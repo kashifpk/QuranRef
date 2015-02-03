@@ -16,18 +16,18 @@ log = logging.getLogger(__name__)
 
 from ..models import (
     db,
-    Aya,
+    Translation,
     )
 
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
-    print(('usage: %s <config_uri> filename\n'
-           '(examples:\n    "%s development.ini data/quran-uthmani.txt")' % (cmd, cmd))) 
+    print(('usage: %s <config_uri> translation_name filename\n'
+           '(examples:\n    "%s development.ini ur.maududi data/translations/ur.maududi.txt")' % (cmd, cmd))) 
     sys.exit(1)
 
 
-def import_ayas(filename):
+def import_translation(translation_name, filename):
     file = open(filename)
     with transaction.manager:
         for line in file:
@@ -35,16 +35,18 @@ def import_ayas(filename):
                 break
             
             surah, aya, content = line.split('|')
-            new_aya = Aya(surah=surah,
-                          aya_number=aya,
-                          arabic_text=content)
-            db.add(new_aya)
+            new_rec = Translation(
+                translation_name=translation_name,
+                surah=surah,
+                aya_number=aya,
+                translation_text=content)
+            db.add(new_rec)
     
     log.info("Done importing!")
     
 
 def main(argv=sys.argv):
-    if len(argv) != 3:
+    if len(argv) != 4:
         usage(argv)
 
     load_project_settings()
@@ -56,6 +58,6 @@ def main(argv=sys.argv):
     db.configure(bind=engine)
     db.autoflush = True
     
-    import_ayas(sys.argv[2])
+    import_translation(sys.argv[2], sys.argv[3])
     
 

@@ -8,9 +8,9 @@ from sqlalchemy.orm import (
 db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
-from .models import Aya
+from .models import Aya, Translation
 from .auth import Permission, User, UserPermission, RoutePermission
 
 # Place additional model names here for ease of importing.
 __all__ = ['db', 'Base', 'Permission', 'User', 'UserPermission', 'RoutePermission',
-           'Aya']
+           'Aya', 'Translation']
