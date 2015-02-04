@@ -25,16 +25,41 @@ Quran Reference -
 
 <%def name="extra_head()">
 <style>
-body {
-  font-family: 'MeQuran';
+
+.ar {
+  font-family: 'AlQalam';
+  text-align: right;
 }
+
+.ur {
+  font-family: 'Noori';
+  text-align: right;
+}
+
+.num {
+  vertical-align: top;
+}
+
 </style>
 </%def>
 
-<table>
+
+<% tr_class = "" %>
+%if translation and translation.startswith("ur."):
+   <% tr_class = "ur" %>
+%endif
+
+<table class="table">
 %for aya in ayas:
   <tr>
-    <td> (${arabic_numerals(aya.aya_number)}) (${aya.aya_number}) &nbsp; ${aya.arabic_text} </td>
+    
+    <!--<td>(${aya.aya_number})</td>-->
+    %if translation:
+    
+    <td class="${tr_class}">${aya.get_translation(translation)}</td>
+    %endif
+    <td class="ar">${aya.arabic_text}</td>
+    <td class="num">(${arabic_numerals(aya.aya_number)})</td>
   </tr>
   
 %endfor

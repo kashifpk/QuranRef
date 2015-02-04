@@ -18,6 +18,8 @@ def qref(request):
     aya_num_end = None
     
     surah_num = int(request.matchdict['surah'])
+    translation = request.GET.get('tr', None)
+    
     if ',' in request.matchdict['aya']:
         aya_num_start, aya_num_end = request.matchdict['aya'].split(',')
     
@@ -27,9 +29,9 @@ def qref(request):
         
     ayas = db.query(Aya).filter_by(
         surah=surah_num).filter(Aya.aya_number.between(aya_num_start, aya_num_end))
-        
     
-    return dict(ayas=ayas)
+    
+    return dict(ayas=ayas, translation=translation)
 
 
 @view_config(route_name='contact', renderer="contact.mako")

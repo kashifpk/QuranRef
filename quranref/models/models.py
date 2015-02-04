@@ -35,7 +35,7 @@ class Aya(Base):
         return db.query(Translation.translation_text).filter_by(
             translation_name=translation_name,
             surah=self.surah,
-            aya_number=self.aya_number).first()
+            aya_number=self.aya_number).first()[0]
 
     def get_range(self, surah_num, aya_start, aya_end=None):
         "Returns a list of ayas for given surah"
