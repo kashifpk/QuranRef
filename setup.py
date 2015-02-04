@@ -4,8 +4,6 @@ import sys
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.txt')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'PyCK',
@@ -38,7 +36,7 @@ setup(
     name='quranref',
     version='0.0',
     description='quranref',
-    long_description=README + '\n\n' + CHANGES,
+    long_description='Online and Embeddable Quran Reference and Tafseer collection',
     classifiers=[
         "Programming Language :: Python",
         "Framework :: Pyramid",
