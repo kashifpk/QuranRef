@@ -8,7 +8,7 @@ from ..lib.surah_info import surah_info
 
 @view_config(route_name='home', renderer='home.mako')
 def homepage(request):
-    return {'project': 'quranref'}
+    return {'surah_info': surah_info}
 
 
 @view_config(route_name='qref', renderer='qref.mako')

@@ -12,3 +12,17 @@
   font-family: 'Noori';
   src: url('/static/fonts/noori.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
+
+.ar {
+  font-family: 'AlQalam';
+  text-align: right;
+}
+
+.ur {
+  font-family: 'Noori';
+  text-align: right;
+}
+
+.num {
+  vertical-align: top;
+}

@@ -25,23 +25,6 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
 <%def name="body_class()"></%def>
 
 <%def name="extra_head()">
-<style>
-
-.ar {
-  font-family: 'AlQalam';
-  text-align: right;
-}
-
-.ur {
-  font-family: 'Noori';
-  text-align: right;
-}
-
-.num {
-  vertical-align: top;
-}
-
-</style>
 </%def>
 
 
