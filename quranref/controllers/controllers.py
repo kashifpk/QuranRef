@@ -1,9 +1,7 @@
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound
 
-from ..models import (
-    db,
-    )
+from ..models import db, Aya, Translation
 
 from ..forms import ContactForm
 
@@ -11,6 +9,27 @@ from ..forms import ContactForm
 @view_config(route_name='home', renderer='home.mako')
 def homepage(request):
     return {'project': 'quranref'}
+
+
+@view_config(route_name='qref', renderer='qref.mako')
+def qref(request):
+    
+    aya_num_start = None
+    aya_num_end = None
+    
+    surah_num = int(request.matchdict['surah'])
+    if ',' in request.matchdict['aya']:
+        aya_num_start, aya_num_end = request.matchdict['aya'].split(',')
+    
+    else:
+        aya_num_start = int(request.matchdict['aya'])
+        aya_num_end = aya_num_start
+        
+    ayas = db.query(Aya).filter_by(
+        surah=surah_num).filter(Aya.aya_number.between(aya_num_start, aya_num_end))
+        
+    
+    return dict(ayas=ayas)
 
 
 @view_config(route_name='contact', renderer="contact.mako")

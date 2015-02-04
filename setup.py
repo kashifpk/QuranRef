@@ -60,6 +60,7 @@ setup(
     [console_scripts]
     quranref_populate = quranref.scripts.populate:main
     quranref_newapp = quranref.scripts.newapp:main
-    quranref_import = quranref.scripts.data_import:main
+    quranref_import_arabic = quranref.scripts.data_import:main
+    quranref_import_translation = quranref.scripts.translation_import:main
     """,
 )

@@ -1,6 +1,8 @@
 <%!
 from quranref.auth import is_allowed
 
+skip_dojo = False
+
 auth_links = [('home', 'Home'), ('contact', 'Contact Us'),
               ('admin.admin_index', 'Admin Section'), ('pyckauth_manager', 'Auth Manager')]
 
@@ -23,8 +25,10 @@ auth_links = [('home', 'Home'), ('contact', 'Contact Us'),
   
   <!-- Custom CSS -->
   <link rel="stylesheet" href="${request.static_url('quranref:static/pyck.css')}" type="text/css" media="screen" charset="utf-8" />
+  <link rel="stylesheet" href="${request.static_url('quranref:static/quranref.css')}" type="text/css" media="screen" charset="utf-8" />
   
   <!-- Dojo -->
+  %if not self.attr.skip_dojo:
   <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/dojo/1.10.1/dojo/resources/dojo.css" type="text/css" charset="utf-8" />
   <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/dojo/1.10.1/dijit/themes/claro/claro.css" type="text/css" charset="utf-8" />
   <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.1/dojo/dojo.js" data-dojo-config="isDebug: true, async: true"></script>
@@ -33,7 +37,8 @@ auth_links = [('home', 'Home'), ('contact', 'Contact Us'),
           parser.parse();
           });});
   </script>
-
+  %endif
+  
   ${self.extra_head()}
 </head>
 
@@ -42,15 +47,12 @@ auth_links = [('home', 'Home'), ('contact', 'Contact Us'),
 
 <body class="${self.body_class()}" ${self.body_attrs()}>
    <div class="container">
-	<div class="row">
-		<div class="col-md-12">
-			${self.header()}
-		</div>
-	</div>
+	
+	${self.header()}
+	
     ${self.content_wrapper()}
-	<div class="row">
-		<div class="col-md-12">${self.footer()}</div>
-	</div>
+	
+	${self.footer()}
   </div>
 </body>
 </html>
@@ -66,11 +68,15 @@ auth_links = [('home', 'Home'), ('contact', 'Contact Us'),
 <%def name="body_class()">
 claro
 </%def>
+
 <%def name="body_attrs()">
 </%def>
+
 <%def name="header()">
-  <div>
-    ${self.main_menu()}
+  <div class="row">
+	<div class="col-md-12">
+	  ${self.main_menu()}
+	</div>
   </div>
 </%def>
   
@@ -149,5 +155,9 @@ claro
   
 
 </%def>
-<%def name="footer()"></%def>
+<%def name="footer()">
+  <div class="row">
+	<div class="col-md-12">QuranRef - Thanks to data provided by <a href="http://tanzil.net">Tanzil.net</a></div>
+  </div>
+</%def>
 

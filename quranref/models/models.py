@@ -4,7 +4,7 @@ from sqlalchemy import (
     Unicode,
     UnicodeText,
     UniqueConstraint,
-    Index
+    Index,
     )
 
 from . import db, Base
@@ -21,7 +21,7 @@ class Aya(Base):
     
     id = Column(Integer, primary_key=True)
     surah = Column(Integer)
-    aya_number = Column(Unicode(100))
+    aya_number = Column(Integer)
     arabic_text = Column(UnicodeText)
     
     __table_args__ = (
@@ -36,7 +36,16 @@ class Aya(Base):
             translation_name=translation_name,
             surah=self.surah,
             aya_number=self.aya_number).first()
-    
+
+    def get_range(self, surah_num, aya_start, aya_end=None):
+        "Returns a list of ayas for given surah"
+        
+        if not aya_end:
+            aya_end = aya_start
+            
+        ayas = db.query(Aya).filter_by(
+            surah=surah_num,
+            aya_number=aya_num)
 
 
 class Translation(Base):
@@ -46,5 +55,5 @@ class Translation(Base):
     
     translation_name = Column(Unicode, primary_key=True)
     surah = Column(Integer, primary_key=True)
-    aya_number = Column(Unicode(100), primary_key=True)
+    aya_number = Column(Integer, primary_key=True)
     translation_text = Column(UnicodeText)
