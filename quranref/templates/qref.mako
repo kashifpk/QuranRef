@@ -14,7 +14,8 @@ def arabic_numerals(number):
 <%inherit file="base.mako"/>
 
 <%def name="title()">
-Quran Reference - 
+Quran Reference - ${surah_info['arabic_name']} - ${surah_info['english_name']} - ${surah_info['translated_name']} -
+Aya ${request.matchdict['aya'].replace(',', '-')}
 </%def>
 
 <%def name="header()"> 
