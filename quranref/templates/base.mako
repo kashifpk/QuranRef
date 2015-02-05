@@ -99,7 +99,7 @@ claro
     
 <%def name="main_menu()">
 
-<nav class="navbar navbar-default" role="navigation" style="height: 100px;">
+<nav class="navbar navbar-default" role="navigation" style="height: 120px;">
   <div class="container-fluid">
     
     <!-- Brand and toggle get grouped for better mobile display -->
@@ -115,7 +115,7 @@ claro
     </div>
 
     <div class="ar text-success" style="font-size: larger; font-weight: bold;">وَلَقَدْ يَسَّرْنَا ٱلْقُرْءَانَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِر</div>
-    <div class="ur text-primary hidden-xs" style="font-size: smaller">ہم نے اِس قرآن کو نصیحت کے لیے آسان ذریعہ بنا دیا ہے، پھر کیا ہے کوئی نصیحت قبول کرنے والا؟
+    <div class="ur text-primary hidden-xs">ہم نے اِس قرآن کو نصیحت کے لیے آسان ذریعہ بنا دیا ہے، پھر کیا ہے کوئی نصیحت قبول کرنے والا؟
 	  <br />
 	  We have made the Qur'an easy to derive lessons from. Is there, then, any who will take heed?
 	</div>
@@ -145,7 +145,10 @@ claro
 </%def>
 <%def name="footer()">
   <div class="row">
-	<div class="well col-md-12">QuranRef - Arabic text and translations courtesy of <a href="http://tanzil.net">Tanzil.net</a></div>
+	<div class="well col-md-12" style="text-align: center">
+      <div class="ar text-danger" style="text-align: center; font-weight: bold; font-size: 18pt;">رَبَّنَا تَقَبَّلْ مِنَّآ</div>
+      <div style="font-size: 8pt;">QuranRef - Arabic text and translations courtesy of <a href="http://tanzil.net">Tanzil.net</a></div>
+	</div>
   </div>
 </%def>
 

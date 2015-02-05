@@ -1,6 +1,6 @@
 from pyck.forms import Form
 from wtforms import validators
-from wtdojo import DojoStringField
+from wtdojo.fields import DojoStringField
 from wtdojo.widgets import DojoTextArea
 
 

@@ -29,4 +29,5 @@ def application_routes(config):
     config.add_route('pyckauth_permissions', '/auth/permissions')
     config.add_route('pyckauth_routes', '/auth/routes')
 
-    config.add_route('qref', '/qref/{surah}/{aya}')
+    config.add_route('qref', '/{surah}/{aya}')
+    config.add_route('qref_trans', '/{surah}/{aya}/{translation}')

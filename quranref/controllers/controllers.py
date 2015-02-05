@@ -13,6 +13,7 @@ def homepage(request):
 
 
 @view_config(route_name='qref', renderer='qref.mako')
+@view_config(route_name='qref_trans', renderer='qref.mako')
 def qref(request):
     
     aya_num_start = None
@@ -25,7 +26,8 @@ def qref(request):
     else:
         surah_num = get_surah_number_by_name(surah)
     
-    translation = request.GET.get('tr', None)
+    
+    translation = request.matchdict.get('translation', None)
     if translation in translation_aliases:
         translation = translation_aliases[translation]
     

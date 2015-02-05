@@ -32,22 +32,23 @@ Quran Reference - القرِآن
         base_link = request.route_url('qref', surah=idx,aya=aya_str)
         %>
         
-        <a href="${base_link}">${idx}</a>
+        <a href="${request.route_url('qref', surah=idx,aya=aya_str)}">${idx}</a>
         <br />
         %for tr in translations:
-          <a href="${base_link}?tr=${tr}"><span class="label label-success" style="font-size: smaller;">${tr.upper()}</span></a>
+          <a href="${request.route_url('qref_trans', surah=idx,aya=aya_str,translation=tr)}">
+            <span class="label label-success" style="font-size: smaller;">${tr.upper()}</span>
+          </a>
         %endfor
       
       </td>
       <td>
-        <%
-        base_link = request.route_url('qref', surah=surah['english_name'],aya=aya_str)
-        %>
         
-        <a href="${base_link}">${surah['english_name']}</a>
+        <a href="${request.route_url('qref', surah=surah['english_name'],aya=aya_str)}">${surah['english_name']}</a>
         <br />
         %for tr in translations:
-          <a href="${base_link}?tr=${tr}"><span class="label label-success" style="font-size: smaller;">${tr.upper()}</span></a>
+          <a href="${request.route_url('qref_trans', surah=surah['english_name'],aya=aya_str,translation=tr)}">
+            <span class="label label-success" style="font-size: smaller;">${tr.upper()}</span>
+          </a>
         %endfor
         
       </td>
@@ -56,14 +57,13 @@ Quran Reference - القرِآن
       <td>${surah['rukus']}</td>
       <td>${surah['nuzool_order']} (${surah['nuzool_location']})</td>
       <td class="ar">
-        <%
-        base_link = request.route_url('qref', surah=surah['arabic_name'],aya=aya_str)
-        %>
         
-        <a href="${base_link}">${surah['arabic_name']}</a>
+        <a href="${request.route_url('qref', surah=surah['arabic_name'],aya=aya_str)}">${surah['arabic_name']}</a>
         <br />
         %for tr in translations:
-          <a href="${base_link}?tr=${tr}"><span class="label label-success" style="font-size: smaller;">${tr.upper()}</span></a>
+          <a href="${request.route_url('qref_trans', surah=surah['arabic_name'],aya=aya_str,translation=tr)}">
+            <span class="label label-success" style="font-size: smaller;">${tr.upper()}</span>
+          </a>
         %endfor
         
       </td>

@@ -2,7 +2,7 @@ from pyck.forms import Form
 from wtforms import validators, widgets
 from wtforms.fields import (PasswordField, TextField, DateField, TextAreaField, RadioField,
                             BooleanField, SelectField, SelectMultipleField)
-from wtdojo import DojoStringField, DojoSelectField
+from wtdojo.fields import DojoStringField, DojoSelectField
 from wtdojo.widgets import DojoTextArea, DojoCheckBox, DojoPasswordBox
 
 
