@@ -42,7 +42,17 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
     
     <td class="${tr_class}">${aya.get_translation(translation)}</td>
     %endif
-    <td class="ar">${aya.arabic_text}</td>
+    <td class="ar">
+      
+      %if aya.arabic_text.strip().endswith("۩"):
+        
+        ${aya.arabic_text.strip()[:-1]}
+        <span class="text-danger" style="font-size: larger; text-decoration: underline;">          السجدة </span>
+        
+      %else:
+        ${aya.arabic_text}
+      %endif
+    </td>
     <td class="num">(${arabic_numerals(aya.aya_number)})</td>
   </tr>
   
