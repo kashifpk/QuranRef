@@ -24,7 +24,10 @@ Quran Reference - القرِآن
   %for idx, surah in enumerate(surah_info):
     %if surah:
     <%
-    aya_str = "1," + str(surah['total_ayas'])
+   # aya_str = "0," + str(surah['total_ayas'])
+
+   aya_str = "1," + str(surah['total_ayas'])
+
     %>
     <tr>
       <td>
@@ -32,7 +35,11 @@ Quran Reference - القرِآن
         base_link = request.route_url('qref', surah=idx,aya=aya_str)
         %>
         
-        <a href="${request.route_url('qref', surah=idx,aya=aya_str)}">${idx}</a>
+       <!-- <a href="${base_link}">${idx}</a>-->
+        
+       <a href="${request.route_url('qref', surah=idx,aya=aya_str)}">${idx}</a>
+      
+
         <br />
         %for tr in translations:
           <a href="${request.route_url('qref_trans', surah=idx,aya=aya_str,translation=tr)}">

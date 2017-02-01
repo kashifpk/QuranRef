@@ -37,16 +37,14 @@ def qref(request):
     else:
         aya_num_start = int(request.matchdict['aya'])
         aya_num_end = aya_num_start
-        
+	
     s_info = surah_info[surah_num]
     
-    ayas = db.query(Aya).filter_by(
-        surah=surah_num).filter(Aya.aya_number.between(aya_num_start, aya_num_end))
+    ayas = db.query(Aya).filter_by(surah=surah_num).filter(Aya.aya_number.between(aya_num_start, aya_num_end)).order_by(Aya.aya_number) 
     
-    
-    return dict(surah_info=s_info, ayas=ayas, translation=translation)
-
-
+        
+    return dict(surah_info=s_info, ayas=ayas, translation=translation, surah=surah_num)
+  
 @view_config(route_name='contact', renderer="contact.mako")
 def contact_form(request):
 
