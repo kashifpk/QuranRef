@@ -24,7 +24,6 @@
 .ar{
   font-family: 'AlQalam';
   text-align: right;
- 
 }
 
 .ur {
@@ -38,5 +37,10 @@
   font-size:small;
   vertical-align: top;
   text-align: left;
-  
+
 }
+'''
+.num {
+  vertical-align: top;
+}
+'''

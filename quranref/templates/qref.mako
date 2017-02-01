@@ -5,7 +5,7 @@ def arabic_numerals(number):
     ret = ''
     for i in n:
         #ret += chr(0x06f0+int(i))
-        ret += chr(int(i)+1776)    
+	ret += chr(int(i)+1776)
     return ret
 %>
 
@@ -25,13 +25,13 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
 <%def name="extra_head()">
 </%def>
 
+
 <% tr_class = "" %>
 %if translation and translation.startswith("ur."):
    <% tr_class = "ur" %>
 %endif
 
 <table class="table">
-
 %for aya in ayas:
   <tr>
     %if translation: 
@@ -43,7 +43,6 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
 	%else:
 	<td class="${tr_class}">${aya.get_translation(translation)}</td>
 	%endif
-	
     %endif
     
     <td class="ar-num">
@@ -52,15 +51,17 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
         
         ${aya.arabic_text.strip()[:-1]}
         <span class="text-danger" style="font-size: larger; text-decoration: underline;">          السجدة </span>
- 
+       
+        
       %elif (surah!=1 and surah!=9 and aya.aya_number==1):
 	  ${aya.arabic_text[:38]} <!--Display bismillah -->
+	  
   </tr>
 	<tr>
 	  %if translation:
 	      <td class="${tr_class}">${aya.get_translation(translation)}</td>
 	      <td class="ar-num">${aya.arabic_text.strip()[38:]}${"۝"}${arabic_numerals(aya.aya_number)}</td> <!-- Display first verse -->
-	  %else:
+	 %else:
 	      <td class="ar-num">${aya.arabic_text.strip()[38:]}${"۝"}${arabic_numerals(aya.aya_number)}</td>
 	  %endif
 	</tr>
@@ -71,7 +72,8 @@ Aya ${request.matchdict['aya'].replace(',', '-')}
       %endif
       
   </tr>
-  
+     
 %endfor
-
 </table>
+    
+  
