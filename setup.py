@@ -34,7 +34,7 @@ for enabled_app in enabled_apps:
 
 setup(
     name='quranref',
-    version='0.0',
+    version='0.1',
     description='quranref',
     long_description='Online and Embeddable Quran Reference and Tafseer collection',
     classifiers=[
