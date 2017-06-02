@@ -1,18 +1,13 @@
 import os
 import sys
-import transaction
-
-from sqlalchemy import engine_from_config
-
-from pyramid.paster import (
-    get_appsettings,
-    setup_logging,
-    )
-
-from .. import load_project_settings
-
 import logging
+
+from pyramid.paster import get_appsettings, setup_logging
+
+from .. import load_project_settings, do_config
+
 log = logging.getLogger(__name__)
+
 
 from ..models import (
     db,
@@ -28,6 +23,9 @@ def usage(argv):
 
 
 def import_ayas(filename):
+    from ..graph_models import gdb
+    from ..graph_models.word_list import Word
+
     file = open(filename)
     with transaction.manager:
         for line in file:

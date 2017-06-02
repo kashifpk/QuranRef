@@ -14,21 +14,21 @@ from . import db, Base
 
 class Aya(Base):
     "Surah database representation"
-    
+
     __tablename__ = "ayas"
-    
+
     #start, ayas, order, rukus, name, tname, ename, type
-    
+
     id = Column(Integer, primary_key=True)
     surah = Column(Integer)
     aya_number = Column(Integer)
     arabic_text = Column(UnicodeText)
-    
+
     __table_args__ = (
         UniqueConstraint('surah', 'aya_number', name='_surah_aya_uc'),
         Index('idx_surah_aya', 'surah', 'aya_number', unique=True)
     )
-    
+
     def get_translation(self, translation_name):
         "Given a translation_name, returns the translation for current Aya"
         
@@ -50,9 +50,9 @@ class Aya(Base):
 
 class Translation(Base):
     "Quran translation"
-    
+
     __tablename__ = 'translations'
-    
+
     translation_name = Column(Unicode, primary_key=True)
     surah = Column(Integer, primary_key=True)
     aya_number = Column(Integer, primary_key=True)

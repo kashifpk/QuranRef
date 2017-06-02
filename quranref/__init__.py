@@ -1,38 +1,40 @@
 import sys
 import os
 from pyramid.config import Configurator
-from pyramid.session import UnencryptedCookieSessionFactoryConfig
+from pyramid.session import SignedCookieSessionFactory
+from pyramid.renderers import JSON
 
-from sqlalchemy import engine_from_config
-
-from .models import db
 from .routes import application_routes
 
 from .apps import enabled_apps
 from . import apps
+from . import graph_models
 
 from pyck.ext import add_admin_handler, AdminController
-from pyck.lib import get_models, get_submodules
-import quranref
+from pyck.lib import get_submodules
 
 
-def main(global_config, **settings):
+def do_config(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
 
     load_project_settings()
 
-    session_factory = UnencryptedCookieSessionFactoryConfig(settings.get('session.secret', 'hello'))
+    session_factory = SignedCookieSessionFactory(settings.get('session.secret', 'hello'))
 
-    engine = engine_from_config(settings, 'sqlalchemy.')
-    db.configure(bind=engine)
     config = Configurator(session_factory=session_factory, settings=settings)
     config.add_tween('quranref.auth.authenticator')
+    config.add_renderer('prettyjson', JSON(indent=4))
     config.include('pyramid_mako')
     config.add_view('pyramid.view.append_slash_notfound_view',
-                context='pyramid.httpexceptions.HTTPNotFound')
+                    context='pyramid.httpexceptions.HTTPNotFound')
 
-    add_admin_handler(config, db, get_models(quranref, return_dict=True), 'admin.', '/admin', AdminController)
+    # ArangoDB configuration
+    graph_models.connect(server=settings['gdb.server'],
+                         port=settings['gdb.port'],
+                         username=settings['gdb.username'],
+                         password=settings['gdb.password'],
+                         db_name=settings['gdb.database'])
 
     application_routes(config)
     configure_app_routes(config)
@@ -47,6 +49,15 @@ def main(global_config, **settings):
 
     config.scan(ignore=ignored_apps)
 
+    return config
+
+
+def main(global_config, **settings):
+    """ This function returns a Pyramid WSGI application.
+    """
+
+    config = do_config(global_config, **settings)
+
     return config.make_wsgi_app()
 
 
@@ -58,8 +69,8 @@ def load_project_settings():
 
 def configure_app_routes(config):
     """
-    Puggable - Application routes integration
-    =========================================
+    Pluggable - Application routes integration
+    ==========================================
 
     Integrates routes for all applications present in the apps folder and enabled (present in the enabled_apps
     list in apps.__init__.py).
@@ -75,7 +86,7 @@ def configure_app_routes(config):
 
     # The app_route_prefixes dictionary for overriding app route prefixes
     app_route_prefixes = {
-        #'blog': '/myblog'
+        # 'blog': '/myblog'
     }
 
     for app_module in enabled_apps:
@@ -86,3 +97,7 @@ def configure_app_routes(config):
             config.include(app_module.application_routes, route_prefix=app_route_prefix)
         except Exception as exp:
             print(repr(exp))
+
+        # process global routes for sub apps
+        if hasattr(app_module, 'global_routes'):
+            config.include(app_module.global_routes)
