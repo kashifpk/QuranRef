@@ -100,7 +100,7 @@ class AyaText(Relation):
     class _Schema(Schema):
         _key = String(required=True)  # aya_number-text_key
         language = String(required=True)
-        text_type = String(required=True, options=['text', 'translation'])
+        text_type = String(required=True)
 
     @classmethod
     def new(cls, aya, aya_text, language, text_type):
