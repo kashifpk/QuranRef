@@ -103,8 +103,8 @@ class QrefAPI(APIBase):
     _ENDPOINTS = {
         'GET': [
             ('', 'surah_list'),
-            ('qref/{surah}', 'qref_arabic_text'),
-            ('qref/{surah}/{aya}', 'qref_arabic_text')
+            ('qref/{text_type}/{surah}', 'qref_arabic_text'),
+            ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text')
         ],
         # 'POST': [
         #     ('', 'new_asset')
@@ -124,6 +124,7 @@ class QrefAPI(APIBase):
 
     def qref_arabic_text(self):
         surah = self.endpoint_info['surah']
+        text_type = self.endpoint_info['text_type']
         aya = self.endpoint_info.get('aya', None)
 
         gdb = graph_models.gdb
@@ -133,27 +134,25 @@ class QrefAPI(APIBase):
 
         qgraph = QuranGraph(connection=gdb)
 
-
-
         # qgraph.expand(surah_doc, depth=2)
         # log.debug(surah_doc._relations['has'][1]._next._relations)
 
         aql = """
         FOR v, e, p IN 1..2 OUTBOUND 'surahs/{surah}' GRAPH 'quran_graph'
-            FILTER e.text_type=="simple"
+            FILTER e.text_type=="{text_type}"
             SORT e._key
         RETURN p
-        """.format(surah=surah)
+        """.format(surah=surah, text_type=text_type)
 
         obj = qgraph.aql(aql)
-        log.debug(obj)
-        log.debug(obj._dump())
-        log.debug(obj._relations)
+        # log.debug(obj)
+        # log.debug(obj._dump())
+        # log.debug(obj._relations)
         ayas_arabic = [rel._next._relations['aya_texts'][0]._next.text
                        for rel in obj._relations['has']]
-        log.debug(ayas_arabic)
-        
-        log.debug(obj._relations['has'][1]._next._relations['aya_texts'][0]._next.text)
+        # log.debug(ayas_arabic)
+
+        # log.debug(obj._relations['has'][1]._next._relations['aya_texts'][0]._next.text)
 
         ret_dict = surah_doc._dump()
         ret_dict['ayas'] = ayas_arabic

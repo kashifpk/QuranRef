@@ -98,7 +98,7 @@ class AyaText(Relation):
     __collection__ = 'aya_texts'
 
     class _Schema(Schema):
-        _key = String(required=True)  # aya_number-text_key
+        _key = String(required=True)  # aya_number-text_key-language-text-type
         language = String(required=True)
         text_type = String(required=True)
 
@@ -110,7 +110,7 @@ class AyaText(Relation):
         add_document_if_not_exists(text_doc, return_document='never')
 
         # Add aya text link
-        aya_text_key = "{}-{}".format(aya._key, text_doc._key)
+        aya_text_key = "{}-{}-{}-{}".format(aya._key, text_doc._key, language, text_type)
         aya_text_document = Graph().relation(
             aya,
             cls(_key=aya_text_key, language=language, text_type=text_type),

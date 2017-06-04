@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
-    print(('usage: %s <config_uri> filename\n'
-           '(examples:\n    "%s development.ini data/quran-uthmani.txt")' % (cmd, cmd)))
+    print(('usage: %s <config_uri>\n'
+           '(examples:\n    "%s development.ini")' % (cmd, cmd)))
     sys.exit(1)
 
 
