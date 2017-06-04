@@ -12,13 +12,33 @@
           <th>Arabic Name</th>
         </tr>
         <tr v-for="surah in surahs">
-          <td>{{ surah._key }}</td>
-          <td>{{ surah.english_name }}</td>
-          <td>{{ surah.translated_name }}</td>
+          <td>
+            <router-link title="View Surah"
+              :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">
+                {{ surah.surah_number }}
+            </router-link>
+          </td>
+          <td>
+            <router-link title="View Surah"
+              :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">
+                {{ surah.english_name }}
+            </router-link>
+          </td>
+          <td>
+            <router-link title="View Surah"
+              :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">
+                {{ surah.translated_name }}
+              </router-link>
+          </td>
           <td>{{ surah.total_ayas }}</td>
           <td>{{ surah.rukus }}</td>
           <td>{{ surah.nuzool_order }} ({{ surah.nuzool_location }})</td>
-          <td class="ar" style="text-align: right">{{ surah.arabic_name }}</td>
+          <td class="ar" style="text-align: right">
+            <router-link title="View Surah"
+              :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">
+                {{ surah.arabic_name }}
+            </router-link>
+          </td>
         </tr>
       </table>
     </div>

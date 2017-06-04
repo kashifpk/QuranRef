@@ -103,6 +103,7 @@ class QrefAPI(APIBase):
     _ENDPOINTS = {
         'GET': [
             ('surahs', 'surah_list'),
+            ('text_types', 'get_text_types'),
             ('qref/{text_type}/{surah}', 'qref_arabic_text'),
             ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text')
         ],
@@ -121,6 +122,20 @@ class QrefAPI(APIBase):
         log.debug(surahs)
 
         return [s._dump() for s in surahs]
+
+    def get_text_types(self):
+
+        aql = """
+        FOR doc IN aya_texts
+            FILTER doc.language=='arabic'
+        RETURN DISTINCT doc.text_type
+        """
+
+        gdb = graph_models.gdb
+        results = [r for r in gdb._db.aql.execute(aql)]
+        # log.debug(results)
+
+        return results
 
     def qref_arabic_text(self):
         surah = self.endpoint_info['surah']

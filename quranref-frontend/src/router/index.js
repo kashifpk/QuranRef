@@ -1,16 +1,14 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import Home from '@/components/Home'
+import SurahView from '@/components/SurahView'
 
 Vue.use(Router)
 
 export default new Router({
   routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: Home
-    }
+    { name: 'home', path: '/', component: Home },
+    { name: 'surah_view', path: '/surah/:surah_number', component: SurahView }
     /* {
       path: '/',
       name: 'Hello',
