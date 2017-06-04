@@ -102,7 +102,7 @@ class QrefAPI(APIBase):
 
     _ENDPOINTS = {
         'GET': [
-            ('', 'surah_list'),
+            ('surahs', 'surah_list'),
             ('qref/{text_type}/{surah}', 'qref_arabic_text'),
             ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text')
         ],
@@ -117,7 +117,7 @@ class QrefAPI(APIBase):
 
     def surah_list(self):
         gdb = graph_models.gdb
-        surahs = gdb.query(Surah).sort("_key").all()
+        surahs = gdb.query(Surah).sort("surah_number").all()
         log.debug(surahs)
 
         return [s._dump() for s in surahs]

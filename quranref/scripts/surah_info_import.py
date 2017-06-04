@@ -25,6 +25,7 @@ def import_surahs():
     for s_info in surah_info:
         s = Surah(
             _key=str(surah_number),
+            surah_number=surah_number,
             arabic_name=s_info['arabic_name'],
             english_name=s_info['english_name'],
             translated_name=s_info['translated_name'],

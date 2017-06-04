@@ -26,6 +26,7 @@ class Surah(Collection):
 
     class _Schema(Schema):
         _key = String(required=True)  # the surah number
+        surah_number = Integer(required=True)
         arabic_name = String(required=True)
         english_name = String(required=True)
         translated_name = String(required=True)

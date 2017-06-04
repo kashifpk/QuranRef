@@ -10,6 +10,7 @@
       <br>
       <li><a href="http://vuejs-templates.github.io/webpack/" target="_blank">Docs for This Template</a></li>
     </ul>
+    <button class="btn btn-success btn-block" @click="print_api_url()">API URL</button>
     <h2>Ecosystem</h2>
     <ul>
       <li><a href="http://router.vuejs.org/" target="_blank">vue-router</a></li>
@@ -21,11 +22,19 @@
 </template>
 
 <script>
+import appConfig from '../lib/config'
+
 export default {
   name: 'hello',
   data () {
     return {
       msg: 'Welcome to Your Vue.js App'
+    }
+  },
+  methods: {
+    print_api_url () {
+      let env = appConfig.getEnvConfig(process.env.NODE_ENV)
+      console.log(env.API_URL)
     }
   }
 }
