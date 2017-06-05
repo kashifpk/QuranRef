@@ -47,6 +47,7 @@ class Aya(Collection):
 
     class _Schema(Schema):
         _key = String(required=True)  # the aya number (format: surah_number-aya_number
+        aya_number = Integer(required=True)
 
     @classmethod
     def new(cls, surah_number, aya_number):
@@ -55,7 +56,8 @@ class Aya(Collection):
 
         # Add aya
         aya = cls(
-            _key="{}-{}".format(surah_number, aya_number)
+            _key="{}-{}".format(surah_number, aya_number),
+            aya_number=aya_number
         )
         add_document_if_not_exists(aya, return_document='never')
         # log.debug(aya.surah_aya_number)

@@ -11,7 +11,13 @@
     <arabic-text-type-select v-model="selectedTextType" @text-type-changed="getSurahText()"></arabic-text-type-select>
     <br />
     <div class="row ar" v-for="aya in surahAyas">
-      {{ aya }}
+      <div class="col-xs-11">
+        {{ aya.aya_text }}
+      </div>
+      <div class="col-xs-1">
+        ({{ aya.aya_number }})  
+      </div>
+      
     </div>
   </div>
 </template>

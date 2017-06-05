@@ -155,7 +155,7 @@ class QrefAPI(APIBase):
         aql = """
         FOR v, e, p IN 1..2 OUTBOUND 'surahs/{surah}' GRAPH 'quran_graph'
             FILTER e.text_type=="{text_type}"
-            SORT e._key
+            SORT p['vertices'][1].aya_number
         RETURN p
         """.format(surah=surah, text_type=text_type)
 
@@ -163,7 +163,8 @@ class QrefAPI(APIBase):
         # log.debug(obj)
         # log.debug(obj._dump())
         # log.debug(obj._relations)
-        ayas_arabic = [rel._next._relations['aya_texts'][0]._next.text
+        ayas_arabic = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
+                            aya_number=rel._next.aya_number)
                        for rel in obj._relations['has']]
         # log.debug(ayas_arabic)
 
