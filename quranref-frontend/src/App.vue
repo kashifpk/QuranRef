@@ -84,6 +84,7 @@ export default {
 .ar{
   font-family: 'AlQalam';
   text-align: right;
+  font-size: 18pt;
 }
 
 .ur {
