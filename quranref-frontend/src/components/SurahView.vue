@@ -8,7 +8,8 @@
 
 <template>
   <div class="surah-view-component">
-    <arabic-text-type-select v-model="selectedTextType" @text-type-changed="getSurahText()"></arabic-text-type-select>
+    <arabic-text-type-select v-model="selectedTextType"
+                             @text-type-changed="getSurahText()"></arabic-text-type-select>
     <br />
     <div class="row ar" v-for="aya in surahAyas">
       <div class="col-xs-11">
@@ -30,13 +31,13 @@ export default {
   name: 'SurahView',
   data () {
     return {
-      selectedTextType: '',
-      surahAyas: []
+      surahAyas: [],
+      selectedTextType: ''
     }
   },
   mounted () {
-    this.selectedTextType = this.$store.getters.arabicTextType
     this.getSurahText()
+    this.selectedTextType = this.$store.getters.arabicTextType
   },
   components: {
     ArabicTextTypeSelect
@@ -45,7 +46,7 @@ export default {
     getSurahText () {
       let env = appConfig.getEnvConfig(process.env.NODE_ENV)
 
-      let requestURL = env.API_URL + '/qref/' + this.selectedTextType +
+      let requestURL = env.API_URL + '/qref/' + this.$store.getters.arabicTextType +
         '/' + this.$route.params.surah_number
 
       console.log(requestURL)

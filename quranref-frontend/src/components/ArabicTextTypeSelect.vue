@@ -5,7 +5,7 @@
 
 <template>
   <div class="arabic-text-type-component">
-    <select class="form-control" :value="value" size="1"
+    <select class="form-control" :value="value" size="1" v-model="selectedType"
             @change="changeTextType($event.target.value)">
       <option v-for="tt in textTypes">{{tt}}</option>
     </select>
@@ -20,11 +20,13 @@ export default {
   props: ['value'],
   data () {
     return {
+      selectedType: '',
       textTypes: []
     }
   },
   mounted () {
     this.getTextTypes()
+    this.selectedType = this.value
   },
   methods: {
     getTextTypes () {
@@ -34,15 +36,16 @@ export default {
       this.axios.get(requestURL).then((response) => {
         console.log(response.data)
         this.textTypes = response.data
+        this.selectedType = this.value
       })
       .catch((error) => {
         console.log(error)
       })
     },
     changeTextType (value) {
-      this.$store.commit('setArabicTextType', this.value)
+      this.$store.commit('setArabicTextType', value)
+      this.$emit('text-type-changed', value)
       this.$emit('input', value)
-      this.$emit('text-type-changed', this.value)
     }
   }
 }

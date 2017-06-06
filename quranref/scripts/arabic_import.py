@@ -22,17 +22,31 @@ def import_ayas(text_name, filename):
 
     file = open(filename)
 
+    bismillah_arabic = ''
+    current_surah = ''
+
     for line in file:
         if not line.strip():
             break
 
         surah, aya, content = line.split('|')
-        aya_doc = Aya.new(
-            surah_number=surah,
-            aya_number=aya
-        )
 
-        AyaText.new(aya_doc, content.strip(), 'arabic', text_name)
+        if not bismillah_arabic:
+            bismillah_arabic = content.strip()
+
+        if current_surah != surah and content.startswith(bismillah_arabic):
+            # new surah starting, separate bismillah and save as aya 0 for surah
+            content = content[len(bismillah_arabic):].strip()
+            if content:
+                aya_doc = Aya.new(surah_number=surah, aya_number=0)
+            else:
+                aya_doc = Aya.new(surah_number=surah, aya_number=aya)
+
+            AyaText.new(aya_doc, bismillah_arabic, 'arabic', text_name)
+
+        if content:
+            aya_doc = Aya.new(surah_number=surah, aya_number=aya)
+            AyaText.new(aya_doc, content.strip(), 'arabic', text_name)
 
     log.info("Done importing!")
 
