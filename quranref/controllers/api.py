@@ -135,7 +135,7 @@ class QrefAPI(APIBase):
         results = [r for r in gdb._db.aql.execute(aql)]
         # log.debug(results)
 
-        return results
+        return sorted(results)
 
     def qref_arabic_text(self):
         surah = self.endpoint_info['surah']

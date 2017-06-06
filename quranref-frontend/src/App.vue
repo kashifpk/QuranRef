@@ -19,7 +19,7 @@
         <div class="ar text-success" style="font-size: larger; font-weight: bold;">
               وَلَقَدْ يَسَّرْنَا ٱلْقُرْءَانَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِر
         </div>
-        <div class="ur text-primary hidden-xs">
+        <div class="ur text-primary hidden-xs hidden-sm">
           ہم نے اِس قرآن کو نصیحت کے لیے آسان ذریعہ بنا دیا ہے، پھر کیا ہے کوئی نصیحت قبول کرنے والا؟
         <br />
         We have made the Qur'an easy to derive lessons from. Is there, then, any who will take heed?
