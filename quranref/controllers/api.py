@@ -105,7 +105,8 @@ class QrefAPI(APIBase):
             ('surahs', 'surah_list'),
             ('text_types', 'get_text_types'),
             ('qref/{text_type}/{surah}', 'qref_arabic_text'),
-            ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text')
+            ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text'),
+            ('search/{search_term}/{result_text_type}', 'do_search')
         ],
         # 'POST': [
         #     ('', 'new_asset')
@@ -174,35 +175,65 @@ class QrefAPI(APIBase):
         ret_dict['ayas'] = ayas_arabic
 
         return ret_dict
-    # def _get_asset(self):
-    # 
-    #     user_id = self._get_auth_user()
-    #     col_name = self.endpoint_info['asset_type']
-    #     key = self.endpoint_info['asset_id']
-    # 
-    #     if col_name not in self.supported_collections:
-    #         return APIBadRequest("ID not understood")
-    # 
-    #     rec = graph_models.gdb.query(self.supported_collections[col_name]).by_key(key)
-    # 
-    #     client_graph = ClientInfrastructureGraph(connection=graph_models.gdb)
-    #     client_graph.expand(rec, depth=1, direction='any')
-    # 
-    #     # verify ownership
-    #     assert 'owns' in rec._relations
-    #     if user_id != rec._relations['owns'][0]._next._key:
-    #         raise APIForbidden("You don't own this asset")
-    # 
-    #     rec.verified = rec._relations['owns'][0].verified
-    # 
-    #     # add country and city location for ip addresses
-    #     if 'ip_addresses' == col_name:
-    #         rec.location = geodb.simple_ip_lookup(key)
-    # 
-    #     return rec
-    # 
-    # def get_asset(self):
-    # 
-    #     rec = self._get_asset()
-    #     return graph.convert_to_asset_dict(rec)
 
+    def do_search(self):
+
+        gdb = graph_models.gdb
+        qgraph = QuranGraph(connection=gdb)
+
+        aarab = ['ِ', 'ْ', 'َ', 'ُ', 'ّ']
+
+        search_results = []
+        search_term = self.endpoint_info['search_term']
+        result_text_type = self.endpoint_info['result_text_type']
+        is_plain = True
+        for ch in aarab:
+            if ch in search_term:
+                is_plain = False
+                break
+
+        if is_plain:
+            matched_texts = gdb.query(Text).filter(
+                "LIKE(rec.text, '%{}%')".format(search_term), prepend_rec_name=False).all()
+
+            # search_results = [rec.text for rec in matched_texts]
+
+            for mt in matched_texts:
+                aql = """
+                FOR v, e, p IN 1..3 INBOUND 'texts/{}' GRAPH 'quran_graph'
+                    FILTER p.edges[0].text_type=="simple-clean"
+                RETURN p""".format(mt._key)
+
+                obj = qgraph.aql(aql)
+                log.debug(obj)
+                log.debug(obj._dump())
+                log.debug(obj._relations)
+                log.info(obj._relations['aya_texts'][0]._next._key)
+                for aya_text_doc in obj._relations['aya_texts']:
+                    search_result = {
+                        'surah': aya_text_doc._next._relations['has'][0]._next._dump(),
+                        'aya_number': aya_text_doc._next._key,
+                        'texts': {
+                            'simple-clean': mt.text
+                        }
+                    }
+
+                    if 'simple-clean' != result_text_type:
+                        # get arabic text of the specified style
+                        aql = """
+                        FOR v, e, p IN 1..2 OUTBOUND 'ayas/{}' GRAPH 'quran_graph'
+                            FILTER p.edges[0].text_type=="{}"
+                        RETURN p
+                        """.format(search_result['aya_number'], result_text_type)
+
+                        aya_obj = qgraph.aql(aql)
+                        search_result['texts'][result_text_type] = \
+                            aya_obj._relations['aya_texts'][0]._next.text
+
+                    search_results.append(search_result)
+
+                # ayas_arabic = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
+                #                     aya_number=rel._next.aya_number)
+                #                for rel in obj._relations['has']]
+
+        return search_results
