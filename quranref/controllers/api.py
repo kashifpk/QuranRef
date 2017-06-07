@@ -181,7 +181,7 @@ class QrefAPI(APIBase):
         gdb = graph_models.gdb
         qgraph = QuranGraph(connection=gdb)
 
-        aarab = ['ِ', 'ْ', 'َ', 'ُ', 'ّ']
+        aarab = ['ِ', 'ْ', 'َ', 'ُ', 'ّ', 'ٍ', 'ً', 'ٌ']
 
         search_results = []
         search_term = self.endpoint_info['search_term']

@@ -1,7 +1,12 @@
 <template>
   <div class="home-component">
     <div class="row">
-      <table class="table table-striped table-bordered table-hover">
+      <div class="col-xs-12 col-sm-12 col-md-6 col-md-offset-6 col-lg-4 col-lg-offset-8">
+        <search-box></search-box>
+      </div>
+    </div>
+    <div class="row">
+      <table class="table table-striped table-bordered table-hover col-xs-12">
         <tr class="bg-primary">
           <th>SNo.</th>
           <th>Surah Name</th>
@@ -47,9 +52,13 @@
 
 <script>
 import appConfig from '../lib/config'
+import SearchBox from './SearchBox'
 
 export default {
   name: 'home',
+  components: {
+    SearchBox
+  },
   data () {
     return {
       surahs: []

@@ -28,10 +28,7 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <form class="navbar-form navbar-right" role="search">
-            <div class="form-group">
-              <input type="text" class="form-control" placeholder="Search">
-            </div>
-            <button type="submit" class="btn btn-default">Submit</button>
+            
           </form>
         </div>
       </div><!-- /.container-fluid -->
@@ -41,9 +38,10 @@
 </template>
 
 <script>
-export default {
-  name: 'app'
-}
+  
+  export default {
+    name: 'app'
+  }
 </script>
 
 <style>
