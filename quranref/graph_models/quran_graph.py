@@ -93,7 +93,7 @@ class Has(Relation):
     __collection__ = 'has'
 
     class _Schema(Schema):
-        _key = String(required=True)  # surah_number-aya-number
+        _key = String(required=True)  # surah_number-aya-number or AW-aya-number-word-hash
 
 
 class AyaText(Relation):
@@ -122,12 +122,31 @@ class AyaText(Relation):
         add_document_if_not_exists(aya_text_document, return_document='never')
 
 
+class Word(Collection):
+    "Representing a single word of the Quran"
+
+    __collection__ = 'words'    
+
+    _index = [
+        {"type": "hash", "fields": ["word"]}
+    ]
+
+    class _Schema(Schema):
+        _key = String(required=True)  # sha1 hash of word
+        word = String(required=True)
+
+    @classmethod
+    def new(cls, word):
+        key = hashlib.sha1(word.encode("UTF-8")).hexdigest()
+        return cls(_key=key, word=word)
+
+
 class QuranGraph(Graph):
 
     __graph__ = 'quran_graph'
 
     graph_connections = [
-        GraphConnection(Surah, Has, Aya),
-        GraphConnection(Aya, AyaText, Text),
+        GraphConnection([Surah, Aya], Has, [Aya, Word]),
+        GraphConnection(Aya, AyaText, Text)
         # GraphConnection(Surah, Has, [Aya]),
     ]

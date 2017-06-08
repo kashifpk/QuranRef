@@ -61,6 +61,7 @@ setup(
     quranref_newapp = quranref.scripts.newapp:main
     quranref_import_surah_info = quranref.scripts.surah_info_import:main
     quranref_import_arabic = quranref.scripts.arabic_import:main
+    quranref_make_words = quranref.scripts.make_words:main
     quranref_import_translation = quranref.scripts.translation_import:main
     """,
 )

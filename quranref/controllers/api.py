@@ -205,6 +205,9 @@ class QrefAPI(APIBase):
                 RETURN p""".format(mt._key)
 
                 obj = qgraph.aql(aql)
+                if not obj:
+                    return []
+
                 log.debug(obj)
                 log.debug(obj._dump())
                 log.debug(obj._relations)
