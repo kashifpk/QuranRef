@@ -24,15 +24,16 @@
         <br />
         We have made the Qur'an easy to derive lessons from. Is there, then, any who will take heed?
         </div>
-        
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <form class="navbar-form navbar-right" role="search">
-            
-          </form>
-        </div>
       </div><!-- /.container-fluid -->
     </nav>
+    <div class="row">
+      <div class="col-xs-12" style="text-align: left;">
+        <router-link class="btn btn-default btn-sm" title="Browse By Word"
+                     :to="{name: 'browse_by_word'}">
+          Browse By Word
+        </router-link>
+      </div>
+    </div>
     <router-view></router-view>
   </div>
 </template>

@@ -91,11 +91,16 @@ from pyramid.view import view_defaults, view_config
 from .api_base import APIBase
 from .exceptions import APIForbidden, APIBadRequest, APITooManyRequests
 
-from ..graph_models.quran_graph import QuranGraph, Surah, Aya, Text
+from ..graph_models.quran_graph import QuranGraph, Surah, Aya, Text, Word
 from .. import graph_models
 
 log = logging.getLogger(__name__)
 
+"""
+FOR v, e, p IN 1..2 ANY 'words/4ce9591136a39a901d44ac5a7fb4aab2ccbcf17a' GRAPH 'quran_graph'
+FILTER p.edges[1].text_type=="simple-clean"
+RETURN p
+"""
 
 @view_defaults(route_name='api', renderer="prettyjson")
 class QrefAPI(APIBase):
@@ -103,6 +108,8 @@ class QrefAPI(APIBase):
     _ENDPOINTS = {
         'GET': [
             ('surahs', 'surah_list'),
+            ('letters', 'letters'),
+            ('words_by_letter/{letter}', 'get_words_by_letter'),
             ('text_types', 'get_text_types'),
             ('qref/{text_type}/{surah}', 'qref_arabic_text'),
             ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text'),
@@ -116,6 +123,29 @@ class QrefAPI(APIBase):
     @view_config(request_method=("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"))
     def request_handler(self):
         return self.handle_request()
+
+    def letters(self):
+        letters_list = [
+            "آ", "أ", "إ", "ا", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش",
+            "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن", "و", "ه", "ي"
+        ]
+
+        return letters_list
+
+    def get_words_by_letter(self):
+
+        aql = """
+        FOR doc IN words
+            FILTER LEFT(doc.word, 1)=='{letter}'
+            SORT doc.word
+        RETURN doc.word
+        """.format(letter=self.endpoint_info['letter'])
+
+        gdb = graph_models.gdb
+        results = [r for r in gdb._db.aql.execute(aql)]
+        log.debug(results)
+
+        return results
 
     def surah_list(self):
         gdb = graph_models.gdb
