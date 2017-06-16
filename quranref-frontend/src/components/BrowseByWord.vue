@@ -55,7 +55,6 @@
 
 <script>
 import appConfig from '../lib/config'
-import Vue from 'vue'
 // import ArabicTextTypeSelect from './ArabicTextTypeSelect'
 
 export default {
@@ -114,7 +113,7 @@ export default {
         this.axios.get(requestURL).then((response) => {
           console.log(response)
           // this.wordAyas[word] = response.data
-          Vue.set(this.wordAyas, word, response.data)
+          this.$set(this.wordAyas, word, response.data)
         })
         .catch((error) => {
           console.log(error)
