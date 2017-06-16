@@ -96,11 +96,6 @@ from .. import graph_models
 
 log = logging.getLogger(__name__)
 
-"""
-FOR v, e, p IN 1..2 ANY 'words/4ce9591136a39a901d44ac5a7fb4aab2ccbcf17a' GRAPH 'quran_graph'
-FILTER p.edges[1].text_type=="simple-clean"
-RETURN p
-"""
 
 @view_defaults(route_name='api', renderer="prettyjson")
 class QrefAPI(APIBase):
@@ -110,6 +105,7 @@ class QrefAPI(APIBase):
             ('surahs', 'surah_list'),
             ('letters', 'letters'),
             ('words_by_letter/{letter}', 'get_words_by_letter'),
+            ('ayas_by_word/{word}/{result_text_type}', 'get_ayas_by_word'),
             ('text_types', 'get_text_types'),
             ('qref/{text_type}/{surah}', 'qref_arabic_text'),
             ('qref/{text_type}/{surah}/{aya}', 'qref_arabic_text'),
@@ -144,6 +140,52 @@ class QrefAPI(APIBase):
         gdb = graph_models.gdb
         results = [r for r in gdb._db.aql.execute(aql)]
         log.debug(results)
+
+        return results
+
+    def get_ayas_by_word(self):
+
+        gdb = graph_models.gdb
+        qgraph = QuranGraph(connection=gdb)
+
+        word_doc = gdb.query(Word).filter("word==@word", word=self.endpoint_info['word']).all()
+        if not word_doc:
+            return []
+
+        word_doc = word_doc[0]
+
+        aql = """
+        FOR v, e, p IN 1..2 ANY 'words/{wkey}' GRAPH 'quran_graph'
+            FILTER p.edges[1].text_type=="{text_type}"
+        RETURN p
+        """.format(wkey=word_doc._key, text_type=self.endpoint_info['result_text_type'])
+
+        obj = qgraph.aql(aql)
+        if not obj:
+            return []
+
+        # log.debug(obj._relations)
+
+        results = []
+        ayas = [r._next for r in obj._relations['has']]
+        for aya in ayas:
+            r = {
+                'aya_number': aya._key,
+                'aya_text': aya._relations['aya_texts'][0]._next.text
+            }
+
+            qgraph.expand(aya)
+            # log.info(aya._relations)
+            for rel in aya._relations['has']:
+                # log.debug(rel._next)
+                surah = rel._next
+                if not surah._id.startswith('surah'):
+                    continue
+
+                r['surah_arabic_name'] = surah.arabic_name
+                r['surah_english_name'] = surah.english_name
+
+            results.append(r)
 
         return results
 

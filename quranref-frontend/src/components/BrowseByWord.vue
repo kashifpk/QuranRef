@@ -35,16 +35,19 @@
             <h3 class="panel-title">{{ word }}</h3>
           </div>
           <div class="panel-body" v-if="wordAyas[word]">
-            Word Ayas come here
+            <div class="row ar" v-for="aya in wordAyas[word]">
+              <div class="col-xs-8 ar">
+                {{ aya.aya_text }}
+              </div>
+              <div class="col-xs-2 ar">
+                ({{ aya.aya_number.split('-')[1] }})  {{ aya.surah_arabic_name  }} 
+              </div>
+              <div class="col-xs-2">
+                {{ aya.surah_english_name  }} ({{ aya.aya_number.split('-')[1] }})
+              </div>
+            </div>
           </div>
         </div>
-        <!--<div class="">
-          <button class="btn"
-                :class="{ 'btn-success': word===selectedWord, 'btn-default': word!==selectedWord }"
-                >
-            {{ word }}
-          </button>  
-        </div>-->
       </div>
     </div>
   </div>
@@ -52,6 +55,7 @@
 
 <script>
 import appConfig from '../lib/config'
+import Vue from 'vue'
 // import ArabicTextTypeSelect from './ArabicTextTypeSelect'
 
 export default {
@@ -102,16 +106,20 @@ export default {
       this.selectedWord = word
       console.log(word)
 
-      /* let env = appConfig.getEnvConfig(process.env.NODE_ENV)
-      let requestURL = env.API_URL + '/words_by_letter/' + letter
-      console.log(requestURL)
-      this.axios.get(requestURL).then((response) => {
-        console.log(response)
-        this.words = response.data
-      })
-      .catch((error) => {
-        console.log(error)
-      }) */
+      if (!this.wordAyas[word]) {
+        let env = appConfig.getEnvConfig(process.env.NODE_ENV)
+        let requestURL = env.API_URL + '/ayas_by_word/' + word + '/' +
+                         this.$store.getters.arabicTextType
+        console.log(requestURL)
+        this.axios.get(requestURL).then((response) => {
+          console.log(response)
+          // this.wordAyas[word] = response.data
+          Vue.set(this.wordAyas, word, response.data)
+        })
+        .catch((error) => {
+          console.log(error)
+        })
+      }
     }
   }
 }
