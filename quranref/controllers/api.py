@@ -139,7 +139,7 @@ class QrefAPI(APIBase):
 
         gdb = graph_models.gdb
         results = [r for r in gdb._db.aql.execute(aql)]
-        log.debug(results)
+        # log.debug(results)
 
         return results
 
@@ -192,7 +192,7 @@ class QrefAPI(APIBase):
     def surah_list(self):
         gdb = graph_models.gdb
         surahs = gdb.query(Surah).sort("surah_number").all()
-        log.debug(surahs)
+        # log.debug(surahs)
 
         return [s._dump() for s in surahs]
 
@@ -280,10 +280,10 @@ class QrefAPI(APIBase):
                 if not obj:
                     return []
 
-                log.debug(obj)
-                log.debug(obj._dump())
-                log.debug(obj._relations)
-                log.info(obj._relations['aya_texts'][0]._next._key)
+                # log.debug(obj)
+                # log.debug(obj._dump())
+                # log.debug(obj._relations)
+                # log.info(obj._relations['aya_texts'][0]._next._key)
                 for aya_text_doc in obj._relations['aya_texts']:
                     search_result = {
                         'surah': aya_text_doc._next._relations['has'][0]._next._dump(),
@@ -306,9 +306,5 @@ class QrefAPI(APIBase):
                             aya_obj._relations['aya_texts'][0]._next.text
 
                     search_results.append(search_result)
-
-                # ayas_arabic = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
-                #                     aya_number=rel._next.aya_number)
-                #                for rel in obj._relations['has']]
 
         return search_results

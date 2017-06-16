@@ -1,9 +1,13 @@
 <template>
   <div class="home-component">
     <div class="row">
-      <div class="col-xs-12 col-sm-12 col-md-6 col-md-offset-6 col-lg-4 col-lg-offset-8">
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-4">
         <search-box></search-box>
       </div>
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-4">
+        <arabic-text-type-select></arabic-text-type-select>
+      </div>
+      
     </div>
     <div class="row">
       <table class="table table-striped table-bordered table-hover col-xs-12">
@@ -53,11 +57,13 @@
 <script>
 import appConfig from '../lib/config'
 import SearchBox from './SearchBox'
+import ArabicTextTypeSelect from './ArabicTextTypeSelect'
 
 export default {
   name: 'home',
   components: {
-    SearchBox
+    SearchBox,
+    ArabicTextTypeSelect
   },
   data () {
     return {
