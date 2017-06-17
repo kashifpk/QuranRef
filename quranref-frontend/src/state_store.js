@@ -1,9 +1,11 @@
 var stateStore = {
   state: {
-    arabicTextType: 'simple'
+    arabicTextType: 'simple',
+    surahInfo: ''
   },
   getters: {
-    arabicTextType: state => { return state.arabicTextType }
+    arabicTextType: state => { return state.arabicTextType },
+    surahInfo: state => { return state.surahInfo }
 
     /* isLoggedIn: (state, getters) => {
       if (state.authToken === '') {
@@ -23,7 +25,8 @@ var stateStore = {
     } */
   },
   mutations: {
-    setArabicTextType (state, textType) { state.arabicTextType = textType }
+    setArabicTextType (state, textType) { state.arabicTextType = textType },
+    setSurahInfo (state, surahData) { state.surahInfo = surahData }
   }
 }
 

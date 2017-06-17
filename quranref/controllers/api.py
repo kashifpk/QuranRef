@@ -173,18 +173,6 @@ class QrefAPI(APIBase):
                 'aya_number': aya._key,
                 'aya_text': aya._relations['aya_texts'][0]._next.text
             }
-
-            qgraph.expand(aya)
-            # log.info(aya._relations)
-            for rel in aya._relations['has']:
-                # log.debug(rel._next)
-                surah = rel._next
-                if not surah._id.startswith('surah'):
-                    continue
-
-                r['surah_arabic_name'] = surah.arabic_name
-                r['surah_english_name'] = surah.english_name
-
             results.append(r)
 
         return results
@@ -192,9 +180,11 @@ class QrefAPI(APIBase):
     def surah_list(self):
         gdb = graph_models.gdb
         surahs = gdb.query(Surah).sort("surah_number").all()
-        # log.debug(surahs)
+        results = {}
+        for surah in surahs:
+            results[surah._key] = surah._dump()
 
-        return [s._dump() for s in surahs]
+        return results
 
     def get_text_types(self):
 
@@ -216,14 +206,7 @@ class QrefAPI(APIBase):
         aya = self.endpoint_info.get('aya', None)
 
         gdb = graph_models.gdb
-        surah_doc = gdb.query(Surah).by_key(surah)
-
-        assert surah_doc is not None
-
         qgraph = QuranGraph(connection=gdb)
-
-        # qgraph.expand(surah_doc, depth=2)
-        # log.debug(surah_doc._relations['has'][1]._next._relations)
 
         aql = """
         FOR v, e, p IN 1..2 OUTBOUND 'surahs/{surah}' GRAPH 'quran_graph'
@@ -233,18 +216,15 @@ class QrefAPI(APIBase):
         """.format(surah=surah, text_type=text_type)
 
         obj = qgraph.aql(aql)
-        # log.debug(obj)
-        # log.debug(obj._dump())
-        # log.debug(obj._relations)
         ayas_arabic = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
                             aya_number=rel._next.aya_number)
                        for rel in obj._relations['has']]
         # log.debug(ayas_arabic)
-
         # log.debug(obj._relations['has'][1]._next._relations['aya_texts'][0]._next.text)
 
-        ret_dict = surah_doc._dump()
-        ret_dict['ayas'] = ayas_arabic
+        ret_dict = {
+            'ayas_arabic': ayas_arabic
+        }
 
         return ret_dict
 
@@ -272,7 +252,7 @@ class QrefAPI(APIBase):
 
             for mt in matched_texts:
                 aql = """
-                FOR v, e, p IN 1..3 INBOUND 'texts/{}' GRAPH 'quran_graph'
+                FOR v, e, p IN 1..1 INBOUND 'texts/{}' GRAPH 'quran_graph'
                     FILTER p.edges[0].text_type=="simple-clean"
                 RETURN p""".format(mt._key)
 
@@ -286,7 +266,6 @@ class QrefAPI(APIBase):
                 # log.info(obj._relations['aya_texts'][0]._next._key)
                 for aya_text_doc in obj._relations['aya_texts']:
                     search_result = {
-                        'surah': aya_text_doc._next._relations['has'][0]._next._dump(),
                         'aya_number': aya_text_doc._next._key,
                         'texts': {
                             'simple-clean': mt.text

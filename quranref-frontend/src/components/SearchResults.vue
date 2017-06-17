@@ -52,8 +52,12 @@ export default {
 
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {
-        console.log(response.data)
-        this.searchResults = response.data
+        for (let idx in response.data) {
+          let sr = response.data[idx]
+          let sn = sr.aya_number.split('-')[0]
+          sr['surah'] = this.$store.getters.surahInfo[sn]
+          this.searchResults.push(sr)
+        }
       })
       .catch((error) => {
         console.log(error)

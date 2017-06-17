@@ -67,7 +67,7 @@ export default {
   },
   data () {
     return {
-      surahs: []
+      surahs: {}
     }
   },
   mounted () {
@@ -75,21 +75,29 @@ export default {
   },
   methods: {
     getSurahs () {
-      let env = appConfig.getEnvConfig(process.env.NODE_ENV)
-      console.log(env.API_URL)
+      // TODO: Later move the API fetch code to lib so it can be called from other pages
+      // in cases where those pages are directly accessed and home page was not executed
+      // and hence we didn't fetch surah info
+      if (!this.$store.getters.surahInfo) {
+        let env = appConfig.getEnvConfig(process.env.NODE_ENV)
+        console.log(env.API_URL)
 
-      this.axios.get(env.API_URL + '/surahs').then((response) => {
-        console.log(response)
-        this.surahs = response.data
-      })
-      .catch((error) => {
-        console.log(error)
-        this.$store.commit('addAlert', {
-          type: 'danger',
-          title: 'Server not responding',
-          text: 'Could not fetch predefined security questions'
+        this.axios.get(env.API_URL + '/surahs').then((response) => {
+          console.log(response)
+          this.$store.commit('setSurahInfo', response.data)
         })
-      })
+        .catch((error) => {
+          console.log(error)
+          this.$store.commit('addAlert', {
+            type: 'danger',
+            title: 'Server not responding',
+            text: 'Could not fetch predefined security questions'
+          })
+        })
+      }
+
+      // console.log('Surahs set')
+      this.surahs = this.$store.getters.surahInfo
     }
   }
 }

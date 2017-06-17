@@ -49,7 +49,7 @@ export default {
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {
         console.log(response)
-        this.surahAyas = response.data.ayas
+        this.surahAyas = response.data.ayas_arabic
       })
       .catch((error) => {
         console.log(error)

@@ -30,20 +30,20 @@
       
 
       <div class="row" v-for="word in words">
-        <div class="panel panel-default col-xs-12">
+        <div class="panel panel-success col-xs-12">
           <div class="panel-heading ar" @click="getAyas(word)">
             <h3 class="panel-title">{{ word }}</h3>
           </div>
-          <div class="panel-body" v-if="wordAyas[word]">
+          <div class="panel-body bg-info" v-if="wordAyas[word]">
             <div class="row ar" v-for="aya in wordAyas[word]">
               <div class="col-xs-8 ar">
                 {{ aya.aya_text }}
               </div>
               <div class="col-xs-2 ar">
-                ({{ aya.aya_number.split('-')[1] }})  {{ aya.surah_arabic_name  }} 
+                ({{ aya.aya_number.split('-')[1] }})  {{ aya.surah.arabic_name }} 
               </div>
               <div class="col-xs-2">
-                {{ aya.surah_english_name  }} ({{ aya.aya_number.split('-')[1] }})
+                {{ aya.surah.english_name  }} ({{ aya.aya_number.split('-')[1] }})
               </div>
             </div>
           </div>
@@ -110,10 +110,17 @@ export default {
         let requestURL = env.API_URL + '/ayas_by_word/' + word + '/' +
                          this.$store.getters.arabicTextType
         console.log(requestURL)
+        let results = []
         this.axios.get(requestURL).then((response) => {
           console.log(response)
-          // this.wordAyas[word] = response.data
-          this.$set(this.wordAyas, word, response.data)
+          for (let idx in response.data) {
+            let sr = response.data[idx]
+            let sn = sr.aya_number.split('-')[0]
+            sr['surah'] = this.$store.getters.surahInfo[sn]
+            results.push(sr)
+          }
+
+          this.$set(this.wordAyas, word, results)
         })
         .catch((error) => {
           console.log(error)
