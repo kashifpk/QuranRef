@@ -10,19 +10,9 @@
 <template>
   <div class="search-results-component">
     <br />
-    <div class="row" v-for="sr in searchResults">
-      <div class="col-xs-8 ar">
-        <aya-view :search-term="$route.params.search_term" :texts="sr.texts"></aya-view>
-      </div>
-      <div class="col-xs-2 ar">
-        ({{ sr.aya_number.split('-')[1] }})  {{ sr.surah.arabic_name  }} 
-      </div>
-      <div class="col-xs-2">
-        {{ sr.surah.english_name  }} ({{ sr.aya_number.split('-')[1] }})
-      </div>
-      
+    <div class="row" v-for="aya in searchResults">
+      <aya-view :aya="aya" :display-surah-name="true"></aya-view>
     </div>
-    
   </div>
 </template>
 
@@ -52,12 +42,7 @@ export default {
 
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {
-        for (let idx in response.data) {
-          let sr = response.data[idx]
-          let sn = sr.aya_number.split('-')[0]
-          sr['surah'] = this.$store.getters.surahInfo[sn]
-          this.searchResults.push(sr)
-        }
+        this.searchResults = response.data
       })
       .catch((error) => {
         console.log(error)

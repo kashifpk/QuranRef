@@ -10,32 +10,51 @@
 
 <template>
   <div class="aya-view-component">
-    <!-- <span v-for="word in texts['simple-clean'].split(' ')">
-      {{ word }}
-    </span>
-    <br />
-    <span v-for="word in texts[$store.getters.arabicTextType].split(' ')">
-      {{ stripAraab(word) }}
-      
-    </span> 
-    <br /> -->
-    {{ texts[$store.getters.arabicTextType] }} <br />
+    <div class="ar" :class="[displaySurahName ? 'col-xs-8' : 'col-xs-11']">
+      {{ aya.aya_text }}
+    </div>
+    
+    <div class="col-xs-1">
+      ({{ aya.aya_number.split('-')[1] }})
+    </div>
+    
+    <div class="col-xs-3 ar" v-if="displaySurahName">
+      {{ surah.arabic_name }} ({{ surah.english_name  }})
+    </div>
+    
   </div>
 </template>
 
 <script>
 export default {
   name: 'AyaView',
-  props: ['texts', 'searchTerm'],
+  props: {
+    aya: {
+      type: Object,
+      required: true
+    },
+    displaySurahName: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
-      textsWords: {}
+      textsWords: {},
+      surah: {}
     }
   },
   mounted () {
+    this.setSurah()
     this.breakWords()
   },
   methods: {
+    setSurah () {
+      let sn = this.aya.aya_number.split('-')[0]
+      console.log(sn)
+      console.log(this.$store.getters.surahInfo[sn])
+      this.surah = this.$store.getters.surahInfo[sn]
+    },
     breakWords () {
       console.log(this.texts)
       for (let textType in this.texts) {

@@ -216,17 +216,13 @@ class QrefAPI(APIBase):
         """.format(surah=surah, text_type=text_type)
 
         obj = qgraph.aql(aql)
-        ayas_arabic = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
-                            aya_number=rel._next.aya_number)
+        ayas = [dict(aya_text=rel._next._relations['aya_texts'][0]._next.text,
+                            aya_number=rel._next._key)
                        for rel in obj._relations['has']]
         # log.debug(ayas_arabic)
         # log.debug(obj._relations['has'][1]._next._relations['aya_texts'][0]._next.text)
 
-        ret_dict = {
-            'ayas_arabic': ayas_arabic
-        }
-
-        return ret_dict
+        return ayas
 
     def do_search(self):
 
@@ -267,9 +263,7 @@ class QrefAPI(APIBase):
                 for aya_text_doc in obj._relations['aya_texts']:
                     search_result = {
                         'aya_number': aya_text_doc._next._key,
-                        'texts': {
-                            'simple-clean': mt.text
-                        }
+                        'aya_text': mt.text
                     }
 
                     if 'simple-clean' != result_text_type:
@@ -281,8 +275,7 @@ class QrefAPI(APIBase):
                         """.format(search_result['aya_number'], result_text_type)
 
                         aya_obj = qgraph.aql(aql)
-                        search_result['texts'][result_text_type] = \
-                            aya_obj._relations['aya_texts'][0]._next.text
+                        search_result['aya_text'] = aya_obj._relations['aya_texts'][0]._next.text
 
                     search_results.append(search_result)
 

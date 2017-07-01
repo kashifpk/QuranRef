@@ -36,15 +36,13 @@
           </div>
           <div class="panel-body bg-info" v-if="wordAyas[word]">
             <div class="row ar" v-for="aya in wordAyas[word]">
-              <div class="col-xs-8 ar">
-                {{ aya.aya_text }}
-              </div>
-              <div class="col-xs-2 ar">
+              <aya-view :aya="aya" :display-surah-name="true"></aya-view>
+              <!--<div class="col-xs-2 ar">
                 ({{ aya.aya_number.split('-')[1] }})  {{ aya.surah.arabic_name }} 
               </div>
               <div class="col-xs-2">
                 {{ aya.surah.english_name  }} ({{ aya.aya_number.split('-')[1] }})
-              </div>
+              </div>-->
             </div>
           </div>
         </div>
@@ -55,10 +53,13 @@
 
 <script>
 import appConfig from '../lib/config'
-// import ArabicTextTypeSelect from './ArabicTextTypeSelect'
+import AyaView from './AyaView'
 
 export default {
   name: 'BrowseByWord',
+  components: {
+    AyaView
+  },
   data () {
     return {
       letters: [],
@@ -110,17 +111,9 @@ export default {
         let requestURL = env.API_URL + '/ayas_by_word/' + word + '/' +
                          this.$store.getters.arabicTextType
         console.log(requestURL)
-        let results = []
         this.axios.get(requestURL).then((response) => {
           console.log(response)
-          for (let idx in response.data) {
-            let sr = response.data[idx]
-            let sn = sr.aya_number.split('-')[0]
-            sr['surah'] = this.$store.getters.surahInfo[sn]
-            results.push(sr)
-          }
-
-          this.$set(this.wordAyas, word, results)
+          this.$set(this.wordAyas, word, response.data)
         })
         .catch((error) => {
           console.log(error)
