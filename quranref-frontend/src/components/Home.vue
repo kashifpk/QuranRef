@@ -85,6 +85,7 @@ export default {
         this.axios.get(env.API_URL + '/surahs').then((response) => {
           console.log(response)
           this.$store.commit('setSurahInfo', response.data)
+          this.surahs = response.data
         })
         .catch((error) => {
           console.log(error)
@@ -94,10 +95,10 @@ export default {
             text: 'Could not fetch predefined security questions'
           })
         })
+      } else {
+        // console.log('Surahs set')
+        this.surahs = this.$store.getters.surahInfo
       }
-
-      // console.log('Surahs set')
-      this.surahs = this.$store.getters.surahInfo
     }
   }
 }

@@ -35,17 +35,23 @@ export default {
   },
   methods: {
     getTextTypes () {
-      let env = appConfig.getEnvConfig(process.env.NODE_ENV)
-      let requestURL = env.API_URL + '/text_types'
-
-      this.axios.get(requestURL).then((response) => {
-        console.log(response.data)
-        this.textTypes = response.data
+      if (this.$store.getters.availableTextTypes.length > 0) {
+        this.textTypes = this.$store.getters.availableTextTypes
         this.selectedType = this.$store.getters.arabicTextType
-      })
-      .catch((error) => {
-        console.log(error)
-      })
+      } else {
+        let env = appConfig.getEnvConfig(process.env.NODE_ENV)
+        let requestURL = env.API_URL + '/text_types'
+
+        this.axios.get(requestURL).then((response) => {
+          console.log(response.data)
+          this.textTypes = response.data
+          this.$store.commit('setAvailableTextTypes', response.data)
+          this.selectedType = this.$store.getters.arabicTextType
+        })
+        .catch((error) => {
+          console.log(error)
+        })
+      }
     },
     changeTextType (value) {
       this.$store.commit('setArabicTextType', value)
