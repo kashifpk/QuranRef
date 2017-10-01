@@ -44,8 +44,8 @@ export default {
 
         this.axios.get(requestURL).then((response) => {
           console.log(response.data)
-          this.textTypes = response.data
-          this.$store.commit('setAvailableTextTypes', response.data)
+          this.textTypes = response.data.arabic
+          this.$store.commit('setAvailableTextTypes', response.data.arabic)
           this.selectedType = this.$store.getters.arabicTextType
         })
         .catch((error) => {

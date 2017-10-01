@@ -8,12 +8,12 @@ Contains models for storing Quran Ayas, Arabic Texts, Translations, References e
 import logging
 import hashlib
 
-from marshmallow import Schema
-from marshmallow.fields import String, Date, Integer, Float, Boolean, DateTime, List, Dict
+from marshmallow.fields import String, Integer
 from arango_orm import Collection, Relation, Graph, GraphConnection
 
-from .common import add_document_if_not_exists
 from quranref.graph_models import gdb
+from .common import add_document_if_not_exists
+
 # import pdb
 
 log = logging.getLogger(__name__)
@@ -24,16 +24,15 @@ class Surah(Collection):
 
     __collection__ = 'surahs'
 
-    class _Schema(Schema):
-        _key = String(required=True)  # the surah number
-        surah_number = Integer(required=True)
-        arabic_name = String(required=True)
-        english_name = String(required=True)
-        translated_name = String(required=True)
-        nuzool_location = String(required=True, options=['Meccan', 'Medinan'])
-        nuzool_order = Integer(required=True)
-        rukus = Integer(required=True)
-        total_ayas = Integer(required=True)
+    _key = String(required=True)  # the surah number
+    surah_number = Integer(required=True)
+    arabic_name = String(required=True)
+    english_name = String(required=True)
+    translated_name = String(required=True)
+    nuzool_location = String(required=True, options=['Meccan', 'Medinan'])
+    nuzool_order = Integer(required=True)
+    rukus = Integer(required=True)
+    total_ayas = Integer(required=True)
 
 
 class Aya(Collection):
@@ -45,9 +44,8 @@ class Aya(Collection):
         {"type": "hash", "fields": ["surah_aya_number"]}
     ]
 
-    class _Schema(Schema):
-        _key = String(required=True)  # the aya number (format: surah_number-aya_number
-        aya_number = Integer(required=True)
+    _key = String(required=True)  # the aya number (format: surah_number-aya_number
+    aya_number = Integer(required=True)
 
     @classmethod
     def new(cls, surah_number, aya_number):
@@ -78,9 +76,8 @@ class Text(Collection):
 
     __collection__ = 'texts'
 
-    class _Schema(Schema):
-        _key = String(required=True)  # sha1 hash of text
-        text = String(required=True)
+    _key = String(required=True)  # sha1 hash of text
+    text = String(required=True)
 
     @classmethod
     def new(cls, text):
@@ -92,18 +89,20 @@ class Has(Relation):
 
     __collection__ = 'has'
 
-    class _Schema(Schema):
-        _key = String(required=True)  # surah_number-aya-number or AW-aya-number-word-hash
+    _key = String(required=True)  # surah_number-aya-number or AW-aya-number-word-hash
+    _from = String(required=True)
+    _to = String(required=True)
 
 
 class AyaText(Relation):
 
     __collection__ = 'aya_texts'
 
-    class _Schema(Schema):
-        _key = String(required=True)  # aya_number-text_key-language-text-type
-        language = String(required=True)
-        text_type = String(required=True)
+    _key = String(required=True)  # aya_number-text_key-language-text-type
+    _from = String(required=True)
+    _to = String(required=True)
+    language = String(required=True)
+    text_type = String(required=True)
 
     @classmethod
     def new(cls, aya, aya_text, language, text_type):
@@ -125,15 +124,14 @@ class AyaText(Relation):
 class Word(Collection):
     "Representing a single word of the Quran"
 
-    __collection__ = 'words'    
+    __collection__ = 'words'
 
     _index = [
         {"type": "hash", "fields": ["word"]}
     ]
 
-    class _Schema(Schema):
-        _key = String(required=True)  # sha1 hash of word
-        word = String(required=True)
+    _key = String(required=True)  # sha1 hash of word
+    word = String(required=True)
 
     @classmethod
     def new(cls, word):
@@ -144,9 +142,17 @@ class Word(Collection):
 class QuranGraph(Graph):
 
     __graph__ = 'quran_graph'
+    _graph_instance = None
 
     graph_connections = [
         GraphConnection([Surah, Aya], Has, [Aya, Word]),
         GraphConnection(Aya, AyaText, Text)
         # GraphConnection(Surah, Has, [Aya]),
     ]
+
+    @classmethod
+    def get_graph_instance(cls, conn):
+        if cls._graph_instance is None:
+            cls._graph_instance = cls(connection=conn)
+
+        return cls._graph_instance

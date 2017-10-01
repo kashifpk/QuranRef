@@ -40,8 +40,8 @@ export default {
     getSurahText () {
       let env = appConfig.getEnvConfig(process.env.NODE_ENV)
 
-      let requestURL = env.API_URL + '/qref/' + this.$store.getters.arabicTextType +
-        '/' + this.$route.params.surah_number
+      let requestURL = env.API_URL + '/qref/' + this.$route.params.surah_number +
+        '/arabic,' + this.$store.getters.arabicTextType
 
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {

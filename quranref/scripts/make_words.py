@@ -16,7 +16,7 @@ def usage(argv):
     sys.exit(1)
 
 
-def make_words():
+def make_words():  # pylint: disable=R0914
 
     from ..graph_models import gdb
     from ..graph_models.common import add_document_if_not_exists
@@ -52,7 +52,7 @@ def make_words():
     log.info("Done importing!")
 
 
-def main(argv=sys.argv):
+def main(argv=sys.argv):  # pylint: disable=W0102
     if len(argv) != 2:
         usage(argv)
 

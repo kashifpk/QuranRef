@@ -42,7 +42,7 @@ def import_surahs():
     log.info("Done importing!")
 
 
-def main(argv=sys.argv):
+def main(argv=sys.argv):  # pylint: disable=W0102
     if len(argv) != 2:
         usage(argv)
 

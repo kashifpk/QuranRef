@@ -15,7 +15,7 @@ td {
         <th>Translated Name (EN)</th>
         <th>Ayas</th>
         <th>Rukus</th>
-        <th>Nuzool order / location</th>
+        <th>Nuzool</th>
         <th>Arabic Name</th>
       </tr>
       <tr v-for="surah in surahs">

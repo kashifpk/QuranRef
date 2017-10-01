@@ -11,11 +11,11 @@
 <template>
   <div class="aya-view-component">
     <div class="ar" :class="[displaySurahName ? 'col-xs-8' : 'col-xs-11']">
-      {{ aya.aya_text }}
+      {{ aya.texts.arabic[$store.getters.arabicTextType] }}
     </div>
     
     <div class="col-xs-1">
-      ({{ aya.aya_number.split('-')[1] }})
+      ({{ aya.aya_number }})
     </div>
     
     <div class="col-xs-3 ar" v-if="displaySurahName">

@@ -10,7 +10,6 @@ from .apps import enabled_apps
 from . import apps
 from . import graph_models
 
-from pyck.ext import add_admin_handler, AdminController
 from pyck.lib import get_submodules
 
 

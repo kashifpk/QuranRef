@@ -4,17 +4,17 @@
 </style>
 
 <template>
-  <div class="search-box-component">
+  <form class="form-inline">
     <div class="input-group">
+      
       <input type="text" class="form-control" v-model="searchTerm" />
       <span class="input-group-btn">
-        <button class="btn btn-primary" type="button"
-                @click="doSearch()">
+        <button class="btn btn-success" type="button" @click="doSearch()">
           Search!
         </button>
       </span>
     </div><!-- /input-group -->
-  </div>
+  </form>
 </template>
 
 <script>
