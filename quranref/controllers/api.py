@@ -170,9 +170,10 @@ class QrefAPI(APIBase, GraphMixin):
         results = []
         ayas = [r._next for r in obj._relations['has']]
         for aya in ayas:
+            # log.debug(aya._relations)
             r = {
                 'aya_number': aya._key,
-                'texts': {'arabic': {self.endpoint_info['result_text_type']: r_text_type}}
+                'texts': {'arabic': {r_text_type: aya._relations['aya_texts'][0]._next.text}}
             }
 
             results.append(r)
