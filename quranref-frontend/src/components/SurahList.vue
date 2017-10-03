@@ -4,6 +4,10 @@ td {
   text-align: left;
   padding: 5px;
 }
+
+.surah-list-component {
+  margin: 5px;
+}
 </style>
 
 <template>
@@ -12,10 +16,10 @@ td {
       <tr class="bg-primary">
         <th>SNo.</th>
         <th>Surah Name</th>
-        <th>Translated Name (EN)</th>
+        <th class="hidden-xs hidden-sm">Translated Name (EN)</th>
         <th>Ayas</th>
-        <th>Rukus</th>
-        <th>Nuzool</th>
+        <th class="hidden-xs">Rukus</th>
+        <th class="hidden-xs">Nuzool</th>
         <th>Arabic Name</th>
       </tr>
       <tr v-for="surah in surahs">
@@ -31,15 +35,15 @@ td {
               {{ surah.english_name }}
           </router-link>
         </td>
-        <td>
+        <td class="hidden-xs hidden-sm">
           <router-link title="View Surah"
             :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">
               {{ surah.translated_name }}
             </router-link>
         </td>
         <td>{{ surah.total_ayas }}</td>
-        <td>{{ surah.rukus }}</td>
-        <td>{{ surah.nuzool_order }} ({{ surah.nuzool_location }})</td>
+        <td class="hidden-xs">{{ surah.rukus }}</td>
+        <td class="hidden-xs">{{ surah.nuzool_order }} ({{ surah.nuzool_location }})</td>
         <td class="ar" style="text-align: right">
           <router-link title="View Surah"
             :to="{name: 'surah_view', params: {surah_number: surah.surah_number}}">

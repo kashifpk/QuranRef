@@ -2,7 +2,9 @@ var stateStore = {
   state: {
     arabicTextType: 'simple',
     surahInfo: '',
-    availableTextTypes: []
+    availableTextTypes: [],
+    callingAPI: false,
+    searching: ''
   },
   getters: {
     arabicTextType: state => { return state.arabicTextType },
@@ -27,6 +29,12 @@ var stateStore = {
     } */
   },
   mutations: {
+    TOGGLE_LOADING (state) {
+      state.callingAPI = !state.callingAPI
+    },
+    TOGGLE_SEARCHING (state) {
+      state.searching = (state.searching === '') ? 'loading' : ''
+    },
     setArabicTextType (state, textType) { state.arabicTextType = textType },
     setSurahInfo (state, surahData) { state.surahInfo = surahData },
     setAvailableTextTypes (state, textTypes) { state.availableTextTypes = textTypes }
