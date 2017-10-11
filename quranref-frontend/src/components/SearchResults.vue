@@ -33,6 +33,12 @@ export default {
   mounted () {
     this.getSearchResults()
   },
+  watch: {
+    '$route.params.search_term': function (newVal, oldVal) { // watch it
+      console.log('searchTerm changed: ', newVal, ' | was: ', oldVal)
+      this.getSearchResults()
+    }
+  },
   methods: {
     getSearchResults () {
       // http://127.0.0.1:6543/api/search/جبار/uthmani

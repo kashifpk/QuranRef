@@ -52,7 +52,8 @@
 }
 
 .content-wrapper {
-  padding-top: 50px;
+  padding: 8px;
+  padding-top: 65px;
 }
 
 .main-sidebar {
