@@ -1,12 +1,24 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 
+.sidebar-form {
+  border: 0px;
+  margin: 10px 10px
+}
+
+select {
+  border-radius: 3px;
+  border: 1px solid #00d600;
+}
+
+
 </style>
 
 <template>
   <div class="arabic-text-type-component">
     <div class="form-group">
-      <form class="form-inline">
+      
+      <form class="sidebar-form">
         <label for="arabic_text_type">Arabic Text Type: </label>
         <select class="form-control" size="1" v-model="selectedType" id="arabic_text_type"
                 placeholder="Select arabic style..."

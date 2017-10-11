@@ -27,8 +27,6 @@
     
     
     <div class="words_list ar" style="text-align: left;">
-      
-
       <div class="row" v-for="word in words">
         <div class="panel panel-success col-xs-12">
           <div class="panel-heading ar" @click="getAyas(word)">
@@ -72,9 +70,12 @@ export default {
   mounted () {
     this.getLetters()
   },
-  /* components: {
-    ArabicTextTypeSelect
-  }, */
+  watch: {
+    '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
+      this.wordAyas = {}
+      this.getAyas(this.selectedWord)
+    }
+  },
   methods: {
     getLetters () {
       let env = appConfig.getEnvConfig(process.env.NODE_ENV)

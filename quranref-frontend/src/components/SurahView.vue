@@ -8,9 +8,6 @@
 
 <template>
   <div class="surah-view-component">
-    <arabic-text-type-select @text-type-changed="getSurahText()"></arabic-text-type-select>
-    <br />
-    
     <div class="row ar" v-for="aya in surahAyas">
       <aya-view :aya="aya"></aya-view>
     </div>
@@ -19,7 +16,6 @@
 
 <script>
 import appConfig from '../lib/config'
-import ArabicTextTypeSelect from './ArabicTextTypeSelect'
 import AyaView from './AyaView'
 
 export default {
@@ -33,8 +29,13 @@ export default {
     this.getSurahText()
   },
   components: {
-    ArabicTextTypeSelect,
     AyaView
+  },
+  watch: {
+    '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
+      console.log('arabicTextType changed: ', newVal, ' | was: ', oldVal)
+      this.getSurahText()
+    }
   },
   methods: {
     getSurahText () {

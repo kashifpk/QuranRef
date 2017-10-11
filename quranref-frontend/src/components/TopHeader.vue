@@ -35,6 +35,12 @@
   font-weight: bold;
   color: #fff
 }
+
+.ar-header {
+  color: #f1f1f1;
+  font-weight: bold;
+  text-align: center;
+}
 </style>
 
 <template>
@@ -47,9 +53,12 @@
         <span class="sr-only">Toggle navigation</span>
       </a>
       
-      <router-link title="Go to home page" :to="{name: 'home'}" class="xs-header">
-        <br />QuranRef Home
+      <router-link title="Go to home page" :to="{name: 'home'}" class="xs-header visible-xs ar ar-header">
+        القرآن الکریم
       </router-link>
+      <span class="hidden-xs ar ar-header">
+وَلَقَدْ يَسَّرْنَا ٱلْقُرْءَانَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِرِ
+      </span>
       <!-- Navbar Right Menu -->
       <div class="navbar-custom-menu">
         
