@@ -105,10 +105,10 @@ class QrefAPI(APIBase, GraphMixin):
             ('surahs', 'surah_list'),
             ('letters', 'letters'),
             ('words_by_letter/{letter}', 'get_words_by_letter'),
-            ('ayas_by_word/{word}/{result_text_type}', 'get_ayas_by_word'),
+            ('ayas_by_word/{word}/{languages}', 'get_ayas_by_word'),
             ('text_types', 'get_text_types'),
             ('qref/{surah}/{languages}', 'qref_text'),
-            ('search/{search_term}/{result_text_type}', 'do_search')
+            ('search/{search_term}/{languages}', 'do_search')
         ],
         # 'POST': [
         #     ('', 'new_asset')
@@ -145,6 +145,22 @@ class QrefAPI(APIBase, GraphMixin):
 
         return results
 
+    def _process_aya_results(self, obj):  # pylint: disable=R0201
+        ayas = []
+        for rel in obj._relations['has']:
+            # log.info(rel._next._relations['aya_texts'])
+
+            d = {'aya_number': rel._next._key, 'texts': {}}
+            for aya_text in rel._next._relations['aya_texts']:
+                if aya_text.language not in d['texts']:
+                    d['texts'][aya_text.language] = {}
+
+                d['texts'][aya_text.language][aya_text.text_type] = aya_text._next.text
+
+            ayas.append(d)
+
+        return ayas
+
     def get_ayas_by_word(self):
 
         word_doc = self.gdb.query(Word).filter("word==@word", word=self.endpoint_info['word']).all()
@@ -152,33 +168,29 @@ class QrefAPI(APIBase, GraphMixin):
             return []
 
         word_doc = word_doc[0]
-        r_text_type = self.endpoint_info['result_text_type']
 
-        aql = """
-        FOR v, e, p IN 1..2 ANY 'words/{wkey}' GRAPH 'quran_graph'
-            FILTER p.edges[1].text_type=="{text_type}"
-                AND p.edges[1].language=="arabic"
-        RETURN p
-        """.format(wkey=word_doc._key, text_type=r_text_type)
+        aql = "FOR v, e, p IN 1..2 ANY 'words/{wkey}' GRAPH 'quran_graph'\n".format(
+            wkey=word_doc._key
+        )
 
+        aql += 'FILTER '
+        for lang in self.endpoint_info['languages'].split('_'):
+            language, text_type = lang.split(',')
+
+            aql += '(e.language=="{language}" && e.text_type=="{text_type}") OR '.format(
+                language=language, text_type=text_type
+            )
+
+        aql = aql.strip(' OR ')  # pylint: disable=E1310
+        aql += "\nRETURN p"
+
+        log.debug(aql)
         obj = self.qgraph.aql(aql)
         if not obj:
             return []
 
         # log.debug(obj._relations)
-
-        results = []
-        ayas = [r._next for r in obj._relations['has']]
-        for aya in ayas:
-            # log.debug(aya._relations)
-            r = {
-                'aya_number': aya._key,
-                'texts': {'arabic': {r_text_type: aya._relations['aya_texts'][0]._next.text}}
-            }
-
-            results.append(r)
-
-        return results
+        return self._process_aya_results(obj)
 
     def surah_list(self):
 
@@ -257,35 +269,24 @@ class QrefAPI(APIBase, GraphMixin):
 
         obj = self.qgraph.aql(aql)
         # log.debug(obj._relations)
-        ayas = []
-        for rel in obj._relations['has']:
-            # log.info(rel._next._relations['aya_texts'])
-
-            d = {'aya_number': rel._next.aya_number, 'aya': rel._next._key, 'texts': {}}
-            for aya_text in rel._next._relations['aya_texts']:
-                if aya_text.language not in d['texts']:
-                    d['texts'][aya_text.language] = {}
-
-                d['texts'][aya_text.language][aya_text.text_type] = aya_text._next.text
-
-            ayas.append(d)
-
-        return ayas
+        return self._process_aya_results(obj)
 
     def do_search(self):
 
         aarab = ['ِ', 'ْ', 'َ', 'ُ', 'ّ', 'ٍ', 'ً', 'ٌ']
 
         search_results = []
-        search_term = self.endpoint_info['search_term']
-        result_text_type = self.endpoint_info['result_text_type']
-        is_plain = True
-        for ch in aarab:
-            if ch in search_term:
-                is_plain = False
-                break
+        search_term = ''
+        # is_plain = True
+        # for ch in aarab:
+        #     if ch in search_term:
+        #         is_plain = False
+        #         break
+        for ch in self.endpoint_info['search_term']:
+            if ch not in aarab:
+                search_term += ch
 
-        if is_plain:
+        if search_term:
             matched_texts = self.gdb.query(Text).filter(
                 "LIKE(rec.text, '%{}%')".format(search_term), prepend_rec_name=False).all()
 
@@ -299,32 +300,61 @@ class QrefAPI(APIBase, GraphMixin):
                         AND p.edges[0].language=="arabic"
                 RETURN p""".format(mt._key)
 
-                # log.debug(aql)
+                log.debug(aql)
                 obj = self.qgraph.aql(aql)
                 if not obj:
                     continue
 
                 # log.debug(obj)
-                # log.debug(obj._dump())
-                # log.debug(obj._relations)
+                log.debug(obj._dump())
+                log.debug(obj._relations)
                 # log.info(obj._relations['aya_texts'][0]._next._key)
                 for aya_text_doc in obj._relations['aya_texts']:
                     search_result = {
                         'aya_number': aya_text_doc._next._key,
                         'texts': {'arabic': {'simple-clean': mt.text}}
                     }
+                    log.debug(search_result)
 
-                    if 'simple-clean' != result_text_type:
-                        # get arabic text of the specified style
-                        aql = """
-                        FOR v, e, p IN 1..2 OUTBOUND 'ayas/{}' GRAPH 'quran_graph'
-                            FILTER p.edges[0].text_type=="{}"
-                        RETURN p
-                        """.format(search_result['aya_number'], result_text_type)
+                    languages = self.endpoint_info['languages'].split('_')
+                    if len(languages) == 1 and languages[0] == 'arabic,simple-clean':
+                        search_results.append(search_result)
+                        continue
 
-                        aya_obj = self.qgraph.aql(aql)
-                        search_result['texts']['arabic'][result_text_type] = \
-                            aya_obj._relations['aya_texts'][0]._next.text
+                    log.info(languages)
+                    aql = "FOR v, e, p IN 1..2 OUTBOUND 'ayas/{}' GRAPH 'quran_graph'\n".format(
+                        search_result['aya_number']
+                    )
+
+                    aql += 'FILTER '
+                    for lang in self.endpoint_info['languages'].split('_'):
+                        language, text_type = lang.split(',')
+
+                        aql += '(e.language=="{language}" && e.text_type=="{text_type}") OR '.format(
+                            language=language, text_type=text_type
+                        )
+
+                    aql = aql.strip(' OR ')  # pylint: disable=E1310
+                    aql += "\nRETURN p"
+                    log.info(aql)
+
+                    # get arabic text of the specified style
+                    # aql = """
+                    # FOR v, e, p IN 1..2 OUTBOUND 'ayas/{}' GRAPH 'quran_graph'
+                    #     FILTER p.edges[0].text_type=="{}"
+                    # RETURN p
+                    # """.format(search_result['aya_number'], result_text_type)
+
+                    aya_obj = self.qgraph.aql(aql)
+                    # search_result['texts']['arabic'][result_text_type] = \
+                    #     aya_obj._relations['aya_texts'][0]._next.text
+
+                    for aya_text in aya_obj._relations['aya_texts']:
+                        if aya_text.language not in search_result['texts']:
+                            search_result['texts'][aya_text.language] = {}
+
+                        search_result['texts'][aya_text.language][aya_text.text_type] = \
+                            aya_text._next.text
 
                     search_results.append(search_result)
 

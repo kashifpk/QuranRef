@@ -19,7 +19,6 @@ select {
     <div class="form-group">
       
       <form class="sidebar-form">
-        <label for="arabic_text_type">Arabic Text Type: </label>
         <select class="form-control" size="1" v-model="selectedType" id="arabic_text_type"
                 placeholder="Select arabic style..."
                 @change="changeTextType($event.target.value)">
@@ -67,7 +66,6 @@ export default {
     },
     changeTextType (value) {
       this.$store.commit('setArabicTextType', value)
-      this.$emit('text-type-changed', value)
       // this.$emit('input', value)
     }
   }

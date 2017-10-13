@@ -8,7 +8,7 @@
 
 <template>
   <div class="surah-view-component">
-    <div class="row ar" v-for="aya in surahAyas">
+    <div class="row" v-for="aya in surahAyas">
       <aya-view :aya="aya"></aya-view>
     </div>
   </div>
@@ -43,6 +43,11 @@ export default {
 
       let requestURL = env.API_URL + '/qref/' + this.$route.params.surah_number +
         '/arabic,' + this.$store.getters.arabicTextType
+
+      let trStr = this.$store.getters.selectedTranslationsString
+      if (trStr) {
+        requestURL += '_' + trStr
+      }
 
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {

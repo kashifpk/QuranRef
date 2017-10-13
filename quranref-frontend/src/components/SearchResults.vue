@@ -43,8 +43,13 @@ export default {
     getSearchResults () {
       // http://127.0.0.1:6543/api/search/جبار/uthmani
       let env = appConfig.getEnvConfig(process.env.NODE_ENV)
-      let requestURL = env.API_URL + '/search/' + this.$route.params.search_term + '/' +
+      let requestURL = env.API_URL + '/search/' + this.$route.params.search_term + '/arabic,' +
                        this.$store.getters.arabicTextType
+
+      let trStr = this.$store.getters.selectedTranslationsString
+      if (trStr) {
+        requestURL += '_' + trStr
+      }
 
       console.log(requestURL)
       this.axios.get(requestURL).then((response) => {

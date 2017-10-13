@@ -64,12 +64,6 @@
   background-color: #ffffff
 }
 
-
-.skin-green .sidebar-menu>li.header {
-  color: #4b646f;
-  background: #2a5345
-}
-
 .skin-green .sidebar-menu>li>a {
   border-left: 3px solid transparent
 }

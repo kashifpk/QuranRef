@@ -1,6 +1,7 @@
 <style>
 .main-sidebar {
   background-color: #005500;
+  overflow: auto;
 }
 
 .main-sidebar label {
@@ -12,6 +13,14 @@
 
 .user-panel>.info,user-panel>.info>a {
   color: #fff
+}
+
+
+.sidebar-menu>li.header {
+  color: #fff;
+  font-weight: bold;
+  font-size: 12pt;
+  background: #003f00
 }
 
 .sidebar-menu>li>a {
@@ -73,9 +82,19 @@
             <span class="page">By Word</span>
           </a>
         </router-link>
+        
+        <li class="header">
+          Arabic Text Type
+        </li>
+        <li><arabic-text-type-select></arabic-text-type-select></li>
+        
+        <li class="header">
+          Translations
+        </li>
+        <li><translation-select /></li>
       </ul>
       <!-- /.sidebar-menu -->
-      <arabic-text-type-select></arabic-text-type-select>
+      
     </section>
     <!-- /.sidebar -->
   </aside>
@@ -84,12 +103,14 @@
 <script>
 import SearchBox from './SearchBox'
 import ArabicTextTypeSelect from './ArabicTextTypeSelect'
+import TranslationSelect from './TranslationSelect'
 
 export default {
   name: 'Sidebar',
   components: {
     SearchBox,
-    ArabicTextTypeSelect
+    ArabicTextTypeSelect,
+    TranslationSelect
   },
   mounted: function () {
     window.jQuery('[data-toggle="hideseek"]').off().hideseek()

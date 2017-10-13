@@ -1,6 +1,6 @@
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-td {
+td, th {
   text-align: left;
   padding: 5px;
 }
@@ -8,12 +8,22 @@ td {
 .surah-list-component {
   margin: 5px;
 }
+
+.table-heading {
+  background-color: #005500;
+  color: #fff;
+  font-weight: bold;
+}
+
+a {
+  
+}
 </style>
 
 <template>
   <div class="row surah-list-component">
     <table class="table table-striped table-bordered table-hover col-xs-12">
-      <tr class="bg-primary">
+      <tr class="table-heading">
         <th>SNo.</th>
         <th>Surah Name</th>
         <th class="hidden-xs hidden-sm">Translated Name (EN)</th>

@@ -31,16 +31,22 @@
   unicode-bidi: bidi-override;
 }
 
-.ar{
+.ar, .arabic{
   font-family: 'AlQalam';
   text-align: right;
   font-size: 18pt;
 }
 
-.ur {
+.ur, .urdu {
   font-family: 'Noori';
   text-align: right;
+  font-size: 14pt;
+}
 
+.en, .english {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  text-align: left;
+  font-size: 12pt;
 }
 
 .num {
