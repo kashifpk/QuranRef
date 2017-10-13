@@ -37,6 +37,12 @@ export default {
     '$route.params.search_term': function (newVal, oldVal) { // watch it
       console.log('searchTerm changed: ', newVal, ' | was: ', oldVal)
       this.getSearchResults()
+    },
+    '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
+      this.getSearchResults()
+    },
+    '$store.state.selectedTranslations': function (newVal, oldVal) { // watch it
+      this.getSearchResults()
     }
   },
   methods: {

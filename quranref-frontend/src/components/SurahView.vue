@@ -35,6 +35,9 @@ export default {
     '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
       console.log('arabicTextType changed: ', newVal, ' | was: ', oldVal)
       this.getSurahText()
+    },
+    '$store.state.selectedTranslations': function (newVal, oldVal) { // watch it
+      this.getSurahText()
     }
   },
   methods: {

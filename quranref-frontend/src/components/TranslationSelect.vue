@@ -95,7 +95,7 @@ export default {
       if (Object.keys(this.$store.state.availableTranslations).length > 0) {
         console.log('tr-select: have translations')
         this.textTypes = this.$store.getters.availableTextTypes
-        this.availableTranslations = this.$store.state.availableTranslations
+        this.setAvailableTranslations()
       } else {
         console.log('tr-select: fetching translations')
         let env = appConfig.getEnvConfig(process.env.NODE_ENV)
@@ -116,13 +116,12 @@ export default {
 
           this.$store.commit('setAvailableTranslations', availableTranslations)
           this.selectedTranslations = this.$store.state.selectedTranslations
+          this.setAvailableTranslations()
         })
         .catch((error) => {
           console.log(error)
         })
       }
-
-      this.setAvailableTranslations()
     },
     setAvailableTranslations () {
       this.availableTranslations = []

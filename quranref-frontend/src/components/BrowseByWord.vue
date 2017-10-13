@@ -82,6 +82,10 @@ export default {
     '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
       this.wordAyas = {}
       this.getAyas(this.selectedWord)
+    },
+    '$store.state.selectedTranslations': function (newVal, oldVal) { // watch it
+      this.wordAyas = {}
+      this.getAyas(this.selectedWord)
     }
   },
   methods: {

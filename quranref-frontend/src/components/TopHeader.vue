@@ -17,7 +17,7 @@
 .logo-mini,
 .logo-lg {
   text-align: left;
-
+  background-color: #fff;
   img {
     padding: .4em !important;
   }
@@ -45,6 +45,8 @@
 
 <template>
   <header class="main-header">
+    
+    
     
     <!-- Header Navbar -->
     <nav class="navbar navbar-static-top" role="navigation">
