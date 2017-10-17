@@ -10,8 +10,7 @@ import hashlib
 
 from marshmallow.fields import String, Integer
 from arango_orm import Collection, Relation, Graph, GraphConnection
-
-from quranref.graph_models import gdb
+from quranref import graph_models
 from .common import add_document_if_not_exists
 
 # import pdb
@@ -50,6 +49,7 @@ class Aya(Collection):
     @classmethod
     def new(cls, surah_number, aya_number):
 
+        gdb = graph_models.gdb
         surah = gdb.query(Surah).by_key(str(surah_number))
 
         # Add aya

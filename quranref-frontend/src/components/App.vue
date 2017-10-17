@@ -90,9 +90,11 @@ hr.visible-xs-block {
     <!-- Main Footer -->
     <footer class="main-footer">
       <strong>
-        <i class="fa fa-creative-commons fa-2x"></i>
-        Public service
+        <i class="fa fa-creative-commons"></i>
+        Public service for the good of all
       </strong>
+      -
+      Arabic texts and translations courtesy of <a href="http://tanzil.net">tanzil.net</a>
     </footer>
   </div>
 </template>
