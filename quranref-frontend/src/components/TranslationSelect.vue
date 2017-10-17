@@ -48,16 +48,12 @@ select {
 
 <template>
   <div class="translation-select">
-    <div class="form-group sidebar-form input-group">
+    <div class="form-group sidebar-form">
       <select class="form-control" size="1" v-model="selectedTranslation"
-              placeholder="Select translation" >
+              placeholder="Select translation"
+              @change="addTranslation()" >
         <option v-for="tr in availableTranslations">{{ tr[0] }}-{{ tr[1]}}</option>
       </select>
-      <div class="input-group-btn">
-        <button class="btn btn-success" @click="addTranslation()">
-          <i class="fa fa-plus"></i>
-        </button>
-      </div>
     </div>
     
     <div class="row selected-translation" v-for="tr in $store.state.selectedTranslations">
