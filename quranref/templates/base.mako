@@ -1,5 +1,5 @@
 <%!
-from quranref.auth import is_allowed
+# from quranref.auth import is_allowed
 
 skip_dojo = False
 

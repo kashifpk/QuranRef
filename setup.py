@@ -18,7 +18,9 @@ requires = [
     'waitress',
     'wtforms',
     'wtdojo',
-    'psycopg2'
+    'psycopg2',
+    'arango-orm',
+    'python-jose'
 ]
 
 if sys.version_info[:3] < (2, 5, 0):
@@ -34,7 +36,7 @@ for enabled_app in enabled_apps:
 
 setup(
     name='quranref',
-    version='0.1',
+    version='1.1',
     description='quranref',
     long_description='Online and Embeddable Quran Reference and Tafseer collection',
     classifiers=[
@@ -58,7 +60,8 @@ setup(
     [console_scripts]
     quranref_populate = quranref.scripts.populate:main
     quranref_newapp = quranref.scripts.newapp:main
-    quranref_import_arabic = quranref.scripts.data_import:main
-    quranref_import_translation = quranref.scripts.translation_import:main
+    quranref_import_surah_info = quranref.scripts.surah_info_import:main
+    quranref_import_text = quranref.scripts.text_import:main
+    quranref_make_words = quranref.scripts.make_words:main
     """,
 )

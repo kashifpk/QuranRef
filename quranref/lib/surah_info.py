@@ -1,7 +1,7 @@
 
 
 surah_info = [
-	{},  # empty item so that indexes and surah number match
+    # {},  # empty item so that indexes and surah number match
     {'arabic_name': 'الفاتحة',
     'english_name': 'Al-Faatiha',
     'nuzool_location': 'Meccan',

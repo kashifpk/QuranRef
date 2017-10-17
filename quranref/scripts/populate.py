@@ -1,37 +1,35 @@
 import os
 import sys
-import transaction
+# import importlib
 
-from sqlalchemy import engine_from_config
+from pyramid.paster import get_appsettings, setup_logging
 
-from pyramid.paster import (
-    get_appsettings,
-    setup_logging,
-    )
-
-import importlib
-import hashlib
-from ..apps import enabled_apps
-from .. import load_project_settings
-
-from ..models import (
-    db,
-    User,
-    Permission,
-    RoutePermission,
-    UserPermission,
-    Base,
-    )
+# from ..apps import enabled_apps
+from .. import load_project_settings, do_config
 
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
     print(('usage: %s <config_uri>\n'
-          '(example: "%s development.ini")' % (cmd, cmd))) 
+           '(example: "%s development.ini")' % (cmd, cmd)))
     sys.exit(1)
 
 
-def main(argv=sys.argv):
+def _get_graph():
+    from ..graph_models import gdb
+    from ..graph_models.quran_graph import QuranGraph
+    graph = QuranGraph(connection=gdb)
+
+    return gdb, QuranGraph, graph
+
+
+def create_graph():
+    gdb, _, graph = _get_graph()
+    gdb.create_graph(graph)
+
+
+def main(argv=sys.argv):  # pylint: disable=W0102
+
     if len(argv) != 2:
         usage(argv)
 
@@ -40,45 +38,20 @@ def main(argv=sys.argv):
     config_uri = argv[1]
     setup_logging(config_uri)
     settings = get_appsettings(config_uri)
-    engine = engine_from_config(settings, 'sqlalchemy.')
-    db.configure(bind=engine)
-    db.autoflush = True
-    Base.metadata.create_all(engine)
-    with transaction.manager:
+    do_config({'__file__': config_uri}, **settings)
 
-        #Authentication related basic user and permission setup
-        if 0 == db.query(User).count():
-            db.add(User(
-                user_id='admin',
-                password=hashlib.sha1('admin'.encode('utf-8')).hexdigest()))
-            db.flush()
+    # create_graph()
+    gdb, QuranGraph, _ = _get_graph()
+    db_objects = [QuranGraph]
+    gdb.create_all(db_objects)
 
-        if 0 == db.query(Permission).count():
-            db.add(Permission(
-                permission='admin',
-                description='Manage administrative section'))
-            db.flush()
-
-        if 0 == db.query(UserPermission).count():
-            db.add(UserPermission(
-                user_id='admin',
-                permission='admin'))
-            db.flush()
-
-        if 0 == db.query(RoutePermission).count():
-            db.add(RoutePermission(
-                route_name='pyckauth_manager',
-                method='ALL',
-                permission='admin'))
-            db.flush()
-
-    #populate application models
-    for app in enabled_apps:
-        app_name = app.APP_NAME
-        app_module = importlib.import_module("apps.%s.scripts.populate" % app_name)
-        #print("App Module: %s\n" % app_module.__name__)
-
-        try:
-            app_module.populate_app(engine, db)
-        except Exception as exp:
-            print(repr(exp))
+    # populate application models
+    # for app in enabled_apps:
+    #     app_name = app.APP_NAME
+    #     app_module = importlib.import_module("apps.%s.scripts.populate" % app_name)
+    #     #print("App Module: %s\n" % app_module.__name__)
+    #
+    #     try:
+    #         app_module.populate_app(engine, db)
+    #     except Exception as exp:
+    #         print(repr(exp))

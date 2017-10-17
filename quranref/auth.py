@@ -1,83 +1,84 @@
+import logging
 from pyramid.httpexceptions import HTTPNotFound, HTTPForbidden
-from .models import db, Permission, User, UserPermission, RoutePermission
 from pyramid.urldispatch import _compile_route
-from sqlalchemy import or_, func
+
+
+from quranref.controllers.exceptions import APIInsufficientPermissions, APIForbidden, APIBadToken
+from .lib.jwt import check_auth_header
+
+log = logging.getLogger(__name__)
 
 
 def authenticator(handler, registry):
 
     def auth_request(request):
 
-        response = None
-
         # ignore static routes for authentication
         if 'static' in request.path.split('/'):
             return handler(request)
 
-        logged_in_user = request.session.get('logged_in_user', None)
-
-        protected_routes = []
-        routes = db.query(RoutePermission.route_name).distinct().all()
-
-        for R in routes:
-            protected_routes.append(R[0])
-
-        #print(protected_routes)
         matched_routename = None
 
         for r in request.registry.introspector.get_category('routes'):
             R = r['introspectable']
 
-            matcher, generator = _compile_route(R['pattern'])
+            matcher, _ = _compile_route(R['pattern'])
 
             if isinstance(matcher(request.path), dict):
-                #print(R['name'] + ':' + R['pattern'])
                 matched_routename = R['name']
                 break
 
-        # Check routes from protected routes here.
-        if matched_routename and matched_routename in protected_routes:
-            # first check if there is any static permission given and if yes then validate routes against that permission
-            if not logged_in_user:
-                return HTTPForbidden()
+        # log.debug("Matched route: %s", matched_routename)
+        # log.debug(request.path)
 
-            if is_allowed(request, matched_routename, method=['ALL', request.method], check_route=False):
-                return handler(request)
-            else:
-                return HTTPForbidden()
+        # For API routes do API Auth Token based authentication
+        if request.path.startswith('/api/'):
 
-        else:
+            # log.debug("Is API route")
+            # Allow HTTP OPTIONS method for API calls unconditionally
+            # if 'OPTIONS' == request.method:
+            #     return handler(request)
+            # 
+            # auth_token = None
+            # route_permissions = _get_route_permissions(matched_routename, request.method)
+            # log.debug("Route permissions: %r", route_permissions)
+
+            # try:
+            #     # Try to get auth token
+            #     auth_token = check_auth_header(request)
+            #     # log.debug("auth token: %r", auth_token)
+            # 
+            #     # if we have permissions specified for the route
+            #     if route_permissions:
+            #         # and we have an auth token
+            #         if auth_token:
+            #             # Verify the token contains enough permissions to access the resource
+            #             # log.info("Permissions %r", auth_token['permissions'])
+            #             if not _is_allowed(auth_token['permissions'], matched_routename, request.method):
+            #                 return APIInsufficientPermissions("Not enough permissions")
+            #         else:
+            #             # If the route needs permission(s) but we don't have auth token, return APIForbidden
+            #             return APIForbidden()
+            # 
+            # except APIBadToken as exp:
+            #     if route_permissions:
+            #         return exp
+            # 
+            # except Exception as exp:
+            #     # If couldn't get auth token and have route permissions, return the appropriate error.
+            #     log.error(str(exp))
+            #     if route_permissions:
+            #         return exp
+
+            # if not route_permissions:
+            #     return handler(request)
+
             return handler(request)
 
+        # Check routes from protected routes here.
+        # if not is_allowed(request, matched_routename, request.method):
+        #     return HTTPForbidden()
+
+        return handler(request)
+
     return auth_request
-
-
-def is_allowed(request, routename, method='ALL', check_route=True):
-    """
-    Given a request_object, routename and method; returns True if current user has access to that route,
-    otherwise returns False.
-
-    If check_route if False, does not check the DB to see if the route is in the list of protected routes
-    """
-
-    if check_route:
-        route = db.query(RoutePermission).filter_by(route_name=routename).first()
-        if not route:
-            return True
-
-    if not isinstance(method, list):
-        method = [method, ]
-
-    user_permissions = request.session.get('auth_user_permissions', [])
-    if request.session.get('auth_static_permission', None):
-        user_permissions.append(request.session.get('auth_static_permission', None))
-
-    has_permission = db.query(func.count(RoutePermission.permission)).filter(
-                                            RoutePermission.route_name == routename).filter(
-                                            RoutePermission.method.in_(method)).filter(
-                                            RoutePermission.permission.in_(user_permissions)).scalar()
-
-    if has_permission > 0:
-        return True
-    else:
-        return False
