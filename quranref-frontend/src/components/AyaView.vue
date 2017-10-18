@@ -21,41 +21,44 @@
 .col-sm-6, col-lg-6, col-lg-4 {
   float: right;
 }
+
+.aya-content {
+  margin-top: 5px;
+  padding: 5px;
+}
 </style>
 
 <template>
   <div class="aya-view-component col-xs-12">
     <div class="row">
-      <div :class="colSize">
+    
+      <div class="col-xs-12 col-md-3 col-lg-2 pull-right">
+        <span class="badge en" v-if="!displaySurahName">
+          {{ ayaNumber }}
+        </span>
+        
+        <span class="btn btn-primary" v-if="displaySurahName">
+          <span class="badge badge-primary en">{{ ayaNumber }}</span>
+          &nbsp;&nbsp;&nbsp;
+          <span class="ar" style="font-size: 14pt;">{{ surah.arabic_name }}</span>
+        </span>
+      </div>
+      <div class="col-xs-12 col-md-9 col-lg-10">
         <div class="row">
-          <div class="ar" :class="[displaySurahName ? 'col-xs-8' : 'col-xs-10']">
+          <div :class="colSize" class="ar aya-content">
             {{ aya.texts.arabic[$store.getters.arabicTextType] }}
           </div>
-          
-          <div class="col-xs-1 en en-num">
-            ({{ ayaNumber }})
-          </div>
-          
-          <div class="col-xs-2 ar" v-if="displaySurahName">
-            {{ surah.arabic_name }}
-            <span class="hidden-xs hidden-sm hidden-md en surah-en">
-              ({{ surah.english_name  }})
+          <div class="aya-content" :class="[colSize, trname[0]]" v-for="(trname, tridx) in $store.state.selectedTranslations">
+            
+            <span v-if="aya.texts[trname[0]] && aya.texts[trname[0]][trname[1]]">
+              {{ aya.texts[trname[0]][trname[1]] }}
             </span>
-          </div>
-          
-          <div class="col-xs-1 en en-num" v-if="displaySurahName">
-            <strong>{{ surahNumber }}</strong>
-          </div>
-        </div>
-      </div>
-      <div :class="colSize" v-for="(trname, tridx) in $store.state.selectedTranslations">
-        <div class="row">
-          <div class="col-xs-12" :class="trname[0]">
-            {{ aya.texts[trname[0]][trname[1]] }}
+            
           </div>
         </div>
       </div>
     </div>
+    
     
   </div>
 </template>
@@ -115,12 +118,12 @@ export default {
       let parts = this.aya.aya_number.split('-')
       this.surahNumber = parts[0]
       this.ayaNumber = parts[1]
-      console.log(this.surahNumber)
-      console.log(this.$store.getters.surahInfo[this.surahNumber])
+      // console.log(this.surahNumber)
+      // console.log(this.$store.getters.surahInfo[this.surahNumber])
       this.surah = this.$store.getters.surahInfo[this.surahNumber]
     },
     breakWords () {
-      console.log(this.texts)
+      // console.log(this.texts)
       for (let textType in this.texts) {
         this.textsWords[textType] = this.texts[textType].split(' ')
       }

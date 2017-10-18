@@ -108,7 +108,9 @@ class QrefAPI(APIBase, GraphMixin):
             ('ayas_by_word/{word}/{languages}', 'get_ayas_by_word'),
             ('text_types', 'get_text_types'),
             ('qref/{surah}/{languages}', 'qref_text'),
-            ('search/{search_term}/{languages}', 'do_search')
+            ('search/{search_term}/{languages}', 'do_search'),
+            ('{occurrence}/common/{rec_count}', 'get_top_words'),
+            ('words_by_count/{count}', 'words_by_count'),
         ],
         # 'POST': [
         #     ('', 'new_asset')
@@ -137,11 +139,10 @@ class QrefAPI(APIBase, GraphMixin):
         FOR doc IN words
             FILTER LEFT(doc.word, 1)=='{letter}'
             SORT doc.word
-        RETURN doc.word
+        RETURN doc
         """.format(letter=self.endpoint_info['letter'])
 
-        results = [r for r in self.gdb._db.aql.execute(aql)]
-        # log.debug(results)
+        results = [(r['word'], r['count']) for r in self.gdb._db.aql.execute(aql)]
 
         return results
 
@@ -359,3 +360,28 @@ class QrefAPI(APIBase, GraphMixin):
                     search_results.append(search_result)
 
         return search_results
+
+    def get_top_words(self):
+
+        # {occurrence}/common/{rec_count}
+        o_type = self.endpoint_info['occurrence']
+        assert o_type in ['most', 'least']
+        rec_count = int(self.endpoint_info['rec_count'])
+
+        sort_str = ''
+        if 'most' == o_type:
+            sort_str = 'count DESC'
+        else:
+            sort_str = 'count'
+
+        words = self.gdb.query(Word).sort(sort_str).sort('word').limit(rec_count).all()
+        results = [(r.word, r.count) for r in words]
+
+        return results
+
+    def words_by_count(self):
+        wc = int(self.endpoint_info['count'])
+        words = self.gdb.query(Word).filter_by(count=wc).sort("word").all()
+        results = [(r.word, r.count) for r in words]
+
+        return results

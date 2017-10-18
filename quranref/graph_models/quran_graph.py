@@ -127,16 +127,18 @@ class Word(Collection):
     __collection__ = 'words'
 
     _index = [
-        {"type": "hash", "fields": ["word"]}
+        {"type": "hash", "fields": ["word"]},
+        {"type": "hash", "fields": ["count"]}
     ]
 
     _key = String(required=True)  # sha1 hash of word
     word = String(required=True)
+    count = Integer(allow_none=True, default=1)
 
     @classmethod
-    def new(cls, word):
+    def new(cls, word, count=1):
         key = hashlib.sha1(word.encode("UTF-8")).hexdigest()
-        return cls(_key=key, word=word)
+        return cls(_key=key, word=word, count=count)
 
 
 class QuranGraph(Graph):

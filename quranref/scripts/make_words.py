@@ -44,10 +44,19 @@ def make_words():  # pylint: disable=R0914
         # log.debug(aya_words)
 
         for word in aya_words:
-            word_doc = add_document_if_not_exists(Word.new(word=word))
-            has_key = "AW-{}-{}".format(aya._key, word_doc._key)
-            has_document = qgraph.relation(aya, Has(_key=has_key), word_doc)
-            add_document_if_not_exists(has_document, return_document='never')
+            # add word with count=1 if it doesn't already exist, otherwise increment count
+            word_doc = Word.new(word=word, count=1)
+            if not gdb.exists(word_doc):
+                # log.debug(" --> document does not exist, adding")
+                gdb.add(word_doc)
+                has_key = "AW-{}-{}".format(aya._key, word_doc._key)
+                has_document = qgraph.relation(aya, Has(_key=has_key), word_doc)
+                add_document_if_not_exists(has_document, return_document='never')
+            else:
+                # log.debug(" --> Document exists")
+                word_doc = gdb.query(Word).by_key(word_doc._key)
+                word_doc.count += 1
+                gdb.update(word_doc)
 
     log.info("Done importing!")
 

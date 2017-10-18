@@ -82,6 +82,12 @@
             <span class="page">By Word</span>
           </a>
         </router-link>
+        <router-link tag="li" class="pageLink" :to="{name: 'by_word_count'}">
+          <a>
+            <i class="fa fa-list"></i>
+            <span class="page">words by Count</span>
+          </a>
+        </router-link>
         
         <li class="header">
           Arabic Text Type

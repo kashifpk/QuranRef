@@ -75,6 +75,11 @@
               Browse By Word
             </router-link>
           </li>
+          <li class="hidden-xs">
+            <router-link title="Words by word count" :to="{name: 'by_word_count'}">
+              Words By Count
+            </router-link>
+          </li>
         </ul>
       </div>
     </nav>

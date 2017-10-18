@@ -58,7 +58,10 @@ select {
     
     <div class="row selected-translation" v-for="tr in $store.state.selectedTranslations">
       <div class="col-xs-9" style="padding-top: 8px;">
-        {{ tr[0] }}-{{ tr[1] }}
+        
+            
+          
+        <span class="page">{{ tr[0] }}-{{ tr[1] }}</span>
       </div>
       <div class="col-xs-2">
         <button class="btn btn-danger" @click="removeTranslation(tr)">
@@ -141,7 +144,7 @@ export default {
       return -1
     },
     addTranslation () {
-      if (this.selectedTranslation === '') {
+      if (!this.selectedTranslation) {
         return
       }
 

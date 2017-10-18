@@ -1,10 +1,8 @@
 import os
 import sys
-# import importlib
 
 from pyramid.paster import get_appsettings, setup_logging
 
-# from ..apps import enabled_apps
 from .. import load_project_settings, do_config
 
 
@@ -45,13 +43,3 @@ def main(argv=sys.argv):  # pylint: disable=W0102
     db_objects = [QuranGraph]
     gdb.create_all(db_objects)
 
-    # populate application models
-    # for app in enabled_apps:
-    #     app_name = app.APP_NAME
-    #     app_module = importlib.import_module("apps.%s.scripts.populate" % app_name)
-    #     #print("App Module: %s\n" % app_module.__name__)
-    #
-    #     try:
-    #         app_module.populate_app(engine, db)
-    #     except Exception as exp:
-    #         print(repr(exp))

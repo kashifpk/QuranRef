@@ -83,7 +83,10 @@ hr.visible-xs-block {
     
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
-      <router-view></router-view>
+      <div style="margin: 5px; margin-top: 20px;">
+        <router-view></router-view>
+      </div>
+      
     </div>
     <!-- /.content-wrapper -->
   
