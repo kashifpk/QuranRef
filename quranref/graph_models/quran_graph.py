@@ -127,8 +127,8 @@ class Word(Collection):
     __collection__ = 'words'
 
     _index = [
-        {"type": "hash", "fields": ["word"]},
-        {"type": "hash", "fields": ["count"]}
+        {"type": "skiplist", "fields": ["word"]},
+        {"type": "skiplist", "fields": ["count"]}
     ]
 
     _key = String(required=True)  # sha1 hash of word
