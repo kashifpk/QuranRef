@@ -9,6 +9,7 @@ import ByWordCount from '@/components/ByWordCount'
 Vue.use(Router)
 
 export default new Router({
+  mode: 'history',
   routes: [
     { name: 'home', path: '/', component: Home },
     { name: 'browse_by_word', path: '/by_word', component: BrowseByWord },

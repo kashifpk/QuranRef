@@ -24,7 +24,7 @@
 }
 
 .ar-num {
-  font-family: 'AlQalam';
+  font-family: "Al Qalam Quran", 'AlQalam';
   text-align: right;
   font-size: large;
   direction: rtl;
@@ -38,7 +38,7 @@
 }
 
 .ur, .urdu {
-  font-family: 'Noori';
+  font-family: "Jameel Noori Nastaleeq", Noori;
   text-align: right;
   font-size: 14pt;
 }

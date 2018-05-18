@@ -11,8 +11,8 @@ def connect(server, port, username, password, db_name):
 
     global gdb
 
-    client = ArangoClient(host=server, port=port, username=username, password=password)
-    db = client.db(db_name)
+    client = ArangoClient(host=server, port=port)
+    db = client.db(db_name, username=username, password=password)
 
     gdb = Database(db)
 

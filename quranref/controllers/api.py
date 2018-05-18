@@ -4,83 +4,65 @@ QuranRef API
 
 API access to the QuranRef site
 
-GET /api/v1/assets
+GET /api/v1/surahs
 __________________
 
-Return a list of all assets of the current user. Requires user's auth token in request headers.
+Get surahs list
 
-Example::
+.. code-block:: shell
 
-    curl "http://api.threatify.com/api/v1/assets" -H "Content-Type: application/json"
-
-Returns something like::
-
-    [
-        {
-            "_id": "domains/www.threatify.com",
-            "verified": true,
-            "value": "www.threatify.com",
-            "_relations": [
-                  {"has_ip": "ip_addresses/122.122.122.122"}
-             ]
-        },
-        {
-            "_id": "ip_addresses/122.122.122.122",
-            "verified": false,
-            "value": "122.122.122.122"
-        }
-    ]
+    curl -XGET -H "Content-Type: application/json" "http://api.threatify.com/api/surahs" 
 
 
-GET /api/v1/assets/{asset_id}
-_____________________________
-
-Return details of given asset. Please note that asset ID is of the form
-**domains/www.threatify.com**. Supports the query string parameter depth. Depth specifies how
-much information is required. Default is 1 which also returns all relations and their
-information. All linked documents are placed inside the _relations key.
-
-Example::
-
-    curl -XGET "http://api.threatify.com/api/v1/assets/domains/www.threatify.com -H "Content-Type: application/json"
-
-Returns something like::
-
-
-    {
-        "_id": "domains/www.threatify.com",
-        "verified": true,
-        "value": "www.threatify.com",
-        "_relations": [
-            {
-                "has_ip": {
-                    "_id": "ip_addresses/122.122.122.122",
-                    "verified": false,
-                    "value": "122.122.122.122"
-                }
-            }
-         ]
-    }
-
-POST /api/v1/assets
+GET /api/v1/letters
 ___________________
 
-Creates a new asset for the user. Assets that the user adds using this API are automatically
-marked as verified. Requires user's auth token in request headers. Requires the following info in
-POST's JSON data:
+Get letters list from which Quranic words start
 
-* **asset_type**: Currently can be either **domain** or **ip**
-* **value**: The actual domain or ip address of the asset.
+.. code-block:: shell
 
-Example::
+    curl -XGET -H "Content-Type: application/json" \\
+         "http://api.threatify.com/api/letters" 
 
-    curl -XPOST "http://api.threatify.com/api/v1/assets" -H "Content-Type: application/json" \\
-    -X POST -d '{"asset_type": "domain", "value": "threatify.com"}'
 
-Returns::
+GET /api/v1/words_by_letter/{arabic_letter}
+_____________________________________________
 
-    {"msg": "ok", "_id": "domains/threatify.com"}
+Get all words that start by the specified arabic letter.
 
+.. code-block:: shell
+
+    curl -XGET -H "Content-Type: application/json" \\
+         "http://api.threatify.com/api/words_by_letter/ب" 
+
+
+GET /api/v1/ayas_by_word/{arabic_word}/{languages}
+__________________________________________________
+
+Get all ayas containing the given word and return text in the given languages and
+specific translator. Language items are separated by underscore while within a
+language item there is the language name and it's text type/translation separated by
+comma.
+
+For example:
+    arabic,simple means arabic content with simple syntax.
+    urdu,maududi returns urdu translations by Maududi
+
+.. code-block:: shell
+
+    curl -XGET -H "Content-Type: application/json" \\
+         "http://api.threatify.com/api/ayas_by_word/عابد/arabic,simple_urdu,maududi_english,maududi"
+
+
+GET /api/v1/text_types
+______________________
+
+Get available languages and the text types/translations supported by them
+
+.. code-block:: shell
+
+    curl -XGET -H "Content-Type: application/json" \\
+         "http://api.threatify.com/api/text_types"
 
 """
 
