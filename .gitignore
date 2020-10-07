@@ -54,3 +54,5 @@ docs/_build/
 production.ini
 backups/
 prod_config/quranref.ini
+.vscode
+

@@ -1,0 +1,91 @@
+
+<VirtualHost *:80>
+
+
+						
+		ServerName api.quranref.info
+		ServerAdmin webmaster@api.quranref.info
+
+
+		ErrorLog /var/log/ispconfig/httpd/api.quranref.info/error.log
+
+		Alias /error/ "/var/www/api.quranref.info/web/error/"
+		ErrorDocument 400 /error/400.html
+		ErrorDocument 401 /error/401.html
+		ErrorDocument 403 /error/403.html
+		ErrorDocument 404 /error/404.html
+		ErrorDocument 405 /error/405.html
+		ErrorDocument 500 /error/500.html
+		ErrorDocument 502 /error/502.html
+		ErrorDocument 503 /error/503.html
+
+
+		RewriteEngine on
+		RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/
+		RewriteRule ^ - [END]
+        RewriteCond %{HTTPS} off
+                RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
+
+</VirtualHost>
+
+
+<VirtualHost *:443>
+
+		ServerName api.quranref.info
+		ServerAdmin webmaster@api.quranref.info
+
+		ErrorLog /var/log/ispconfig/httpd/api.quranref.info/error.log
+
+		Alias /error/ "/var/www/api.quranref.info/web/error/"
+		ErrorDocument 400 /error/400.html
+		ErrorDocument 401 /error/401.html
+		ErrorDocument 403 /error/403.html
+		ErrorDocument 404 /error/404.html
+		ErrorDocument 405 /error/405.html
+		ErrorDocument 500 /error/500.html
+		ErrorDocument 502 /error/502.html
+		ErrorDocument 503 /error/503.html
+
+		<IfModule mod_ssl.c>
+		SSLEngine on
+		SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+		# SSLCipherSuite          ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS
+		SSLHonorCipherOrder     on
+		# <IfModule mod_headers.c>
+		# Header always add Strict-Transport-Security "max-age=15768000"
+		# </IfModule>
+		SSLCertificateFile /var/www/clients/client0/web4/ssl/api.quranref.info-le.crt
+		SSLCertificateKeyFile /var/www/clients/client0/web4/ssl/api.quranref.info-le.key
+				SSLUseStapling on
+		SSLStaplingResponderTimeout 5
+		SSLStaplingReturnResponderErrors off
+		</IfModule>
+
+		WSGIDaemonProcess quranref_api_443 user=kashif group=kashif processes=3 \
+	           threads=4 \
+        	   python-path=/home/kashif/venv/lib/python3.8/site-packages
+		 WSGIScriptAlias / /home/kashif/quranref/quranref_api.wsgi
+		<Directory /home/kashif/quranref>
+			<Files "quranref_api.wsgi">
+		            Require all granted
+		        </Files>
+		        WSGIApplicationGroup %{GLOBAL}
+		        WSGIPassAuthorization On
+		        WSGIProcessGroup quranref_api_443
+		        Order allow,deny
+		        Allow from all
+
+		</Directory>
+
+		RewriteEngine on
+		RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/
+		RewriteRule ^ - [END]
+
+</VirtualHost>
+
+<IfModule mod_ssl.c>
+        SSLStaplingCache shmcb:/var/run/ocsp(128000)
+</IfModule>
+
+
+

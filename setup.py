@@ -6,36 +6,36 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
-    'PyCK',
-    'pyramid',
-    'pyramid_mako',
-    'pyramid_debugtoolbar',
-    'webtest',
-    'waitress',
-    'arango-orm',
-    'python-jose'
+    "PyCK",
+    "pyramid",
+    "pyramid_mako",
+    "pyramid_debugtoolbar",
+    "webtest",
+    "waitress",
+    "arango-orm",
+    "python-jose",
 ]
 
 
 setup(
-    name='quranref',
-    version='1.2',
-    description='quranref',
-    long_description='Online and Embeddable Quran Reference and Tafseer collection',
+    name="quranref",
+    version="1.3",
+    description="quranref",
+    long_description="Online and Embeddable Quran Reference and Tafseer collection",
     classifiers=[
         "Programming Language :: Python",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     ],
-    author='',
-    author_email='',
-    url='',
-    keywords='web PyCK framework pylons pyramid',
+    author="",
+    author_email="",
+    url="",
+    keywords="web PyCK framework pylons pyramid",
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_suite='quranref',
+    test_suite="quranref",
     install_requires=requires,
     entry_points="""\
     [paste.app_factory]

@@ -1,0 +1,242 @@
+
+<Directory /var/www/quranref.info>
+		AllowOverride None
+				Require all denied
+		</Directory>
+
+<VirtualHost *:80>
+
+
+									DocumentRoot /var/www/quranref.info/web
+						
+		ServerName quranref.info
+		ServerAlias www.quranref.info
+		ServerAdmin webmaster@quranref.info
+
+
+		ErrorLog /var/log/ispconfig/httpd/quranref.info/error.log
+
+		Alias /error/ "/var/www/quranref.info/web/error/"
+		ErrorDocument 400 /error/400.html
+		ErrorDocument 401 /error/401.html
+		ErrorDocument 403 /error/403.html
+		ErrorDocument 404 /error/404.html
+		ErrorDocument 405 /error/405.html
+		ErrorDocument 500 /error/500.html
+		ErrorDocument 502 /error/502.html
+		ErrorDocument 503 /error/503.html
+
+		<IfModule mod_ssl.c>
+		</IfModule>
+
+		WSGIDaemonProcess quranref_qref_80 user=kashif group=kashif processes=3 \
+                   threads=4 \
+                   python-path=/home/kashif/venv/lib/python3.8/site-packages
+                WSGIScriptAlias /qref /home/kashif/quranref/quranref_qref.wsgi
+		<Directory /home/kashif/quranref>
+				<Files "quranref_qref.wsgi">
+					Require all granted
+				</Files>
+				WSGIApplicationGroup %{GLOBAL}
+				WSGIPassAuthorization On
+				WSGIProcessGroup quranref_qref_80
+				Order allow,deny
+				Allow from all
+
+		</Directory>
+
+		<Directory /var/www/quranref.info/web>
+				# Clear PHP settings of this website
+				<FilesMatch ".+\.ph(p[345]?|t|tml)$">
+						SetHandler None
+				</FilesMatch>
+				Options +SymlinksIfOwnerMatch
+				AllowOverride All
+								Require all granted
+								<Files ~ '.php[s3-6]{0,1}$'>
+												Require all denied
+										</Files>
+		</Directory>
+		<Directory /var/www/clients/client0/web3/web>
+				# Clear PHP settings of this website
+				<FilesMatch ".+\.ph(p[345]?|t|tml)$">
+						SetHandler None
+				</FilesMatch>
+				Options +SymlinksIfOwnerMatch
+				AllowOverride All
+								Require all granted
+								<Files ~ '.php[s3-6]{0,1}$'>
+										Require all denied
+									</Files>
+		</Directory>
+
+
+
+
+		# suexec enabled
+		<IfModule mod_suexec.c>
+			SuexecUserGroup web3 client0
+		</IfModule>
+
+
+		RewriteEngine on
+		RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/
+		RewriteRule ^ - [END]
+
+		RewriteCond %{HTTPS} off
+		RewriteCond %{REQUEST_URI} !/qref/ [NC]
+                RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
+
+		# add support for apache mpm_itk
+		<IfModule mpm_itk_module>
+			AssignUserId web3 client0
+		</IfModule>
+
+		<IfModule mod_dav_fs.c>
+		# Do not execute PHP files in webdav directory
+			<Directory /var/www/clients/client0/web3/webdav>
+				<ifModule mod_security2.c>
+					SecRuleRemoveById 960015
+					SecRuleRemoveById 960032
+				</ifModule>
+				<FilesMatch "\.ph(p3?|tml)$">
+					SetHandler None
+				</FilesMatch>
+			</Directory>
+			DavLockDB /var/www/clients/client0/web3/tmp/DavLock
+			# DO NOT REMOVE THE COMMENTS!
+			# IF YOU REMOVE THEM, WEBDAV WILL NOT WORK ANYMORE!
+      # WEBDAV BEGIN
+			# WEBDAV END
+		</IfModule>
+
+			# skipping apache_directives, as that will be handled by the ssl vhost
+	
+
+</VirtualHost>
+
+
+<VirtualHost *:443>
+
+
+									DocumentRoot /var/www/quranref.info/web
+						
+		ServerName quranref.info
+		ServerAlias www.quranref.info
+		ServerAdmin webmaster@quranref.info
+
+
+		ErrorLog /var/log/ispconfig/httpd/quranref.info/error.log
+
+		Alias /error/ "/var/www/quranref.info/web/error/"
+		ErrorDocument 400 /error/400.html
+		ErrorDocument 401 /error/401.html
+		ErrorDocument 403 /error/403.html
+		ErrorDocument 404 /error/404.html
+		ErrorDocument 405 /error/405.html
+		ErrorDocument 500 /error/500.html
+		ErrorDocument 502 /error/502.html
+		ErrorDocument 503 /error/503.html
+
+		<IfModule mod_ssl.c>
+		SSLEngine on
+		SSLProtocol All -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+		# SSLCipherSuite          ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS
+		SSLHonorCipherOrder     on
+		# <IfModule mod_headers.c>
+		# Header always add Strict-Transport-Security "max-age=15768000"
+		# </IfModule>
+		SSLCertificateFile /var/www/clients/client0/web3/ssl/quranref.info-le.crt
+		SSLCertificateKeyFile /var/www/clients/client0/web3/ssl/quranref.info-le.key
+				SSLUseStapling on
+		SSLStaplingResponderTimeout 5
+		SSLStaplingReturnResponderErrors off
+				</IfModule>
+
+		WSGIDaemonProcess quranref_qref_443 user=kashif group=kashif processes=3 \
+                   threads=4 \
+                   python-path=/home/kashif/venv/lib/python3.8/site-packages
+                 WSGIScriptAlias /qref /home/kashif/quranref/quranref_qref.wsgi
+                <Directory /home/kashif/quranref>
+                        <Files "quranref_qref.wsgi">
+                            Require all granted
+                        </Files>
+                        WSGIApplicationGroup %{GLOBAL}
+                        WSGIPassAuthorization On
+                        WSGIProcessGroup quranref_qref_443
+                        Order allow,deny
+                        Allow from all
+
+                </Directory>
+		<Directory /var/www/quranref.info/web>
+				# Clear PHP settings of this website
+				<FilesMatch ".+\.ph(p[345]?|t|tml)$">
+						SetHandler None
+				</FilesMatch>
+				Options +SymlinksIfOwnerMatch
+				AllowOverride All
+								Require all granted
+								<Files ~ '.php[s3-6]{0,1}$'>
+												Require all denied
+										</Files>
+		</Directory>
+		<Directory /var/www/clients/client0/web3/web>
+				# Clear PHP settings of this website
+				<FilesMatch ".+\.ph(p[345]?|t|tml)$">
+						SetHandler None
+				</FilesMatch>
+				Options +SymlinksIfOwnerMatch
+				AllowOverride All
+								Require all granted
+								<Files ~ '.php[s3-6]{0,1}$'>
+										Require all denied
+									</Files>
+		</Directory>
+
+
+
+
+		# suexec enabled
+		<IfModule mod_suexec.c>
+			SuexecUserGroup web3 client0
+		</IfModule>
+
+
+		RewriteEngine on
+		RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/
+		RewriteRule ^ - [END]
+
+		# add support for apache mpm_itk
+		<IfModule mpm_itk_module>
+			AssignUserId web3 client0
+		</IfModule>
+
+		<IfModule mod_dav_fs.c>
+		# Do not execute PHP files in webdav directory
+			<Directory /var/www/clients/client0/web3/webdav>
+				<ifModule mod_security2.c>
+					SecRuleRemoveById 960015
+					SecRuleRemoveById 960032
+				</ifModule>
+				<FilesMatch "\.ph(p3?|tml)$">
+					SetHandler None
+				</FilesMatch>
+			</Directory>
+			DavLockDB /var/www/clients/client0/web3/tmp/DavLock
+			# DO NOT REMOVE THE COMMENTS!
+			# IF YOU REMOVE THEM, WEBDAV WILL NOT WORK ANYMORE!
+      # WEBDAV BEGIN
+			# WEBDAV END
+		</IfModule>
+
+	
+
+
+</VirtualHost>
+
+<IfModule mod_ssl.c>
+        SSLStaplingCache shmcb:/var/run/ocsp(128000)
+</IfModule>
+
+
+

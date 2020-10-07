@@ -7,11 +7,12 @@ log = logging.getLogger(__name__)
 
 gdb = None
 
+
 def connect(server, port, username, password, db_name):
 
     global gdb
 
-    client = ArangoClient(host=server, port=port)
+    client = ArangoClient(hosts=f"http://{server}:{port}")
     db = client.db(db_name, username=username, password=password)
 
     gdb = Database(db)

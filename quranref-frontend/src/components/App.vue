@@ -9,11 +9,6 @@
 }
 
 @font-face {
-  font-family: 'MeQuran';
-  src: url('/static/fonts/me_quran.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
-}
-
-@font-face {
   font-family: 'AlQalam';
   src: url('/static/fonts/AlQalamQuran.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
@@ -78,18 +73,18 @@ hr.visible-xs-block {
 <template>
   <div id="app_main" :class="['wrapper', classes]">
     <top-header></top-header>
-    
+
     <sidebar />
-    
+
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
       <div style="margin: 5px; margin-top: 20px;">
         <router-view></router-view>
       </div>
-      
+
     </div>
     <!-- /.content-wrapper -->
-  
+
     <!-- Main Footer -->
     <footer class="main-footer">
       <strong>
@@ -107,7 +102,7 @@ hr.visible-xs-block {
   import 'hideseek'
   import TopHeader from './TopHeader'
   import SearchBox from './SearchBox'
-  
+
   export default {
     name: 'app',
     components: {

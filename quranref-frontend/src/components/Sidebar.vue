@@ -2,6 +2,7 @@
 .main-sidebar {
   background-color: #005500;
   overflow: auto;
+  z-index: 1;
 }
 
 .main-sidebar label {
