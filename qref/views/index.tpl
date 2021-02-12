@@ -1,7 +1,16 @@
 <html>
 
 <head>
-    <title>{{surah}}:{{ayas}} - القرآن</title>
+    <title>
+        % if aya_spec:
+        ({{ aya_spec }})
+        % end
+        - القرآن
+        - {{ arabic_name }}
+
+
+
+    </title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="static/css/bootstrap.min.css">
     <style>
