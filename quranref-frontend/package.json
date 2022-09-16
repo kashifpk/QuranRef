@@ -16,7 +16,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "babel-runtime": "^5.8.0",
-    "bootstrap": "^3.3.7",
+    "bootstrap": "^3.4.1",
     "hideseek": "^0.7.0",
     "jquery": "^3.5",
     "vue": "^2.3.3",
