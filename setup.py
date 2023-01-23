@@ -7,11 +7,9 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
     "PyCK",
-    "pyramid",
-    "pyramid_mako",
-    "pyramid_debugtoolbar",
     "webtest",
     "waitress",
+    "requests",
     "arango-orm",
     "python-jose",
 ]
