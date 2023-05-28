@@ -56,3 +56,5 @@ backups/
 prod_config/quranref.ini
 .vscode
 *.code-workspace
+
+venv

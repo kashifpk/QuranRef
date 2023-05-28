@@ -11,20 +11,23 @@ Online and embeddable Quran Reference. Currently contains:
 ## Development Getting Started
 
 
-### 1. Create a python virtual environment
 
-```shell
-python3 -m venv venv
-source venv/bin/activate
-```
 
-### 2. Clone the repo and set it up in development mode.
+### 1. Clone the repo
 
 ```shell
 git clone git@github.com:kashifpk/QuranRef.git
 cd Quranref
 
-python setup.py develop
+```
+
+### 2. Create a python virtual environment and install dependencies
+
+```shell
+python3 -m venv venv
+source venv/bin/activate
+pip install poetry
+poetry install --with dev
 ```
 
 ### 3. Install ArangoDB
