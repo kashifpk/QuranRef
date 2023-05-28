@@ -14,7 +14,7 @@ from .exceptions import APIForbidden, APIMethodNotAllowed, APINoAuthToken, APIBa
 log = logging.getLogger(__name__)
 
 
-class RequestParameters(collections.MutableMapping):
+class RequestParameters(collections.abc.MutableMapping):
     """
     Class that collects parameters from JSON request body. Also allows methods to verify that all
     required parameters are present
