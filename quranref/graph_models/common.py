@@ -14,7 +14,7 @@ def add_document_if_not_exists(document, collection=None,
     return_document can have values: 'never', 'new' and 'always'
     """
 
-    db = graph_models.gdb
+    db = graph_models.get_gdb()
 
     assert return_document in ['never', 'new', 'always']
 
