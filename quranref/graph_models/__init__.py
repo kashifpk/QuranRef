@@ -1,19 +1,16 @@
-import logging
-
 from arango import ArangoClient
 from arango_orm import Database
 
-log = logging.getLogger(__name__)
-
-gdb = None
+from ..settings import get_settings
 
 
-def connect(server, port, username, password, db_name):
+def get_gdb() -> Database:
+    settings = get_settings()
 
-    global gdb
-
-    client = ArangoClient(hosts=f"http://{server}:{port}")
-    db = client.db(db_name, username=username, password=password)
+    client = ArangoClient(hosts=f"http://{settings.gdb_host}:{settings.gdb_port}")
+    db = client.db(
+        settings.gdb_database, username=settings.gdb_username, password=settings.gdb_password
+    )
 
     gdb = Database(db)
 
