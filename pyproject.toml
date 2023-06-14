@@ -28,7 +28,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 quranref = 'quranref.cli:main'
-quranref_populate = 'quranref.scripts.populate:main'
+# quranref_populate = 'quranref.scripts.populate:main'
 # quranref_import_surah_info = 'quranref.scripts.surah_info_import:main'
 # quranref_import_text = 'quranref.scripts.text_import:main'
 # quranref_make_words = 'quranref.scripts.make_words:main'
