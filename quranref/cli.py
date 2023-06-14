@@ -1,17 +1,12 @@
 import typer
-from time import sleep
-from .graph_models import get_gdb
-from .graph_models.quran_graph import QuranGraph
-from .graph_models.quran_graph import Surah
-from .lib.surah_info import surah_info
-from .graph_models.quran_graph import Aya, AyaText
+import time
+from quranref.graph_models import get_gdb
+from quranref.graph_models.quran_graph import QuranGraph
+from quranref.graph_models.quran_graph import Surah
+from quranref.lib.surah_info import surah_info
+from quranref.graph_models.quran_graph import Aya, AyaText
 
 cmd_app = typer.Typer()
-"""
-def iteration():
-    for i in range(1000):
-        yield i
-"""
 
 @cmd_app.command()
 def populate():
@@ -23,6 +18,8 @@ def populate():
 
 @cmd_app.command()
 def import_surahs():
+    """Importing Surahs."""
+    gdb = get_gdb()
     surah_number = 1
     for s_info in surah_info:
         s = Surah(
@@ -36,48 +33,46 @@ def import_surahs():
             rukus=s_info['rukus'],
             total_ayas=s_info['total_ayas']
         )
-
-        gdb = get_gdb()
         gdb.add(s)
         surah_number += 1
 
 
 @cmd_app.command()
 def import_text(language: str, text_name: str, filename: str):
-    """
-    with typer.progressbar(iteration(), length=1000, label="Progressing") as progress: 
-        for i in progress:
-            sleep(0.01)
-    """
-    file = open(filename)
-
+    """Importing Text""" 
+    file = open('data/'+filename)
     bismillah_text = ''
     current_surah = ''
+    total = 0
+    file_range = len(file.readlines())
+    with typer.progressbar(range(file_range)) as progress:
+        for value in progress:
+            for line in file:
+                if not line.strip():
+                    break
 
-    for line in file:
-        if not line.strip():
-            break
+                surah, aya, content = line.split('|')
 
-        surah, aya, content = line.split('|')
+                if not bismillah_text:
+                    bismillah_text = content.strip()
 
-        if not bismillah_text:
-            bismillah_text = content.strip()
+                if current_surah != surah and content.startswith(bismillah_text):
+                    # new surah starting, separate bismillah and save as aya 0 for surah
+                    content = content[len(bismillah_text):].strip()
+                    if content:
+                        aya_doc = Aya.new(surah_number=surah, aya_number=0)
+                    else:
+                        aya_doc = Aya.new(surah_number=surah, aya_number=aya)
 
-        if current_surah != surah and content.startswith(bismillah_text):
-            # new surah starting, separate bismillah and save as aya 0 for surah
-            content = content[len(bismillah_text):].strip()
-            if content:
-                aya_doc = Aya.new(surah_number=surah, aya_number=0)
-            else:
-                aya_doc = Aya.new(surah_number=surah, aya_number=aya)
+                    AyaText.new(aya_doc, bismillah_text, language, text_name)
+                    current_surah = surah
 
-            AyaText.new(aya_doc, bismillah_text, language, text_name)
-            current_surah = surah
-
-        if content:
-            aya_doc = Aya.new(surah_number=surah, aya_number=aya)
-            AyaText.new(aya_doc, content.strip(), language, text_name)
-
+                if content:
+                    aya_doc = Aya.new(surah_number=surah, aya_number=aya)
+                    AyaText.new(aya_doc, content.strip(), language, text_name)
+            time.sleep(0.01)
+            total += 1
+    print(f"Processed {total} things.")
 @cmd_app.command()
 def test():
     """A test command."""
