@@ -7,7 +7,7 @@ Contains models for storing Quran Ayas, Arabic Texts, Translations, References e
 
 import logging
 import hashlib
-
+import sys
 from marshmallow.fields import String, Integer
 from arango_orm import Collection, Relation, Graph, GraphConnection
 from quranref import graph_models
@@ -49,7 +49,7 @@ class Aya(Collection):
     @classmethod
     def new(cls, surah_number, aya_number):
 
-        gdb = graph_models.gdb
+        gdb = graph_models.get_gdb()
         surah = gdb.query(Surah).by_key(str(surah_number))
 
         # Add aya
