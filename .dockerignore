@@ -1,3 +1,6 @@
 .venv/
 .git
 poetry.toml
+node_modules
+README.md
+

@@ -1,0 +1,40 @@
+services:
+  arangodb:
+    image: arangodb
+    env_file:
+      - prod_env
+    volumes:
+      - arangodb_data:/var/lib/arangodb3
+    networks:
+      - traefik-net
+    # deploy:
+    #   labels:
+    #     - "traefik.enable=true"
+    #     - "traefik.http.services.quranref-secure.loadbalancer.server.port=8529"
+  app:
+    image: localhost:5000/quranref:2.0.0
+    command: poetry run fastapi run --workers 6 quranref/main.py --host 0.0.0.0 --port 7000
+    env_file:
+      - prod_env
+    environment:
+      - AM_I_DOCKERIZED=1
+    networks:
+      - traefik-net
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-net"
+        - "traefik.constraint-label=traefik-net"
+        - "traefik.http.routers.quranref-secure.rule=Host(`quranref.info`) || Host(`www.quranref.info`)"
+        - "traefik.http.routers.quranref-secure.entrypoints=websecure"
+        - "traefik.http.routers.quranref-secure.tls=true"
+        - "traefik.http.routers.quranref-secure.tls.certresolver=myresolver"
+        - "traefik.http.services.quranref-secure.loadbalancer.server.port=7000"
+
+volumes:
+  arangodb_data:
+
+networks:
+  traefik-net:
+    external: true
+    name: traefik-net
