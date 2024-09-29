@@ -1,5 +1,7 @@
 <style scoped>
-/* Your component styles here */
+tr:hover {
+  cursor: pointer;
+}
 </style>
 
 <template>
@@ -17,43 +19,37 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-for="surah in store.surahInfo" >
+      <tr v-for="surah in store.surahInfo" @click="goToSurah(surah.surah_number)" >
         <td>
-
-              {{ surah.surah_number }}
-
+          {{ surah.surah_number }}
         </td>
         <td>
-
-              {{ surah.english_name }}
-
+          {{ surah.english_name }}
         </td>
         <td class="hidden-xs hidden-sm">
-
-              {{ surah.translated_name }}
-
+          {{ surah.translated_name }}
         </td>
         <td>{{ surah.total_ayas }}</td>
         <td class="hidden-xs">{{ surah.rukus }}</td>
         <td class="hidden-xs">{{ surah.nuzool_order }} ({{ surah.nuzool_location }})</td>
         <td class="ar" style="text-align: right">
-
-              {{ surah.arabic_name }}
-
+          {{ surah.arabic_name }}
         </td>
       </tr>
     </tbody>
   </v-table>
-
-
 </template>
 
-<script setup>
-import { ref, reactive, computed, watch } from 'vue';
+<script setup lang="ts">
 import { VTable } from 'vuetify/components';
-
+import { useRouter } from 'vue-router';
 import { useStore } from '../store'
-const store = useStore()
 
+const store = useStore()
+const router = useRouter()
+
+const goToSurah = (surahNumber: number) => {
+  router.push({ name: 'surah_view', params: { surah_number: surahNumber.toString() } })
+}
 </script>
 

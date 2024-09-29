@@ -1,14 +1,10 @@
-<style scoped></style>
+<style scoped>
+</style>
 
 <template>
   <v-container>
     <v-row>
       <v-col>
-        <div>
-          <a class="pull-left" href="#">
-            <img src="///static/img/logo.png" alt="Quran Reference Home" />
-          </a>
-        </div>
 
         <div class="ar text-success" style="font-size: larger; font-weight: bold;">
               وَلَقَدْ يَسَّرْنَا ٱلْقُرْءَانَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِر

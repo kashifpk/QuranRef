@@ -26,13 +26,9 @@ export default defineConfig({
         main: resolve('./js/main.js')
       },
     },
-    root: "."
   },
   server: {
+    host: '127.0.0.1',
     port: 5173
-  },
-  test: {
-    environment: 'jsdom',
-    include: ['js_tests/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']
   }
 })

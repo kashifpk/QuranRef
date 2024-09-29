@@ -9,6 +9,7 @@ RUN bun install --frozen-lockfile
 
 COPY *.json .
 COPY *.js .
+COPY *.ts .
 
 COPY js ./js
 COPY prod_env .env
