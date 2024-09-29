@@ -70,7 +70,7 @@
 </template>
 
 
-<script setup>
+<script setup lang="ts">
   import {
     VApp, VResponsive, VMain, VAppBar, VFooter, VAppBarNavIcon, VNavigationDrawer, VDivider, VList, VListItem, VBtn, VIcon, VTextField
   } from 'vuetify/components';

@@ -25,9 +25,9 @@
   </v-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { VContainer, VRow, VCol } from 'vuetify/components';
-  import { ref, onMounted } from 'vue'
+  import { onMounted } from 'vue'
   import { useStore } from '../store'
   import SurahList from './SurahList.vue';
 

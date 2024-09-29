@@ -2,10 +2,29 @@ import typer
 from rich import print
 
 from ..db import db as get_db
-from ..models import QuranGraph, Aya, Has, Word, MetaInfo
+from ..models import QuranGraph, Surah, Aya, Has, Word, MetaInfo
 
 
 app = typer.Typer(name="Data post processing after import(s)")
+
+
+@app.command(name="link-ayas-to-surahs")
+def link_ayas_to_surahs():
+    "Link Ayas to Surahs"
+
+    db = get_db()
+
+    qgraph = QuranGraph(connection=db)
+
+    surahs = db.query(Surah).all()
+    for surah in surahs:
+        ayas = db.query(Aya).filter_by(surah_key=surah.key_).all()
+        for aya in ayas:
+            has_key = f"SA:{surah._key}:{aya._key}"
+            has_document = qgraph.relation(surah, Has(_key=has_key), aya)
+            _ = db.add(has_document, if_present="update")
+
+    print("[green]Done![/green]")
 
 
 @app.command(name="make-words")
