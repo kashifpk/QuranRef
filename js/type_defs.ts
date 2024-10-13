@@ -10,3 +10,12 @@ export interface SurahInfo {
     total_ayas: number;
     [x: string]: unknown;
 }
+
+export interface AyaTexts {
+    [key: string]: { [key: string]: string };
+}
+
+export interface AyaInfo {
+    aya_key: string;
+    texts: AyaTexts;
+}

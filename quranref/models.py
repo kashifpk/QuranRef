@@ -84,7 +84,7 @@ class Text(Collection):
 
     __collection__ = "texts"
 
-    # _key is  f"{aya_key}-{text_key}-{language}-{text_type}
+    # _key is digest of text
     # key is hash diget of text
     text: str
 

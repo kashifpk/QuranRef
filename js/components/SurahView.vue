@@ -4,38 +4,35 @@
   text-align: right;
 
 }
+
+.surah-name {
+  font-size: 26pt;
+  font-weight: bold;
+}
 </style>
 
 <template>
 
   <v-container class="surah-view-component">
     <v-row>
-      <v-col>
-        {{ route.name }}
-        {{ surah_number }}
-
-        Hi there<br />
-  Hi there<br />
-  Hi there<br />
-  Hi there<br />
-  Hi there<br />
-  Hi there<br />
+      <v-col class="text-center ar surah-name">
+        {{ surahInfo?.arabic_name }}
       </v-col>
     </v-row>
-    <v-row v-for="aya in surahAyas">
 
-      {{ aya }}
-    </v-row>
+    <aya-view v-for="aya in surahAyas" :aya="aya" :display-surah-name="false"></aya-view>
+
   </v-container>
 </template>
 
 <script setup lang="ts">
-  // import { mande } from 'mande';
+  import { mande } from 'mande';
   import { VContainer, VRow, VCol } from 'vuetify/components';
-  import { ref, onMounted, watch, defineProps } from 'vue'
+  import { ref, onMounted, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useStore } from '../store'
-  import type { SurahInfo } from "../type_defs"
+  import type { SurahInfo, AyaInfo } from "../type_defs"
+  import AyaView from './AyaView.vue';
 
   const props = defineProps({
     surah_number: Number
@@ -47,19 +44,19 @@
 
   // import AyaView from './AyaView'
   // <aya-view :aya="aya"></aya-view>
-  const surahAyas = ref([])
+  const surahAyas = ref<AyaInfo[]>()
   const surahInfo = ref<SurahInfo>()
 
 
   onMounted(async () => {
-    console.log(props.surah_number)
-    // const surahNumber = parseInt(route.params.surah_number)
-    // parseInt(route.params.surah_number)
+    if (props.surah_number !== undefined) {
+      console.log(props.surah_number)
 
-    // let idx = parseInt(route.params.surah_number) - 1
-    let idx = 1
-    surahInfo.value = store.surahInfo[idx]
-    await getSurahText()
+      surahInfo.value = store.surahInfo[props.surah_number - 1]
+      await getSurahText()
+    } else {
+      console.error('surah_number is undefined')
+    }
   })
 
   watch(() => route.params.surah_number, async (newVal, oldVal) => {
@@ -68,10 +65,13 @@
   })
 
   const getSurahText = async () => {
-    // const url = import.meta.env.VITE_API_BASE_URL + "/surah/" + route.params.surah_number + "/arabic"
-    // const surahsApi = mande(url)
-    // const response = await surahsApi.get()
-
+    console.log('getSurahText')
+    const url = import.meta.env.VITE_API_BASE_URL + "/text/" + props.surah_number + "/arabic:uthmani_urdu:maududi"
+    console.log(url)
+    const surahsApi = mande(url)
+    const response = await surahsApi.get()
+    console.log(response)
+    surahAyas.value = response as AyaInfo[]
   }
 
   // watch: {

@@ -2,13 +2,12 @@ import bz2
 from pathlib import Path
 
 import typer
-from rich import print
 from arango_orm.exceptions import DocumentNotFoundError
+from rich import print
 
-from ..db import db as get_db
-from ..models import QuranGraph, MetaInfo, Surah, Aya, Text, AyaText, Has, Word
 from ..data.surah_info import surah_info
-
+from ..db import db as get_db
+from ..models import Aya, AyaText, Has, MetaInfo, QuranGraph, Surah, Text, Word
 
 app = typer.Typer(name="Database structure related operations")
 
@@ -93,6 +92,8 @@ def import_text(
                     # aya is not just bismillah
                     bismillah_aya_doc = Aya.get_or_new(db, surah_number=int(surah), aya_number=0)
                     AyaText.new(db, bismillah_aya_doc, bismillah_text, language, text_name)
+
+                    content = content[len(bismillah_text):].strip()
 
         if content:
             aya_doc = Aya.get_or_new(db, surah_number=int(surah), aya_number=int(aya))

@@ -1,13 +1,11 @@
 import logging
 
+from arango_orm import Database
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from arango_orm import Database
-
 from .db import db
-from .models import Surah, Word, QuranGraph, MetaInfo, Text
+from .models import MetaInfo, QuranGraph, Surah, Text, Word
 from .schemas import AyaResultSchema
-
 
 log = logging.getLogger(__name__)
 
@@ -206,7 +204,7 @@ async def get_top_least_frequent_words(
     return results
 
 
-@router.get("/text/{ayas-spec}/{languages_spec}")
+@router.get("/text/{ayas_spec}/{languages_spec}")
 async def get_text(
     ayas_spec: str, languages_spec: str, db: Database = Depends(db)
 ) -> list[AyaResultSchema]:
