@@ -1,0 +1,11 @@
+{
+  "js/main.ts": {
+    "file": "main-TcTGWiuD.js",
+    "name": "main",
+    "src": "js/main.ts",
+    "isEntry": true,
+    "css": [
+      "main-DOcwF6Nq.css"
+    ]
+  }
+}
