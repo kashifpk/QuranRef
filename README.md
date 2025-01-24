@@ -41,7 +41,7 @@ DB_HOSTS=http://127.0.0.1:8530 poetry run quranref-cli db --help
 # TODO
 
 - [] Push new version of arango-orm and update dependencies to use it. Required for building docker image for production.
-
+- [] Graph traversal using the '/_api/traversal' endpoint is deprecated and removed from arangodb. Need to use PRUNE now. Will need to check if it's supported on older versions and also convert arango-orm and quranref code accordingly.
 
 ## Docker Swarm Deployment
 
@@ -79,5 +79,5 @@ docker cp quranref-db-dump/ <container-id>:/data
 
 ```shell
 # Then on the container
-arangorestore --server.endpoint tcp://127.0.0.1:8529 --server.username quranref --server.password paord --server.database quranref --input-directory "quranref-db-dump"
+arangorestore --server.endpoint tcp://127.0.0.1:8529 --server.username quranref --server.password password --server.database quranref --input-directory "quranref-db-dump"
 ```
