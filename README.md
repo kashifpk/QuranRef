@@ -1,83 +1,60 @@
 # Quran Reference
 
-Online easily accessible searchable reference of the Holy Quran and it's translations.
+Online easily accessible searchable reference of the Holy Quran and its translations.
 
-## Dev Documentation
-
-Create `.env` file with required parameters. See `env_example` for things that need to be present in `.env` file.
-
-### First Time Setup
-
-
-```shell
-# First time
-docker compose -f docker-compose-dev.yml build
-
-# Bring up arangodb
-docker compose -f docker-compose-dev.yml up --detach arangodb
-```
-
-Open arango web interface at: `http://127.0.0.1:8530` and create databases and users according to your `.env` file.
-
-
-### Normal startup
-
-```shell
-docker compose -f docker-compose-dev.yml up --detach
-```
-
-Shell into app container
-
-```shell
-docker compose -f docker-compose-dev.yml exec app sh
-```
-
-Run commands against dockerized arangodb from local system (not the app container).
+## Project Structure
 
 ```
-DB_HOSTS=http://127.0.0.1:8530 poetry run quranref-cli db --help
+.
+├── backend/              # FastAPI backend
+│   ├── quranref/         # Application code
+│   ├── Dockerfile        # Backend Dockerfile
+│   └── pyproject.toml    # Python dependencies
+├── frontend/             # Vue.js frontend
+│   ├── src/              # Frontend source code
+│   ├── public/           # Static assets
+│   ├── Dockerfile-dev    # Frontend development Dockerfile
+│   ├── package.json      # Frontend dependencies
+│   └── bun.lockb         # Frontend lock file
+├── docker-compose.yml    # Docker compose configuration
+└── README.md             # Project documentation
 ```
 
-# TODO
+## Development Setup
 
-- [] Push new version of arango-orm and update dependencies to use it. Required for building docker image for production.
-- [] Graph traversal using the '/_api/traversal' endpoint is deprecated and removed from arangodb. Need to use PRUNE now. Will need to check if it's supported on older versions and also convert arango-orm and quranref code accordingly.
+1. Create `.env` files:
+   - `backend/.env` for backend configuration
+   - `frontend/.env` for frontend configuration
 
-## Docker Swarm Deployment
-
-On the swarm registry machine, build image and upload to registry
-
-```shell
-docker build -t localhost:5000/quranref:2.0.0 .
-docker push localhost:5000/quranref:2.0.0
-docker stack deploy --compose-file docker-compose.yml quranref
+2. Start the development environment:
+```bash
+docker compose up --build
 ```
 
-### Setup ArangoDB
+3. Access the services:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8000
+   - ArangoDB: http://localhost:8529
 
-```shell
-docker exec -it <arango-container-id> arangosh
+## Production Deployment
 
-const users = require('@arangodb/users');
-users.save('username', 'password');
-db._createDatabase('quranref');
-users.grantDatabase('quranref', 'quranref', 'rw');
-
+1. Build the production images:
+```bash
+docker compose -f docker-compose.prod.yml build
 ```
 
-### Create data folder in container
-
-```shell
-docker exec -it <arango-container-id> arangosh
-mkdir /data
+2. Deploy the stack:
+```bash
+docker stack deploy -c docker-compose.prod.yml quranref
 ```
 
-```shell
-# on the docker host where data backup is present
-docker cp quranref-db-dump/ <container-id>:/data
-```
+## Environment Variables
 
-```shell
-# Then on the container
-arangorestore --server.endpoint tcp://127.0.0.1:8529 --server.username quranref --server.password password --server.database quranref --input-directory "quranref-db-dump"
-```
+### Backend
+- `DB_HOSTS`: ArangoDB connection string
+- `DB_USERNAME`: Database username
+- `DB_PASSWORD`: Database password
+- `DB_NAME`: Database name
+
+### Frontend
+- `VITE_API_BASE_URL`: Base URL for API requests
