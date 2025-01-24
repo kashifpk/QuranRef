@@ -23,7 +23,7 @@ export default defineConfig({
     manifest: 'manifest.json',
     rollupOptions: {
       input: {
-        main: resolve('./js/main.js')
+        main: resolve('./js/main.ts')
       },
     },
   },
