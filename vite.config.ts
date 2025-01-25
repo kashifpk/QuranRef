@@ -17,18 +17,21 @@ export default defineConfig({
   plugins: [vue()],
   build: {
     target: 'esnext',
-    outDir: resolve('./static/'),
-    emptyOutDir: false,
+    outDir: resolve('../static/frontend/'),
+    emptyOutDir: true,
     assetsDir: '',
     manifest: 'manifest.json',
     rollupOptions: {
       input: {
-        main: resolve('./js/main.ts')
+        main: resolve('./src/main.ts')
       },
     },
   },
   server: {
-    host: '127.0.0.1',
-    port: 5173
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8000'
+    }
   }
 })
