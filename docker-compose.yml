@@ -2,7 +2,8 @@ services:
   arangodb:
     image: arangodb
     env_file:
-      - prod_env
+      - config/.env.prod
+      - backend/.env
     volumes:
       - arangodb_data:/var/lib/arangodb3
     networks:
@@ -15,7 +16,8 @@ services:
     image: localhost:5000/quranref:2.0.0
     command: poetry run fastapi run --workers 6 quranref/main.py --host 0.0.0.0 --port 7000
     env_file:
-      - prod_env
+      - config/.env.prod
+      - backend/.env
     environment:
       - AM_I_DOCKERIZED=1
     networks:

@@ -22,7 +22,7 @@ RUN poetry config virtualenvs.path /usr/local
 RUN poetry install --only main,dev,test --no-root --no-interaction
 
 # Copy the rest of the files
-COPY .env /code
+COPY backend/.env /code/.env
 COPY quranref /code/quranref
 
 # Install the package

@@ -3,7 +3,7 @@ services:
     image: arangodb:3.8.9
     container_name: quranref_arangodb
     env_file:
-      - .env
+      - backend/.env
     ports:
       - "8530:8529"
     volumes:
@@ -17,7 +17,7 @@ services:
     container_name: quranref
     command: poetry run fastapi dev quranref/main.py --host 0.0.0.0 --port 7000
     env_file:
-      - .env
+      - backend/.env
     environment:
       - AM_I_DOCKERIZED=1
     volumes:

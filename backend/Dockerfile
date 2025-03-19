@@ -2,17 +2,17 @@
 FROM oven/bun:1 AS js-build
 
 WORKDIR /js-build
-COPY bun.lockb .
-COPY package.json .
+COPY ../frontend/bun.lockb .
+COPY ../frontend/package.json .
 
 RUN bun install --frozen-lockfile
 
-COPY *.json .
-COPY *.js .
-COPY *.ts .
+COPY ../frontend/*.json .
+COPY ../frontend/*.js .
+COPY ../frontend/*.ts .
 
-COPY js ./js
-COPY prod_env .env
+COPY ../frontend/src ./src
+COPY ../frontend/.env .
 
 RUN bun run build
 
@@ -41,7 +41,7 @@ RUN poetry config virtualenvs.path /usr/local
 RUN poetry install --only main,dev,test --no-root --no-interaction
 
 # Copy the rest of the files
-COPY prod_env /code/.env
+COPY .env /code/.env
 COPY quranref /code/quranref
 COPY static /code/static
 

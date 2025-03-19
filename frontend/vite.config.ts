@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { config } from 'dotenv'
 
-config({ path: path.join(__dirname, '../.env') })
+config({ path: path.join(__dirname, '.env') })
 
 const STATIC_URL = process.env.STATIC_URL || '/static/'
 
