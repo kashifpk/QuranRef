@@ -1,0 +1,23 @@
+---
+description: VueJS
+globs: *.vue *.json *.ts *.js
+---
+# VueJS Guidelines
+
+- Always use the Vue Composition API script setup style.
+- Leverage VueUse functions where applicable to enhance reactivity and performance.
+- Use TypeScript for type safety
+- Implement proper props and emits definitions
+- Utilize Vue 3's Teleport component when needed
+- Use Suspense for async components
+- Implement proper error handling
+- Follow Vue 3 style guide and naming conventions
+- Use Vite for fast development and building
+
+# UI and Styling
+
+- Use Vuetify components where needed unless there is a more specific library available for a component. For example if sweetalert2 is installed, use it for alerts instead of using vuetify alerts.
+- Implement responsive design; use a mobile-first approach.
+- Build UI components using atomic design principles, organizing them from smallest to largest (e.g., atoms, molecules, organisms, pages).
+- Wrap asynchronous components in Suspense with a fallback UI.
+- Use dynamic loading for non-critical components.

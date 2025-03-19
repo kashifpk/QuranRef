@@ -1,0 +1,1 @@
+{"root":["./vite.config.ts","./js/common_vue.ts","./js/main.ts","./js/router.ts","./js/store.ts","./js/type_defs.ts","./js/vite-env.d.ts","./js/plugins/vuetify.ts"],"version":"5.6.2"}

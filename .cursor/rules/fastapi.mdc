@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+---
+## FastAPI
+
+- Use def for pure functions and async def for asynchronous operations.
+- Use type hints for all function signatures. Prefer Pydantic models over raw dictionaries for input validation.
+- Use concise, one-line syntax for simple conditional statements (e.g., if condition: do_something()).
+- Use SQLAlchemy 2.x with modern querying style using `select()` instead of `db.query(Model)`
+

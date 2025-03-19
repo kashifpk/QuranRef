@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=/api/v1
+    depends_on:
+      - backend
+
+  db:
+    image: arangodb:3.11
+    environment:
+      - ARANGO_ROOT_PASSWORD=rootpassword
+    ports:
+      - "8529:8529"
+    volumes:
+      - quranref_data:/var/lib/arangodb3
+
+volumes:
+  quranref_data:

@@ -16,10 +16,21 @@
         </v-app-bar-title>
 
         <template v-slot:append>
-          <v-text-field label="Search" append-inner-icon="mdi-magnify" variant="solo-inverted" min-width="200" density="compact" single-line hide-details @click:append-inner="doSearch()"></v-text-field>
+          <v-text-field
+            v-model="searchTerm"
+            label="Search"
+            append-inner-icon="mdi-magnify"
+            variant="solo-inverted"
+            min-width="200"
+            density="compact"
+            single-line
+            hide-details
+            @click:append-inner="doSearch"
+            @keyup.enter="doSearch"
+          ></v-text-field>
           <v-icon icon="mdi-account"></v-icon>
           <v-btn href="/" icon="mdi-heart"></v-btn>
-          <v-btn href="/words" title="Explore words" icon="mdi-file-word-box"></v-btn>
+          <v-btn href="/by_word" title="Explore words" icon="mdi-file-word-box"></v-btn>
           <v-btn icon="mdi-dots-vertical"></v-btn>
         </template>
 
@@ -35,19 +46,19 @@
           <v-divider></v-divider>
 
           <v-list-item class="text-left pl-8">
-            <a href="/" title="by-word" class="text-decoration-none font-weight-bold text-green-lighten-5">By Word</a>
+            <router-link to="/by_word" title="Browse by Word" class="text-decoration-none font-weight-bold text-green-lighten-5">By Word</router-link>
           </v-list-item>
 
           <v-list-item class="text-left pl-8">
-            <a href="/" title="by-word" class="text-decoration-none font-weight-bold text-green-lighten-5">Words by count</a>
+            <router-link to="/by_word_count" title="Words by Count" class="text-decoration-none font-weight-bold text-green-lighten-5">Words by count</router-link>
           </v-list-item>
 
           <v-list-item class="text-left pl-8">
-            <a href="/" title="by-word" class="text-decoration-none font-weight-bold text-green-lighten-5">Arabic text type</a>
+            <arabic-text-type-select />
           </v-list-item>
 
           <v-list-item class="text-left pl-8">
-            <a href="/" title="by-word" class="text-decoration-none font-weight-bold text-green-lighten-5">Translations</a>
+            <translation-select />
           </v-list-item>
 
         </v-list>
@@ -71,15 +82,21 @@
 
 
 <script setup lang="ts">
+  import { ref } from 'vue';
+  import { useRouter } from 'vue-router';
   import {
     VApp, VResponsive, VMain, VAppBar, VFooter, VAppBarNavIcon, VNavigationDrawer, VDivider, VList, VListItem, VBtn, VIcon, VTextField
   } from 'vuetify/components';
   import { RouterView, RouterLink } from 'vue-router';
+  import ArabicTextTypeSelect from './components/ArabicTextTypeSelect.vue';
+  import TranslationSelect from './components/TranslationSelect.vue';
 
-  // import { mdiAccount, mdiHeart } from '@mdi/js';
-  // import HelloWorld from './components/HelloWorld.vue'
+  const router = useRouter();
+  const searchTerm = ref('');
 
-  const doSearch = async () => {
-    console.log('doSearch');
-  }
+  const doSearch = () => {
+    if (searchTerm.value.trim()) {
+      router.push({ name: 'search', params: { search_term: searchTerm.value } });
+    }
+  };
 </script>
