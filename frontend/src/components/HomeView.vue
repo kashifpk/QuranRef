@@ -9,7 +9,7 @@
         <div class="ar text-success" style="font-size: larger; font-weight: bold;">
               وَلَقَدْ يَسَّرْنَا ٱلْقُرْءَانَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِر
         </div>
-        <div class="ur text-primary hidden-xs hidden-sm">
+        <div class="ur text-primary d-none d-md-block">
           ہم نے اِس قرآن کو نصیحت کے لیے آسان ذریعہ بنا دیا ہے، پھر کیا ہے کوئی نصیحت قبول کرنے والا؟
         <br />
         We have made the Qur'an easy to derive lessons from. Is there, then, any who will take heed?
@@ -34,7 +34,13 @@
   const store = useStore()
 
   onMounted(async () => {
-    await store.loadSurahInfo()
+    console.log('HomeView mounted, loading Surah info...')
+    try {
+      await store.loadSurahInfo()
+      console.log('Surah info loaded, count:', store.surahInfo.length)
+    } catch (error) {
+      console.error('Failed to load Surah info:', error)
+    }
   })
 
 </script>

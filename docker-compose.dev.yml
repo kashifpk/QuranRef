@@ -55,8 +55,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: quranref_frontend_dev
     environment:
-      # API calls should go to backend service
-      - VITE_API_BASE_URL=http://localhost:41148
+      # API calls should use relative URLs for Vite proxy
+      - VITE_API_BASE_URL=/api/v1
       - VITE_WEBSITE_BASE_URL=http://localhost:41149
       - STATIC_URL=/static/
     volumes:

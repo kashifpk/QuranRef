@@ -1,16 +1,16 @@
 import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-// import { ImportMeta } from "vite"
+import { useStorage, useAsyncState } from '@vueuse/core'
 import type { SurahInfo } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
   const surahInfo = ref<SurahInfo[]>([]);
-  const arabicTextType = ref<string>('simple');
+  const arabicTextType = useStorage('quranref-arabic-text-type', 'simple');
   const availableTextTypes = ref<string[]>([]);
   const availableTranslations = ref<[string, string][]>([]);
-  const selectedTranslations = ref<[string, string][]>([]);
+  const selectedTranslations = useStorage('quranref-selected-translations', [] as [string, string][]);
 
   // Computed properties (getters)
   const selectedTranslationsString = computed(() => {
@@ -26,35 +26,56 @@ export const useStore = defineStore('quranref_store', () => {
     return s;
   });
 
-  // Actions
-  async function loadSurahInfo() {
-    const url = import.meta.env.VITE_API_BASE_URL + "/surahs"
-    const surahsApi = mande(url)
-    const response = await surahsApi.get()
+  // Loading state for surah info
+  const surahInfoLoading = ref(false);
 
-    surahInfo.value = response as SurahInfo[];
+  // Action to load surah info
+  async function loadSurahInfo() {
+    surahInfoLoading.value = true;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const url = baseUrl + "/surahs"
+      const surahsApi = mande(url)
+      const response = await surahsApi.get()
+      surahInfo.value = response as SurahInfo[];
+    } catch (error) {
+      console.error('Failed to load surah info:', error);
+    } finally {
+      surahInfoLoading.value = false;
+    }
   }
 
+  // Loading state for text types
+  const textTypesLoading = ref(false);
+
+  // Action to load text types
   async function loadTextTypes() {
-    const url = import.meta.env.VITE_API_BASE_URL + "/text-types"
-    const api = mande(url)
-    const response = await api.get()
+    textTypesLoading.value = true;
+    try {
+      const url = import.meta.env.VITE_API_BASE_URL + "/text-types"
+      const api = mande(url)
+      const response = await api.get() as any;
 
-    // Set available text types for Arabic
-    if (response && response.arabic) {
-      availableTextTypes.value = response.arabic;
-    }
+      // Set available text types for Arabic
+      if (response && response.arabic) {
+        availableTextTypes.value = response.arabic;
+      }
 
-    // Set available translations
-    const translations: [string, string][] = [];
-    for (const lang in response) {
-      if (lang !== 'arabic') {
-        for (const translator of response[lang]) {
-          translations.push([lang, translator]);
+      // Set available translations
+      const translations: [string, string][] = [];
+      for (const lang in response) {
+        if (lang !== 'arabic') {
+          for (const translator of response[lang]) {
+            translations.push([lang, translator]);
+          }
         }
       }
+      availableTranslations.value = translations;
+    } catch (error) {
+      console.error('Failed to load text types:', error);
+    } finally {
+      textTypesLoading.value = false;
     }
-    availableTranslations.value = translations;
   }
 
   // Methods to update state
@@ -84,6 +105,10 @@ export const useStore = defineStore('quranref_store', () => {
     availableTextTypes,
     availableTranslations,
     selectedTranslations,
+
+    // Loading states
+    surahInfoLoading,
+    textTypesLoading,
 
     // Getters
     selectedTranslationsString,

@@ -9,18 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
+    "@vueuse/core": "^13.5.0",
+    "dotenv": "^16.4.7",
     "mande": "^2.0.9",
-    "pinia": "^2.2.2",
-    "vue": "^3.4.37",
-    "vue-router": "4",
-    "vuetify": "^3.7.1"
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "vuetify": "^3.7.6"
   },
   "devDependencies": {
-    "@types/bun": "^1.1.10",
-    "@vitejs/plugin-vue": "^5.1.2",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.5",
-    "vue-tsc": "^2.0.29"
+    "@types/bun": "^1.1.14",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vue-tsc": "^2.1.10"
   }
 }

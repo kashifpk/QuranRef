@@ -9,28 +9,20 @@ from . import PROJECT_ROOT
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=PROJECT_ROOT / ".env", env_file_encoding="utf-8", extra='allow')
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env", 
+        env_file_encoding="utf-8", 
+        extra='allow',
+        case_sensitive=False
+    )
 
     app_name: str = "QuranRef"
     environment: str = Field(..., env="ENVIRONMENT")
-    in_docker: bool = Field(False, env="AM_I_DOCKERIZED")
-    # website_base_url: str = Field(..., env="WEBSITE_BASE_URL")
-    # dev_js_server: str = Field("", env="DEV_JS_SERVER")
-    # static_url: str = Field(..., env="STATIC_URL")
 
     db_username: str = Field(..., env="DB_USERNAME")
     db_password: str = Field(..., env="DB_PASSWORD")
     db_name: str = Field(..., env="DB_NAME")
-
-    db_hosts_normal: str = Field(..., env="DB_HOSTS_NORMAL")
-    db_hosts_docker: str = Field(..., env="DB_HOSTS_DOCKER")
-
-    @property
-    def db_hosts(self) -> str:
-        if self.in_docker:
-            return self.db_hosts_docker
-
-        return self.db_hosts_normal
+    db_hosts: str = Field(..., env="DB_HOSTS")
 
     debug: bool = False
 

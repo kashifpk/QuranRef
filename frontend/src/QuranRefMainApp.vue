@@ -10,7 +10,7 @@
         </template>
         <v-app-bar-title class="d-flex w-100 justify-center">
           <a href="/"
-            class="d-flex xs-header visible-xs ar ar-header text-decoration-none font-weight-bold text-green-lighten-5">
+            class="d-flex d-sm-none ar ar-header text-decoration-none font-weight-bold text-green-lighten-5">
             القرآن الکریم
           </a>
         </v-app-bar-title>
@@ -85,7 +85,7 @@
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
   import {
-    VApp, VResponsive, VMain, VAppBar, VFooter, VAppBarNavIcon, VNavigationDrawer, VDivider, VList, VListItem, VBtn, VIcon, VTextField
+    VApp, VResponsive, VMain, VAppBar, VAppBarTitle, VFooter, VAppBarNavIcon, VNavigationDrawer, VDivider, VList, VListItem, VBtn, VIcon, VTextField
   } from 'vuetify/components';
   import { RouterView, RouterLink } from 'vue-router';
   import ArabicTextTypeSelect from './components/ArabicTextTypeSelect.vue';

@@ -1,41 +1,67 @@
 <template>
-  <div class="translation-select">
-    <div class="form-group sidebar-form">
-      <select class="form-control" size="1" v-model="selectedTranslation"
-              placeholder="Select translation"
-              @change="addTranslation">
-        <option v-for="tr in availableTranslations" :key="`${tr[0]}-${tr[1]}`">{{ tr[0] }}-{{ tr[1] }}</option>
-      </select>
-    </div>
+  <v-card flat color="transparent">
+    <v-select
+      v-model="selectedTranslation"
+      :items="availableTranslationOptions"
+      label="Add Translation"
+      variant="outlined"
+      density="comfortable"
+      color="green"
+      bg-color="white"
+      hide-details
+      @update:model-value="addTranslation"
+      clearable
+    />
 
-    <div class="row selected-translation" v-for="(tr, index) in selectedTranslations" :key="`selected-${tr[0]}-${tr[1]}`">
-      <div class="col-xs-9" style="padding-top: 8px;">
-        <span class="page">{{ tr[0] }}-{{ tr[1] }}</span>
-      </div>
-      <div class="col-xs-2">
-        <button class="btn btn-danger" @click="removeTranslation(index)">
-          <i class="fa fa-remove"></i>
-        </button>
-      </div>
-    </div>
-  </div>
+    <v-list v-if="selectedTranslations.length > 0" class="mt-2" density="compact">
+      <v-list-item
+        v-for="(tr, index) in selectedTranslations"
+        :key="`selected-${tr[0]}-${tr[1]}`"
+        class="selected-translation"
+      >
+        <template v-slot:prepend>
+          <v-icon icon="mdi-translate" color="green-lighten-5" />
+        </template>
+        
+        <v-list-item-title class="text-green-lighten-5">
+          {{ tr[0] }}-{{ tr[1] }}
+        </v-list-item-title>
+
+        <template v-slot:append>
+          <v-btn
+            icon="mdi-close"
+            size="small"
+            color="red"
+            variant="text"
+            @click="removeTranslation(index)"
+          />
+        </template>
+      </v-list-item>
+    </v-list>
+  </v-card>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from '../store';
+import { VCard, VSelect, VList, VListItem, VListItemTitle, VBtn, VIcon } from 'vuetify/components';
 
 const store = useStore();
 const selectedTranslation = ref('');
 const selectedTranslations = computed(() => store.selectedTranslations);
 
-// Computed property to filter out already selected translations
-const availableTranslations = computed(() => {
-  return store.availableTranslations.filter(tr => {
-    return !store.selectedTranslations.some(
-      selectedTr => selectedTr[0] === tr[0] && selectedTr[1] === tr[1]
-    );
-  });
+// Computed property to create option objects for v-select
+const availableTranslationOptions = computed(() => {
+  return store.availableTranslations
+    .filter(tr => {
+      return !store.selectedTranslations.some(
+        selectedTr => selectedTr[0] === tr[0] && selectedTr[1] === tr[1]
+      );
+    })
+    .map(tr => ({
+      title: `${tr[0]}-${tr[1]}`,
+      value: `${tr[0]}-${tr[1]}`
+    }));
 });
 
 onMounted(async () => {
@@ -63,47 +89,9 @@ const removeTranslation = (index: number) => {
 </script>
 
 <style scoped>
-.sidebar-form {
-  border: 0px;
-  margin: 10px 10px
-}
-
-select {
-  border-radius: 3px;
-  border: 1px solid #00d600;
-}
-
-.translation-select {
-  text-align: left;
-  color: #fff;
-}
-
-select, .btn {
-  box-shadow: none;
-  border: 1px solid transparent;
-  height: 35px;
-  -webkit-transition: all .3s ease-in-out;
-  -o-transition: all .3s ease-in-out;
-  transition: all .3s ease-in-out
-}
-
-select {
-  color: #666;
-  border-top-left-radius: 2px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 2px
-}
-
-.btn {
-  border-top-left-radius: 0;
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-  border-bottom-left-radius: 0
-}
-
 .selected-translation {
-  margin: 10px 10px;
-  background-color: #006800;
+  background-color: rgba(0, 128, 0, 0.1);
+  border-radius: 4px;
+  margin-bottom: 4px;
 }
 </style>
