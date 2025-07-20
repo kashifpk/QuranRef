@@ -1,0 +1,87 @@
+services:
+  arangodb:
+    image: arangodb:3.8.9
+    container_name: quranref_arangodb_dev
+    environment:
+      - ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD:-Test123!}
+    ports:
+      - "18529:8529"
+    volumes:
+      - arangodb_dev_data:/var/lib/arangodb3
+    networks:
+      - quranref_dev
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:8529/_api/version || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: quranref_backend_dev
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - AM_I_CONTAINERIZED=1
+      # Database connection to arangodb service
+      - DB_HOSTS=http://arangodb:8529
+      - DB_NAME=${DB_NAME:-quranref}
+      - DB_USERNAME=${DB_USERNAME:-quranref}
+      - DB_PASSWORD=${DB_PASSWORD:-compulife}
+      # Application settings
+      - STATIC_URL=/static/
+      - WEBSITE_BASE_URL=http://localhost:41148
+    volumes:
+      # Mount source code for hot-reload
+      - ./backend:/app:cached
+      # Exclude Python cache and virtual environments
+      - /app/__pycache__
+      - /app/.pytest_cache
+    ports:
+      - "41148:8000"
+    networks:
+      - quranref_dev
+    depends_on:
+      - arangodb
+    restart: unless-stopped
+    command: ["python", "-m", "fastapi", "dev", "quranref/main.py", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: quranref_frontend_dev
+    environment:
+      # API calls should go to backend service
+      - VITE_API_BASE_URL=http://localhost:41148
+      - VITE_WEBSITE_BASE_URL=http://localhost:41149
+      - STATIC_URL=/static/
+    volumes:
+      # Mount source code for hot-reload
+      - ./frontend:/app:cached
+      # Exclude node_modules to prevent conflicts
+      - /app/node_modules
+      # Cache Bun's global cache
+      - bun_cache:/root/.bun
+    ports:
+      - "41149:5173"
+    networks:
+      - quranref_dev
+    depends_on:
+      - backend
+    restart: unless-stopped
+    command: ["bun", "run", "dev", "--host", "0.0.0.0"]
+
+volumes:
+  arangodb_dev_data:
+    name: quranref_arangodb_dev_data
+  bun_cache:
+    name: quranref_bun_cache
+
+networks:
+  quranref_dev:
+    name: quranref_dev_network
+    driver: bridge

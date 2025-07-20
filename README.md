@@ -11,8 +11,9 @@ Online easily accessible searchable reference of the Holy Quran and its translat
 │   ├── data/             # Data files
 │   ├── tests/            # Backend tests
 │   ├── .env              # Backend environment variables
-│   ├── Dockerfile        # Backend Dockerfile
-│   └── pyproject.toml    # Python dependencies
+│   ├── Dockerfile        # Backend production Dockerfile
+│   ├── Dockerfile.podman # Backend podman Dockerfile
+│   └── pyproject.toml    # Python dependencies (uv/hatchling compatible)
 ├── frontend/             # Vue.js frontend
 │   ├── src/              # Frontend source code
 │   ├── public/           # Static assets
@@ -20,6 +21,7 @@ Online easily accessible searchable reference of the Holy Quran and its translat
 │   ├── tsconfig.*.json   # TypeScript configuration
 │   ├── vite.config.ts    # Vite configuration
 │   ├── Dockerfile        # Frontend production Dockerfile
+│   ├── Dockerfile.podman # Frontend podman Dockerfile
 │   ├── Dockerfile-dev    # Frontend development Dockerfile
 │   ├── package.json      # Frontend dependencies
 │   └── bun.lockb         # Frontend lock file
@@ -30,24 +32,85 @@ Online easily accessible searchable reference of the Holy Quran and its translat
 ├── docker-compose.yml    # Docker compose configuration
 ├── docker-compose-dev.yml # Development Docker compose
 ├── docker-compose.prod.yml # Production Docker compose
+├── podman-compose.yml    # Podman compose configuration
+├── convert-to-uv.sh      # Script to convert from Poetry to uv
+├── dev.sh                # Script for direct host development
+├── DEVELOPMENT.md        # Detailed development guide
 └── README.md             # Project documentation
 ```
 
-## Development Setup
+## Development Options
 
-1. The project uses separate environment files:
-   - `backend/.env` for backend configuration
-   - `frontend/.env` for frontend configuration
+You have three options for developing this project:
 
-2. Start the development environment:
+1. **Direct Host Development** - Run services directly on your machine
+2. **Podman Development** - Run services in Podman containers
+3. **Docker Development** - Run services in Docker containers
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions on all development options.
+
+## Quick Start
+
+### Option 1: Direct Host Development
+
+1. Start all services directly on your host:
+```bash
+./dev.sh all
+```
+
+2. Access the services:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8000
+   - ArangoDB: http://localhost:8529
+
+### Option 2: Podman Development
+
+1. Start the development environment with Podman:
+```bash
+podman-compose -f podman-compose.yml up
+```
+
+2. Access the services (same as direct host).
+
+### Option 3: Docker Development
+
+1. Start the development environment with Docker:
 ```bash
 docker compose -f docker-compose-dev.yml up --build
 ```
 
-3. Access the services:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
-   - ArangoDB: http://localhost:8529
+2. Access the services (same as direct host).
+
+## Python Development
+
+This project uses `uv` as the Python package manager (replacing Poetry):
+
+```bash
+# Install dependencies
+cd backend
+uv pip install -e .
+
+# Run the development server
+python -m fastapi dev quranref/main.py --host 0.0.0.0 --port 8000
+```
+
+If migrating from Poetry, use the provided conversion script:
+```bash
+./convert-to-uv.sh
+```
+
+## Frontend Development
+
+Frontend uses Bun and Vue.js:
+
+```bash
+# Install dependencies
+cd frontend
+bun install
+
+# Start development server
+bun run dev
+```
 
 ## Production Deployment
 
@@ -80,3 +143,4 @@ docker compose -f docker-compose.prod.yml up -d
 
 - See [backend/README.md](backend/README.md) for backend-specific details
 - See [frontend/README.md](frontend/README.md) for frontend-specific details
+- See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed development instructions

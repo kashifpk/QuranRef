@@ -1,4 +1,82 @@
-.venv/
+# Git
 .git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+DEVELOPMENT.md
+CLAUDE.md
+*.md
+
+# Development scripts
+dev.sh
+dev-hybrid.sh
+dev-docker.sh
+convert-to-uv.sh
+
+# Environment files (except the ones we need)
+.env
+.env.*
+!.env.dev
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Dependencies (will be installed in container)
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Legacy
 poetry.toml
-node_modules
+
+# Compose files for different environments
+docker-compose*.yml
+podman-compose.yml
+
+# Production files
+Dockerfile
+Dockerfile.prod

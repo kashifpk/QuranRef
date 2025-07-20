@@ -21,24 +21,27 @@ FROM python:3.12-alpine AS app-build
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV VIRTUAL_ENV=/usr/local
+ENV PATH="/root/.cargo/bin:$PATH"
 
 # Set the working directory
 RUN mkdir /code
 WORKDIR /code
 
-# Install poetry
-RUN pip install --no-cache-dir poetry
+# Install system dependencies and Rust (needed for uv)
+RUN apk add --no-cache curl build-base
 
-# Copy the poetry files
-COPY pyproject.toml poetry.lock README.md /code/
+# Install Rust (needed for uv)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-RUN poetry config virtualenvs.in-project false
-RUN poetry config virtualenvs.create false
-RUN poetry config virtualenvs.path /usr/local
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install the dependencies
-RUN poetry install --only main,dev,test --no-root --no-interaction
+# Copy the project files
+COPY pyproject.toml README.md /code/
+
+# Install hatchling and dependencies
+RUN uv pip install --system hatchling && \
+    uv pip install --system .
 
 # Copy the rest of the files
 COPY .env /code/.env
@@ -48,10 +51,10 @@ COPY static /code/static
 # Copy the JS build
 COPY --from=js-build /js-build/static/* /code/static
 
-# Install the package
-RUN poetry install --only main,dev,test --no-interaction
+# Install the application
+RUN uv pip install --system -e .
 
 # Start prod server
-CMD ["poetry", "run", "fastapi", "run", "quranref/main.py", "--host", "0.0.0.0", "--port", "7000"]
+CMD ["python", "-m", "fastapi", "run", "quranref/main.py", "--host", "0.0.0.0", "--port", "7000"]
 
 

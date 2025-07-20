@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -11,6 +12,8 @@ from .template_config import templates
 app = FastAPI()
 
 static_path = PROJECT_ROOT / "static"
+# Ensure static directory exists
+os.makedirs(static_path, exist_ok=True)
 app.mount('/static', StaticFiles(directory=static_path), name="static")
 
 app.add_middleware(
