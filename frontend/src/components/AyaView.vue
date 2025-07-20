@@ -1,4 +1,4 @@
-<style scoped>
+<style>
 
 .aya-content {
   flex-direction: row-reverse;
@@ -26,12 +26,66 @@
   margin-top: 5px;
   padding: 5px;
 }
+
+.highlighted-word {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  padding: 1px 3px !important;
+  border-radius: 3px !important;
+  font-weight: bold !important;
+  display: inline !important;
+}
+
+.arabic-text .highlighted-word {
+  background-color: #4CAF50 !important;
+  color: white !important;
+  padding: 1px 3px !important;
+  border-radius: 3px !important;
+  font-weight: bold !important;
+  display: inline !important;
+}
+
+.arabic-text {
+  font-size: 16pt;
+  line-height: 1.6;
+}
+
+.translation-text {
+  font-size: 14pt;
+  line-height: 1.5;
+}
+
+.ar {
+  direction: rtl;
+  text-align: right;
+}
+
+.ur {
+  direction: rtl; 
+  text-align: right;
+}
+
+.en {
+  direction: ltr;
+  text-align: left;
+}
 </style>
 
 <template>
-  <v-row class="aya-content">
-
-    <v-col class="p-3 ar" >
+  <v-row class="aya-content" dir="rtl">
+    <!-- Translation texts (rendered first to appear on left in RTL) -->
+    <v-col 
+      v-for="(translation, index) in translationTexts" 
+      :key="`${translation.language}-${translation.textType}`"
+      :class="getTranslationClass(translation.language)"
+      class="p-3"
+      :cols="translationColSize"
+    >
+      <div class="translation-text">{{ translation.text }}</div>
+    </v-col>
+    
+    <!-- Arabic text (rendered last to appear on right in RTL) -->
+    <v-col class="p-3 ar" :cols="arabicColSize">
       <span class="en float-end ms-4" v-if="!displaySurahName">
         <v-chip>{{ ayaNumber }}</v-chip>
       </span>
@@ -42,10 +96,7 @@
           <span class="ar" style="font-size: 14pt;">{{ surahInfo?.arabic_name }}</span>
         </v-chip>
       </span>
-      {{ aya.texts?.arabic?.uthmani }}
-    </v-col>
-    <v-col v-if="aya.texts.urdu" class="p-3 ur" >
-      {{ aya.texts?.urdu?.maududi }}
+      <div class="arabic-text" v-html="highlightedArabicText"></div>
     </v-col>
   </v-row>
 </template>
@@ -59,6 +110,7 @@ import { useStore } from '../store'
 interface AyaViewProps {
   aya: AyaInfo;
   displaySurahName: boolean;
+  highlightWord?: string;
 }
 
 const store = useStore();
@@ -90,9 +142,126 @@ const ayaNumber = computed(() => {
   return props.aya.aya_key.split(':')[1];
 });
 
-// const colSize = computed(() => {
-//   return 'col-xs-12 col-md-6 col-lg-4';
-// });
+// Get all translation texts (excluding Arabic)
+const translationTexts = computed(() => {
+  const translations: Array<{language: string, textType: string, text: string}> = [];
+  
+  if (props.aya.texts) {
+    Object.entries(props.aya.texts).forEach(([language, textTypes]) => {
+      if (language !== 'arabic') {
+        Object.entries(textTypes).forEach(([textType, text]) => {
+          translations.push({
+            language,
+            textType, 
+            text: text as string
+          });
+        });
+      }
+    });
+  }
+  
+  return translations;
+});
+
+// Compute column sizes based on number of translations
+const totalTexts = computed(() => 1 + translationTexts.value.length); // 1 for Arabic + translations
+const arabicColSize = computed(() => {
+  if (totalTexts.value === 1) return 12;
+  if (totalTexts.value === 2) return 6;
+  return 4; // For 3 or more texts
+});
+const translationColSize = computed(() => {
+  if (totalTexts.value === 2) return 6;
+  return 4; // For 3 or more texts
+});
+
+// Get CSS class for translation language
+const getTranslationClass = (language: string) => {
+  const langMap: Record<string, string> = {
+    'urdu': 'ur',
+    'english': 'en', 
+    'arabic': 'ar'
+  };
+  return langMap[language.toLowerCase()] || 'en';
+};
+
+// Highlight the selected word in Arabic text
+const highlightedArabicText = computed(() => {
+  const arabicText = props.aya.texts?.arabic?.[store.arabicTextType] || '';
+  
+  if (!props.highlightWord || !arabicText) {
+    return arabicText;
+  }
+  
+  // Arabic diacritics (harakat) - same as used in old project
+  const aarab = ['ِ', 'ْ', 'َ', 'ُ', 'ّ', 'ٍ', 'ً', 'ٌ'];
+  
+  // Clean the search word (remove diacritics)
+  let cleanWord = '';
+  for (const ch of props.highlightWord) {
+    if (!aarab.includes(ch)) {
+      cleanWord += ch;
+    }
+  }
+  
+  // Clean the text (remove diacritics)
+  let cleanText = '';
+  for (const ch of arabicText) {
+    if (!aarab.includes(ch)) {
+      cleanText += ch;
+    }
+  }
+  
+  console.log('Highlighting word:', props.highlightWord, '-> cleaned:', cleanWord);
+  console.log('In text (first 100 chars):', arabicText.substring(0, 100));
+  console.log('Clean text (first 100 chars):', cleanText.substring(0, 100));
+  
+  // Find the position of the clean word in the clean text
+  const cleanWordIndex = cleanText.indexOf(cleanWord);
+  
+  if (cleanWordIndex === -1) {
+    console.log('Word not found in clean text');
+    return arabicText;
+  }
+  
+  console.log('Found clean word at index:', cleanWordIndex);
+  
+  // Now we need to find the corresponding position in the original text
+  // We'll map clean text positions to original text positions
+  const cleanToOriginalMap: number[] = [];
+  let originalIndex = 0;
+  
+  for (let i = 0; i < arabicText.length; i++) {
+    if (!aarab.includes(arabicText[i])) {
+      cleanToOriginalMap.push(i);
+    }
+  }
+  
+  // Find start and end positions in original text
+  const originalStart = cleanToOriginalMap[cleanWordIndex];
+  const originalEnd = cleanToOriginalMap[cleanWordIndex + cleanWord.length - 1];
+  
+  if (originalStart === undefined || originalEnd === undefined) {
+    console.log('Could not map positions');
+    return arabicText;
+  }
+  
+  // Find the actual end of the word including any trailing diacritics
+  let actualEnd = originalEnd + 1;
+  while (actualEnd < arabicText.length && aarab.includes(arabicText[actualEnd])) {
+    actualEnd++;
+  }
+  
+  // Highlight the word
+  const beforeWord = arabicText.substring(0, originalStart);
+  const wordToHighlight = arabicText.substring(originalStart, actualEnd);
+  const afterWord = arabicText.substring(actualEnd);
+  
+  const result = beforeWord + '<span class="highlighted-word">' + wordToHighlight + '</span>' + afterWord;
+  console.log('Highlighted result:', result);
+  
+  return result;
+});
 
 
 </script>

@@ -19,7 +19,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "frontend/vite.config.ts", 
-    "frontend/js/**/*.ts"
+    "vite.config.ts"
   ]
 }

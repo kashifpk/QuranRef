@@ -63,14 +63,36 @@
     console.log('route.params.surah_number changed: ', newVal, ' | was: ', oldVal)
     await getSurahText()
   })
+  
+  // Watch for changes in Arabic text type
+  watch(() => store.arabicTextType, async () => {
+    console.log('Arabic text type changed, refreshing surah text')
+    await getSurahText()
+  })
+  
+  // Watch for changes in selected translations
+  watch(() => store.selectedTranslations, async () => {
+    console.log('Selected translations changed, refreshing surah text')
+    await getSurahText()
+  }, { deep: true })
 
   const getSurahText = async () => {
     console.log('getSurahText')
-    const url = import.meta.env.VITE_API_BASE_URL + "/text/" + props.surah_number + "/arabic:uthmani_urdu:maududi"
-    console.log(url)
+    
+    // Build the language specification using user's selections
+    let languagesSpec = `arabic:${store.arabicTextType}`
+    
+    if (store.selectedTranslationsString) {
+      languagesSpec += `_${store.selectedTranslationsString}`
+    }
+    
+    const url = import.meta.env.VITE_API_BASE_URL + "/text/" + props.surah_number + "/" + languagesSpec
+    console.log('Requesting URL:', url)
+    console.log('Languages spec:', languagesSpec)
+    
     const surahsApi = mande(url)
     const response = await surahsApi.get()
-    console.log(response)
+    console.log('API Response:', response)
     surahAyas.value = response as AyaInfo[]
   }
 

@@ -16,7 +16,7 @@ export const useStore = defineStore('quranref_store', () => {
   const selectedTranslationsString = computed(() => {
     let s = '';
     for (const tr of selectedTranslations.value) {
-      s += tr[0] + ',' + tr[1] + '_';
+      s += tr[0] + ':' + tr[1] + '_';
     }
 
     if (s.length > 0) {

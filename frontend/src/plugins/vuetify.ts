@@ -11,7 +11,22 @@ const vuetify = createVuetify({
     },
   },
   theme: {
-    defaultTheme: 'light'
+    defaultTheme: 'light',
+    themes: {
+      light: {
+        colors: {
+          primary: '#4CAF50',     // Green
+          secondary: '#81C784',   // Light Green  
+          accent: '#66BB6A',      // Medium Green
+          success: '#4CAF50',     // Green
+          info: '#2196F3',        // Blue
+          warning: '#FF9800',     // Orange
+          error: '#F44336',       // Red
+          background: '#FAFAFA',  // Very Light Gray
+          surface: '#FFFFFF',     // White
+        }
+      }
+    }
   },
 
   icons: {

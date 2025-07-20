@@ -336,49 +336,73 @@ async def search(
 
     if search_term:
         qgraph = QuranGraph(connection=db)
-
+        log.info(f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}")
+        
+        # Simpler approach: Add filter for language/text_type to reduce search scope
         matched_texts = (
             db.query(Text)
             .filter(f"LIKE(rec.text, '%{search_term}%')", prepend_rec_name=False)
+            .limit(1000)  # Add limit to prevent runaway queries
             .all()
         )
-
-        for mt in matched_texts:
-            aql = f"""
-            FOR v, e, p IN 1..1 INBOUND 'texts/{mt._key}' GRAPH 'quran_graph'
-                FILTER p.edges[0].text_type=="{text_type}"
-                    AND p.edges[0].language=="{language}"
-            RETURN p"""
-
-            obj = qgraph.aql(aql)
-            if not obj:
-                continue
-
-            for aya_text_doc in obj._relations["aya_texts"]:
+        
+        log.info(f"Found {len(matched_texts)} text matches")
+        
+        if matched_texts:
+            # Batch process: collect all matching text IDs and search in one query
+            text_ids = [mt._key for mt in matched_texts]
+            text_ids_str = "'" + "', '".join(text_ids) + "'"
+            
+            # Single AQL query to find all matching ayas
+            batch_aql = f"""
+            FOR text_id IN [{text_ids_str}]
+                FOR v, e, p IN 1..1 INBOUND CONCAT('texts/', text_id) GRAPH 'quran_graph'
+                    FILTER e.language == '{language}' AND e.text_type == '{text_type}'
+                    RETURN {{
+                        aya_key: v._key,
+                        text_id: text_id
+                    }}
+            """
+            
+            batch_results = list(db.aql.execute(batch_aql))
+            log.info(f"Found {len(batch_results)} aya matches after filtering")
+            
+            # Create a map of text_id to text content for quick lookup
+            text_map = {mt._key: mt.text for mt in matched_texts}
+            
+            # Process unique ayas
+            processed_ayas = set()
+            
+            for result in batch_results:
+                aya_key = result["aya_key"]
+                text_id = result["text_id"]
+                
+                if aya_key in processed_ayas:
+                    continue
+                processed_ayas.add(aya_key)
+                
                 search_result = {
-                    "aya_number": aya_text_doc._next._key,
-                    "texts": {language: {text_type: mt.text}},
+                    "aya_key": aya_key,
+                    "texts": {language: {text_type: text_map[text_id]}},
                 }
-
+                
+                # Get translations if requested
                 if language_translations:
-                    aql = "FOR v, e, p IN 1..2 OUTBOUND 'ayas/{}' GRAPH 'quran_graph'\n".format(
-                        search_result["aya_number"]
-                    )
-
-                    aql += "FILTER " + tr_aql + "\n"
+                    aql = f"FOR v, e, p IN 1..2 OUTBOUND 'ayas/{aya_key}' GRAPH 'quran_graph'\n"
+                    aql += f"FILTER {tr_aql}\n"
                     aql += "RETURN p"
-                    # print(aql)
-
+                    
                     aya_obj = qgraph.aql(aql)
-
-                    for aya_text in aya_obj._relations["aya_texts"]:
-                        if aya_text.language not in search_result["texts"]:
-                            search_result["texts"][aya_text.language] = {}
-
-                        search_result["texts"][aya_text.language][aya_text.text_type] = (
-                            aya_text._next.text
-                        )
-
+                    
+                    if aya_obj and hasattr(aya_obj, '_relations') and 'aya_texts' in aya_obj._relations:
+                        for aya_text in aya_obj._relations["aya_texts"]:
+                            if aya_text.language not in search_result["texts"]:
+                                search_result["texts"][aya_text.language] = {}
+                            
+                            search_result["texts"][aya_text.language][aya_text.text_type] = (
+                                aya_text._next.text
+                            )
+                
                 search_results.append(search_result)
 
     return search_results

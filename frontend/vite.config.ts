@@ -10,7 +10,7 @@ const STATIC_URL = process.env.STATIC_URL || '/static/'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: `${STATIC_URL}`,
+  base: process.env.NODE_ENV === 'production' ? `${STATIC_URL}` : '/',
   css: {
     devSourcemap: true,
   },
@@ -22,16 +22,19 @@ export default defineConfig({
     assetsDir: '',
     manifest: 'manifest.json',
     rollupOptions: {
-      input: {
-        main: resolve('./src/main.ts')
-      },
+      input: resolve('./index.html')
     },
   },
   server: {
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8000'
+      '/api': 'http://backend:8000'
     }
+  },
+  // Configure for SPA routing
+  preview: {
+    port: 5173,
+    host: '0.0.0.0'
   }
 })
