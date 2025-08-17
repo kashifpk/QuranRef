@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  backend:
+    image: localhost:5000/quranref-backend:latest
+    networks:
+      - traefik-net
+      - internal
+    env_file:
+      - backend/.env.production
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - DB_HOSTS=http://arangodb:8529
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-net"
+        # Main domain API routing
+        - "traefik.http.routers.quranref-api.rule=Host(`quranref.info`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.quranref-api.entrypoints=websecure"
+        - "traefik.http.routers.quranref-api.tls=true"
+        - "traefik.http.routers.quranref-api.tls.certresolver=myresolver"
+        - "traefik.http.routers.quranref-api.priority=100"
+        - "traefik.http.routers.quranref-api.service=quranref-api-service"
+        # WWW domain API routing
+        - "traefik.http.routers.quranref-api-www.rule=Host(`www.quranref.info`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.quranref-api-www.entrypoints=websecure"
+        - "traefik.http.routers.quranref-api-www.tls=true"
+        - "traefik.http.routers.quranref-api-www.tls.certresolver=myresolver"
+        - "traefik.http.routers.quranref-api-www.priority=100"
+        - "traefik.http.routers.quranref-api-www.service=quranref-api-service"
+        # Service definition
+        - "traefik.http.services.quranref-api-service.loadbalancer.server.port=8000"
+    depends_on:
+      - arangodb
+
+  frontend:
+    image: localhost:5000/quranref-frontend:latest
+    networks:
+      - traefik-net
+    env_file:
+      - frontend/.env.production
+    environment:
+      - VITE_API_BASE_URL=https://api.quranref.info/api/v1
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-net"
+        - "traefik.http.routers.quranref-frontend.rule=Host(`quranref.info`) || Host(`www.quranref.info`)"
+        - "traefik.http.routers.quranref-frontend.entrypoints=websecure"
+        - "traefik.http.routers.quranref-frontend.tls=true"
+        - "traefik.http.routers.quranref-frontend.tls.certresolver=myresolver"
+        - "traefik.http.routers.quranref-frontend.priority=1"
+        - "traefik.http.routers.quranref-frontend.service=quranref-frontend-service"
+        - "traefik.http.services.quranref-frontend-service.loadbalancer.server.port=80"
+    depends_on:
+      - backend
+
+  arangodb:
+    image: arangodb:latest
+    networks:
+      - internal
+    environment:
+      - ARANGO_ROOT_PASSWORD=Test123!
+    volumes:
+      - arangodb_data:/var/lib/arangodb3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  traefik-net:
+    external: true
+  internal:
+    driver: overlay
+    internal: true
+
+volumes:
+  arangodb_data:
+    driver: local

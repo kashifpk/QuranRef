@@ -1,39 +1,39 @@
-import os
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from . import API_BASE, PROJECT_ROOT
-from .views import router as views_router
+from . import API_BASE
 from .api import router as api_router
-from .template_config import templates
 
-app = FastAPI()
+app = FastAPI(
+    title="QuranRef API",
+    description="API for Quran Reference Application",
+    version="2.0.0"
+)
 
-static_path = PROJECT_ROOT / "static"
-# Ensure static directory exists
-os.makedirs(static_path, exist_ok=True)
-app.mount('/static', StaticFiles(directory=static_path), name="static")
-
+# Configure CORS for the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins='*',
+    allow_origins=[
+        "http://localhost:41149",  # Local development frontend
+        "https://quranref.info",   # Production frontend
+        "https://www.quranref.info",  # Production frontend with www
+        "*"  # Allow all origins for now (can be restricted later)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(views_router)
+# Include only the API router
 app.include_router(api_router, prefix=API_BASE)
 
-
-@app.get("/{full_path:path}", response_class=HTMLResponse, include_in_schema=False)
-async def catch_all(request: Request, full_path: str):
-    """
-    Catch all path to redirect to SPA style homepage on the frontend and let it handle the
-    routing. This way backend routing takes precedence over frontend routing when pages are
-    requested directly.
-    """
-    print(f"Catch all: {full_path}")
-    return templates.TemplateResponse("index.html", {"request": request})
+# Add a root endpoint for API health check
+@app.get("/")
+async def root():
+    """API root endpoint - health check"""
+    return {
+        "status": "ok",
+        "message": "QuranRef API is running",
+        "version": "2.0.0",
+        "docs": "/docs"
+    }
