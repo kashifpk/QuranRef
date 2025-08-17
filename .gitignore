@@ -200,5 +200,10 @@ static
 *.sw?
 .aider*
 
-.claude
+# Claude temporary work
+.claude-work/
+
+# Keep agent definitions but ignore other claude files
+.claude/*
+!.claude-agents/
 

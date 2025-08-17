@@ -1,0 +1,105 @@
+{
+  "name": "quranref-deployment-agent",
+  "description": "Specialized agent for deploying QuranRef application to Docker Swarm production environment",
+  "version": "1.0.0",
+  "capabilities": [
+    "Build Docker images for frontend and backend",
+    "Tag and push images to Docker registry",
+    "Deploy to Docker Swarm via SSH context",
+    "Monitor deployment status and logs",
+    "Perform rollbacks when needed",
+    "Handle emergency restarts"
+  ],
+  "tools_required": [
+    "Bash",
+    "Read",
+    "Edit"
+  ],
+  "activation_phrases": [
+    "deploy to production",
+    "deploy to swarm",
+    "push to production",
+    "update production",
+    "release to production",
+    "deploy frontend",
+    "deploy backend"
+  ],
+  "knowledge_base": {
+    "docker_contexts": {
+      "default": "Local development",
+      "production": "ssh://kashif@hosting_vps"
+    },
+    "registry": "localhost:5000",
+    "stack_name": "quranref",
+    "services": [
+      "quranref_frontend",
+      "quranref_backend",
+      "quranref_arangodb"
+    ],
+    "production_urls": {
+      "frontend": "https://www.quranref.info",
+      "api": "https://api.quranref.info"
+    },
+    "deployment_script": "./deploy-to-swarm.sh",
+    "critical_configs": {
+      "nginx_server_name": "_",
+      "nginx_root": "/usr/share/nginx/html",
+      "frontend_build_output": "../static/frontend/"
+    }
+  },
+  "standard_procedures": {
+    "frontend_quick_deploy": [
+      "Build frontend with version tag",
+      "Tag for registry",
+      "Switch to production context",
+      "Push to registry",
+      "Update service with new image",
+      "Switch back to default context",
+      "Verify deployment"
+    ],
+    "full_deploy": [
+      "Run ./deploy-to-swarm.sh full [version]",
+      "Monitor deployment progress",
+      "Verify all services are running",
+      "Test production URLs"
+    ],
+    "pre_deployment_checks": [
+      "Test locally with ./dev-docker.sh",
+      "Verify build succeeds",
+      "Check for TypeScript errors",
+      "Ensure no sensitive data"
+    ],
+    "post_deployment_verification": [
+      "Check service status (2/2 replicas)",
+      "Test production website",
+      "Verify specific fixes are working",
+      "Monitor logs for errors"
+    ]
+  },
+  "common_issues": {
+    "nginx_404": {
+      "symptoms": "404 errors, '/etc/nginx/html/index.html' not found",
+      "solution": "Check nginx.prod.conf server_name, verify Dockerfile copies to /usr/share/nginx/html"
+    },
+    "image_not_found": {
+      "symptoms": "tag does not exist in registry",
+      "solution": "Build and tag image manually, push before deployment"
+    },
+    "service_not_converging": {
+      "symptoms": "Service stuck in restart loop",
+      "solution": "Check logs, test image locally, verify resources"
+    }
+  },
+  "emergency_procedures": {
+    "rollback": "docker service update [service] --image localhost:5000/[image]:[previous-version]",
+    "force_restart": "docker service scale [service]=0 && sleep 5 && docker service scale [service]=2",
+    "force_update": "docker service update --force [service]"
+  },
+  "constraints": [
+    "Always return context to default after production operations",
+    "Use version tags, avoid 'latest' in production",
+    "Verify changes work locally before deploying",
+    "Monitor deployment closely",
+    "Document any new issues discovered"
+  ]
+}

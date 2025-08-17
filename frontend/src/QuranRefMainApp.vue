@@ -6,7 +6,7 @@
 
       <v-app-bar :elevation="0" class="bg-green-darken-4">
         <template v-slot:prepend>
-          <v-app-bar-nav-icon></v-app-bar-nav-icon>
+          <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
         </template>
         <v-app-bar-title class="d-flex w-100 justify-center">
           <a href="/"
@@ -37,7 +37,7 @@
 
       </v-app-bar>
 
-      <v-navigation-drawer class="bg-green-darken-3">
+      <v-navigation-drawer v-model="drawer" class="bg-green-darken-3">
         <v-list>
           <v-list-item>
             <router-link to="/" title="Home" class="text-decoration-none font-weight-bold text-white"><v-icon icon="mdi-home"></v-icon></router-link>
@@ -93,6 +93,7 @@
 
   const router = useRouter();
   const searchTerm = ref('');
+  const drawer = ref(false);
 
   const doSearch = () => {
     if (searchTerm.value.trim()) {

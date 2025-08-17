@@ -211,3 +211,25 @@ Key API endpoints for development (available at http://localhost:41148):
 - `GET /api/v1/ayas-by-word/{word}/{languages}` - Verse lookup by word
 
 The frontend uses these endpoints through the Pinia store and component-level API calls.
+
+## Deployment
+
+**For deployment tasks, use the specialized deployment agent:**
+
+The project includes a deployment agent configuration in `.claude-agents/` that handles:
+- Building and tagging Docker images
+- Pushing to production registry
+- Deploying to Docker Swarm
+- Monitoring deployment status
+- Handling rollbacks
+
+To deploy, simply ask: "Deploy the frontend to production" or "Deploy to swarm"
+
+The agent knows about:
+- Docker contexts (production via SSH)
+- Registry configuration (localhost:5000)
+- Service names and URLs
+- Common deployment issues and solutions
+- Emergency procedures
+
+See `.claude-agents/deploy-agent.md` for detailed deployment procedures.

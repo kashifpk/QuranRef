@@ -16,7 +16,7 @@ Modern Vue.js 3 frontend for the QuranRef application with TypeScript and Vuetif
 
 ## Project Structure
 
-```
+```text
 frontend/
 ├── src/
 │   ├── components/        # Vue components
@@ -217,7 +217,7 @@ defineProps<{
   <v-navigation-drawer v-model="drawer">
     <!-- Navigation content -->
   </v-navigation-drawer>
-  
+
   <v-main>
     <v-container>
       <!-- Main content -->
