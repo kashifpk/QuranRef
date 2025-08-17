@@ -4,52 +4,113 @@ This guide provides instructions for setting up and running QuranRef in differen
 
 ## Prerequisites
 
+### For Docker Development (Recommended)
+- Docker and Docker Compose
+- That's it! All other dependencies are containerized
+
+### For Direct Host Development
 - Python 3.12+
-- uv (Python package installer)
-- Bun (for frontend development)
+- uv (Python package installer) - Install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Bun (JavaScript runtime) - Install: `curl -fsSL https://bun.sh/install | bash`
 - ArangoDB 3.8.9+
-- Podman (optional, for containerized development)
+- Docker (optional, for database only)
 
-## Development Options
+## Development Approaches
 
-You have three options for development:
+### Recommended: Docker Development
+**Best for:** Most developers, consistent environment, quick start
+- All dependencies pre-configured
+- System-upgrade-proof
+- Matches production environment
+- Hot-reload optimized
 
-1. **Direct Host Development** - Run all components directly on your host machine
-2. **Podman Containerized Development** - Run components in Podman containers
-3. **Docker Containerized Development** - Run components in Docker containers (see docker-compose files)
+### Alternative: Direct Host Development  
+**Best for:** Advanced debugging, custom tooling integration
+- Requires manual dependency installation
+- Direct access to processes
+- Faster iteration for backend changes
 
-## 1. Direct Host Development
+## Docker Development (Recommended)
+
+### Quick Start
+
+```bash
+# Start all services with one command
+./dev-docker.sh up
+
+# Access services:
+# Frontend: http://localhost:41149 (with hot-reload)
+# Backend: http://localhost:41148 (with auto-reload)
+# ArangoDB: http://localhost:18529
+```
+
+### Docker Development Commands
+
+```bash
+# Start services
+./dev-docker.sh up       # Start all services
+./dev-docker.sh logs     # View logs
+./dev-docker.sh down     # Stop all services
+
+# Development tasks
+./dev-docker.sh shell    # Access backend container
+./dev-docker.sh build    # Rebuild after dependency changes
+
+# Inside backend container
+pytest                   # Run tests
+ruff check              # Lint code
+quranref-cli --help     # CLI commands
+```
+
+### Frontend Development in Docker
+
+```bash
+# Frontend auto-starts with hot-reload
+# Edit files in frontend/src/ - changes appear instantly
+
+# Run frontend commands
+docker exec quranref_frontend_dev bun run build
+docker exec quranref_frontend_dev vue-tsc -b
+```
+
+## Direct Host Development
 
 ### Setting up the Backend
 
 1. Navigate to the backend directory:
+
    ```bash
    cd backend
    ```
 
 2. Install dependencies with uv:
+
    ```bash
-   uv pip install -e .
+   uv sync
    ```
 
 3. Start the backend development server:
+
    ```bash
-   python -m fastapi dev quranref/main.py --host 0.0.0.0 --port 8000
+   uv run fastapi dev quranref/main.py --host 0.0.0.0 --port 8000
    ```
 
 ### Setting up the Frontend
 
 1. Navigate to the frontend directory:
+
    ```bash
    cd frontend
    ```
 
 2. Install dependencies with Bun:
+
    ```bash
    bun install
    ```
 
 3. Start the development server:
+
    ```bash
    bun run dev
    ```
@@ -58,84 +119,93 @@ You have three options for development:
 
 1. Install ArangoDB on your system
 2. Start ArangoDB server:
+
    ```bash
    arangod --server.endpoint tcp://0.0.0.0:8529
    ```
 
-## 2. Podman Containerized Development
+### Database Setup (Both Approaches)
 
-### Starting all services
-
-1. From the project root, run:
-   ```bash
-   podman-compose -f podman-compose.yml up
-   ```
-
-### Starting individual services
-
-1. Start ArangoDB:
-   ```bash
-   podman-compose -f podman-compose.yml up arangodb
-   ```
-
-2. Start backend:
-   ```bash
-   podman-compose -f podman-compose.yml up backend
-   ```
-
-3. Start frontend:
-   ```bash
-   podman-compose -f podman-compose.yml up frontend
-   ```
-
-### Building and rebuilding images
+After starting services, initialize the database:
 
 ```bash
-podman-compose -f podman-compose.yml build
+# For Docker
+./dev-docker.sh shell
+# Then run inside container:
+quranref-cli db init
+quranref-cli db populate-surahs
+quranref-cli db import-text
+quranref-cli post-process link-ayas-to-surahs
+quranref-cli post-process make-words
+
+# For Direct Host
+cd backend
+uv run quranref-cli db init
+uv run quranref-cli db populate-surahs
+uv run quranref-cli db import-text
+uv run quranref-cli post-process link-ayas-to-surahs
+uv run quranref-cli post-process make-words
 ```
 
-To rebuild a specific service:
+## Package Management
+
+### Backend - Python with uv
+
+The backend uses `uv` for ultra-fast Python dependency management:
+
 ```bash
-podman-compose -f podman-compose.yml build <service-name>
+cd backend
+
+# Install/sync dependencies from pyproject.toml
+uv sync
+
+# Add a new dependency
+uv add package-name
+
+# Add a development dependency
+uv add --dev package-name
+
+# Run commands with uv
+uv run python script.py
+uv run pytest
+uv run fastapi dev
 ```
 
-### Accessing Services
+### Frontend - JavaScript with Bun
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- ArangoDB UI: http://localhost:8529
-
-## Converting from Poetry to uv
-
-If you're converting an existing Poetry project to use uv, you can use the included conversion script:
+The frontend uses `bun` for fast JavaScript package management:
 
 ```bash
-./convert-to-uv.sh
+cd frontend
+
+# Install dependencies from package.json
+bun install
+
+# Add a new dependency
+bun add package-name
+
+# Add a development dependency
+bun add -d package-name
+
+# Run scripts
+bun run dev
+bun run build
+bun test
 ```
 
-This script will:
-1. Convert your Poetry dependencies to a standard requirements.txt
-2. Create a uv-compatible pyproject.toml file
-3. Back up your original Poetry files
-4. Install the project in development mode
+### Why uv and Bun?
 
-### Key differences in pyproject.toml
+**uv advantages:**
+- 10-100x faster than pip
+- Built-in virtual environment management
+- Consistent dependency resolution
+- Drop-in replacement for pip
 
-The updated pyproject.toml file uses the standard PEP 621 format:
-
-- Uses `[project]` instead of `[tool.poetry]`
-- Uses `[project.optional-dependencies]` instead of `[tool.poetry.group.*.dependencies]`
-- Uses `[project.scripts]` instead of `[tool.poetry.scripts]`
-- Uses hatchling as the build backend instead of poetry-core
-
-### Required packages
-
-When using uv with this project setup, you'll need:
-
-- `hatchling`: Modern Python build backend (equivalent to setuptools but more modern)
-- `pyproject-metadata`: Used during conversion to extract Poetry dependencies
-
-These are automatically installed by the conversion script.
+**Bun advantages:**
+- Faster than npm/yarn/pnpm
+- Built-in TypeScript support
+- Native speed JavaScript runtime
+- Compatible with npm packages
 
 ## Debugging
 
@@ -144,6 +214,7 @@ These are automatically installed by the conversion script.
 When running directly on the host, you can use Python debugging techniques:
 
 1. Add breakpoints in your code:
+
    ```python
    import debugpy
    # ...
@@ -153,6 +224,7 @@ When running directly on the host, you can use Python debugging techniques:
    ```
 
 2. Use VS Code debugging configuration:
+
    ```json
    {
      "version": "0.2.0",

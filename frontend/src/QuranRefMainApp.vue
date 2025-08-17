@@ -4,7 +4,7 @@
   <v-responsive>
     <v-app>
 
-      <v-app-bar :elevation="0" class="bg-green">
+      <v-app-bar :elevation="0" class="bg-green-darken-4">
         <template v-slot:prepend>
           <v-app-bar-nav-icon></v-app-bar-nav-icon>
         </template>
@@ -37,20 +37,20 @@
 
       </v-app-bar>
 
-      <v-navigation-drawer class="bg-green">
+      <v-navigation-drawer class="bg-green-darken-3">
         <v-list>
           <v-list-item>
-            <router-link to="/" title="Home" class="text-decoration-none font-weight-bold text-green-lighten-5"><v-icon icon="mdi-home"></v-icon></router-link>
+            <router-link to="/" title="Home" class="text-decoration-none font-weight-bold text-white"><v-icon icon="mdi-home"></v-icon></router-link>
           </v-list-item>
 
           <v-divider></v-divider>
 
           <v-list-item class="text-left pl-8">
-            <router-link to="/by_word" title="Browse by Word" class="text-decoration-none font-weight-bold text-green-lighten-5">By Word</router-link>
+            <router-link to="/by_word" title="Browse by Word" class="text-decoration-none font-weight-bold text-white">By Word</router-link>
           </v-list-item>
 
           <v-list-item class="text-left pl-8">
-            <router-link to="/by_word_count" title="Words by Count" class="text-decoration-none font-weight-bold text-green-lighten-5">Words by count</router-link>
+            <router-link to="/by_word_count" title="Words by Count" class="text-decoration-none font-weight-bold text-white">Words by count</router-link>
           </v-list-item>
 
           <v-list-item class="text-left pl-8">

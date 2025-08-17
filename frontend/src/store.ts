@@ -1,7 +1,7 @@
 import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-import { useStorage, useAsyncState } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import type { SurahInfo } from "./type_defs"
 
 

@@ -1,14 +1,16 @@
 <template>
   <v-card flat color="transparent">
+    <div class="text-white text-body-2 mb-1">Add Translation</div>
     <v-select
       v-model="selectedTranslation"
       :items="availableTranslationOptions"
-      label="Add Translation"
+      placeholder="Select translation"
       variant="outlined"
-      density="comfortable"
-      color="green"
+      density="compact"
+      color="green-darken-3"
       bg-color="white"
       hide-details
+      persistent-placeholder
       @update:model-value="addTranslation"
       clearable
     />
@@ -23,7 +25,7 @@
           <v-icon icon="mdi-translate" color="green-lighten-5" />
         </template>
         
-        <v-list-item-title class="text-green-lighten-5">
+        <v-list-item-title class="text-white">
           {{ tr[0] }}-{{ tr[1] }}
         </v-list-item-title>
 

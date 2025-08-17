@@ -1,4 +1,4 @@
-FROM oven/bun:1
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json bun.lockb ./
 
 # Install dependencies
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # The source code will be mounted as a volume
 # This allows for hot-reload during development

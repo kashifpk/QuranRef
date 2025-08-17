@@ -1,15 +1,19 @@
 <template>
-  <v-select
-    v-model="selectedType"
-    :items="textTypes"
-    label="Arabic Text Style"
-    variant="outlined"
-    density="comfortable"
-    color="green"
-    bg-color="white"
-    hide-details
-    @update:model-value="changeTextType"
-  />
+  <div>
+    <div class="text-white text-body-2 mb-1">Arabic Text Style</div>
+    <v-select
+      v-model="selectedType"
+      :items="textTypes"
+      placeholder="Select style"
+      variant="outlined"
+      density="compact"
+      color="green-darken-3"
+      bg-color="white"
+      hide-details
+      persistent-placeholder
+      @update:model-value="changeTextType"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -19,24 +19,23 @@ ENV PATH="/root/.local/bin:$PATH"
 # Verify uv installation
 RUN uv --version
 
-# Copy pyproject.toml first for dependency caching
-COPY pyproject.toml ./
-
-# Install dependencies only (extract from pyproject.toml)
-RUN uv pip install --system fastapi[standard] pydantic-settings typer jinja2 arango-orm six \
-    ruff bandit ipython pre-commit pytest pytest-cov pytest-env
-
-# Copy the application code
+# Copy all application code first
 COPY . .
+
+# Create a virtual environment and install dependencies
+RUN uv venv && \
+    . .venv/bin/activate && \
+    uv sync --all-extras
 
 # Create static directory for frontend assets
 RUN mkdir -p /app/static/frontend
 
-# Install the package in development mode for hot-reload
-RUN uv pip install --system -e .
+# Activate venv in the shell
+ENV PATH="/app/.venv/bin:$PATH"
+ENV VIRTUAL_ENV=/app/.venv
 
 # Expose the application port
 EXPOSE 8000
 
-# Development command with hot-reload
-CMD ["python", "-m", "fastapi", "dev", "quranref/main.py", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Development command with hot-reload  
+CMD ["/bin/bash", "-c", ". /app/.venv/bin/activate && exec python -m fastapi dev quranref/main.py --host 0.0.0.0 --port 8000 --reload"]

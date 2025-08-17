@@ -1,0 +1,475 @@
+#!/bin/bash
+
+# DevCon - Development Container Manager for QuranRef
+# A comprehensive script for managing Docker development environment
+
+set -e
+
+# Configuration
+COMPOSE_FILE="docker-compose.dev.yml"
+PROJECT_NAME="quranref"
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_info() { printf "${CYAN}ℹ ${NC}%s\n" "$1"; }
+print_success() { printf "${GREEN}✓${NC} %s\n" "$1"; }
+print_warning() { printf "${YELLOW}⚠${NC} %s\n" "$1"; }
+print_error() { printf "${RED}✗${NC} %s\n" "$1"; }
+print_header() { printf "\n${BLUE}=== %s ===${NC}\n" "$1"; }
+
+# Check if Docker is running
+check_docker() {
+    if ! docker info >/dev/null 2>&1; then
+        print_error "Docker is not running. Please start Docker first."
+        exit 1
+    fi
+}
+
+# Main function to display help
+show_help() {
+    printf "${GREEN}DevCon - Development Container Manager${NC}\n"
+    printf "\n"
+    printf "${YELLOW}Usage:${NC}\n"
+    printf "  ./devcon [command] [options]\n"
+    printf "\n"
+    printf "${YELLOW}Core Commands:${NC}\n"
+    printf "  up              Start all services (database, backend, frontend)\n"
+    printf "  down            Stop all services\n"
+    printf "  restart         Restart all services\n"
+    printf "  status          Show status of all services\n"
+    printf "  clean           Stop services and remove volumes (WARNING: deletes data!)\n"
+    printf "\n"
+    printf "${YELLOW}Service Commands:${NC}\n"
+    printf "  logs [service]  Show logs (all services or specific: backend/frontend/db)\n"
+    printf "  shell [service] Open shell in service (default: backend)\n"
+    printf "  exec <service> <cmd>  Execute command in service\n"
+    printf "\n"
+    printf "${YELLOW}Development Commands:${NC}\n"
+    printf "  build [service] Rebuild images (all or specific service)\n"
+    printf "  sync            Install/update dependencies in containers\n"
+    printf "  test            Run backend tests\n"
+    printf "  lint            Run linting (ruff) on backend code\n"
+    printf "  format          Format backend code with ruff\n"
+    printf "\n"
+    printf "${YELLOW}Database Commands:${NC}\n"
+    printf "  db-init         Initialize database structure\n"
+    printf "  db-populate     Populate database with Quran data\n"
+    printf "  db-reset        Reset database (drop and recreate)\n"
+    printf "  db-backup       Backup database to ./backups/\n"
+    printf "  db-restore <file> Restore database from backup\n"
+    printf "\n"
+    printf "${YELLOW}Quick Access:${NC}\n"
+    printf "  urls            Show all service URLs\n"
+    printf "  ps              Show running containers (detailed)\n"
+    printf "\n"
+    printf "${YELLOW}Examples:${NC}\n"
+    printf "  ./devcon up           # Start development environment\n"
+    printf "  ./devcon logs backend # View backend logs\n"
+    printf "  ./devcon shell        # Open backend shell\n"
+    printf "  ./devcon shell frontend # Open frontend shell\n"
+    printf "  ./devcon test         # Run backend tests\n"
+    printf "  ./devcon db-init      # Initialize database\n"
+    printf "\n"
+    printf "${YELLOW}Service URLs:${NC}\n"
+    printf "  Frontend:  http://localhost:41149\n"
+    printf "  Backend:   http://localhost:41148\n"
+    printf "  ArangoDB:  http://localhost:18529\n"
+}
+
+# Start all services
+cmd_up() {
+    print_header "Starting Development Environment"
+    
+    print_info "Starting containers..."
+    docker compose -f $COMPOSE_FILE up -d
+    
+    print_info "Waiting for services to be ready..."
+    sleep 3
+    
+    # Check service health
+    if docker compose -f $COMPOSE_FILE ps | grep -q "running"; then
+        print_success "All services started successfully!"
+        cmd_urls
+        print_info "Run './devcon logs' to view logs"
+    else
+        print_error "Some services failed to start. Check logs with './devcon logs'"
+        docker compose -f $COMPOSE_FILE ps
+    fi
+}
+
+# Stop all services
+cmd_down() {
+    print_header "Stopping Development Environment"
+    docker compose -f $COMPOSE_FILE down
+    print_success "All services stopped"
+}
+
+# Restart services
+cmd_restart() {
+    print_header "Restarting Development Environment"
+    cmd_down
+    cmd_up
+}
+
+# Show service status
+cmd_status() {
+    print_header "Service Status"
+    docker compose -f $COMPOSE_FILE ps
+}
+
+# Show service URLs
+cmd_urls() {
+    print_header "Service URLs"
+    printf "${GREEN}Frontend:${NC}  http://localhost:41149 (Vue.js with hot-reload)\n"
+    printf "${GREEN}Backend:${NC}   http://localhost:41148 (FastAPI with auto-reload)\n"
+    printf "${GREEN}API Docs:${NC}  http://localhost:41148/docs (Swagger UI)\n"
+    printf "${GREEN}ArangoDB:${NC}  http://localhost:18529 (Database Admin)\n"
+}
+
+# Show logs
+cmd_logs() {
+    local service=$1
+    
+    if [ -z "$service" ]; then
+        print_header "Showing logs for all services"
+        docker compose -f $COMPOSE_FILE logs -f --tail=50
+    else
+        case $service in
+            backend|back|api)
+                print_header "Backend Logs"
+                docker compose -f $COMPOSE_FILE logs -f --tail=50 backend
+                ;;
+            frontend|front|vue)
+                print_header "Frontend Logs"
+                docker compose -f $COMPOSE_FILE logs -f --tail=50 frontend
+                ;;
+            db|database|arango|arangodb)
+                print_header "Database Logs"
+                docker compose -f $COMPOSE_FILE logs -f --tail=50 arangodb
+                ;;
+            *)
+                print_error "Unknown service: $service"
+                print_info "Available: backend, frontend, db"
+                exit 1
+                ;;
+        esac
+    fi
+}
+
+# Open shell in container
+cmd_shell() {
+    local service=${1:-backend}
+    
+    case $service in
+        backend|back|api)
+            print_header "Opening Backend Shell"
+            print_info "Python environment with uv ready. Try: uv run quranref-cli --help"
+            docker compose -f $COMPOSE_FILE exec backend bash
+            ;;
+        frontend|front|vue)
+            print_header "Opening Frontend Shell"
+            print_info "Bun environment ready. Try: bun run build"
+            docker compose -f $COMPOSE_FILE exec frontend sh
+            ;;
+        db|database|arango|arangodb)
+            print_header "Connecting to ArangoDB"
+            docker compose -f $COMPOSE_FILE exec arangodb arangosh \
+                --server.endpoint tcp://127.0.0.1:8529 \
+                --server.username root \
+                --server.password "${ARANGO_ROOT_PASSWORD:-Test123!}"
+            ;;
+        *)
+            print_error "Unknown service: $service"
+            print_info "Available: backend, frontend, db"
+            exit 1
+            ;;
+    esac
+}
+
+# Execute command in service
+cmd_exec() {
+    local service=$1
+    shift
+    local cmd="$@"
+    
+    if [ -z "$service" ] || [ -z "$cmd" ]; then
+        print_error "Usage: ./devcon exec <service> <command>"
+        exit 1
+    fi
+    
+    print_info "Executing in $service: $cmd"
+    docker compose -f $COMPOSE_FILE exec $service $cmd
+}
+
+# Build/rebuild images
+cmd_build() {
+    local service=$1
+    
+    if [ -z "$service" ]; then
+        print_header "Rebuilding All Images"
+        docker compose -f $COMPOSE_FILE build
+    else
+        print_header "Rebuilding $service"
+        docker compose -f $COMPOSE_FILE build $service
+    fi
+    print_success "Build complete"
+}
+
+# Sync dependencies
+cmd_sync() {
+    print_header "Syncing Dependencies"
+    
+    print_info "Backend: Installing Python dependencies..."
+    docker compose -f $COMPOSE_FILE exec backend uv sync
+    
+    print_info "Frontend: Installing JavaScript dependencies..."
+    docker compose -f $COMPOSE_FILE exec frontend bun install
+    
+    print_success "Dependencies synced"
+}
+
+# Run tests
+cmd_test() {
+    print_header "Running Backend Tests"
+    docker compose -f $COMPOSE_FILE exec backend pytest -v
+}
+
+# Run linting
+cmd_lint() {
+    print_header "Running Linting"
+    docker compose -f $COMPOSE_FILE exec backend ruff check quranref
+}
+
+# Format code
+cmd_format() {
+    print_header "Formatting Code"
+    docker compose -f $COMPOSE_FILE exec backend ruff format quranref
+    print_success "Code formatted"
+}
+
+# Database initialization
+cmd_db_init() {
+    print_header "Initializing Database"
+    
+    print_info "Creating database structure..."
+    docker compose -f $COMPOSE_FILE exec backend quranref-cli db init
+    
+    print_info "Populating Surah data..."
+    docker compose -f $COMPOSE_FILE exec backend quranref-cli db populate-surahs
+    
+    print_info "Importing Quran text..."
+    docker compose -f $COMPOSE_FILE exec backend quranref-cli db import-text
+    
+    print_info "Creating relationships..."
+    docker compose -f $COMPOSE_FILE exec backend quranref-cli post-process link-ayas-to-surahs
+    
+    print_info "Processing words..."
+    docker compose -f $COMPOSE_FILE exec backend quranref-cli post-process make-words
+    
+    print_success "Database initialized successfully!"
+}
+
+# Database populate (without init)
+cmd_db_populate() {
+    print_header "Populating Database"
+    
+    docker compose -f $COMPOSE_FILE exec backend bash -c "
+        quranref-cli db populate-surahs &&
+        quranref-cli db import-text &&
+        quranref-cli post-process link-ayas-to-surahs &&
+        quranref-cli post-process make-words
+    "
+    
+    print_success "Database populated!"
+}
+
+# Database reset
+cmd_db_reset() {
+    print_warning "This will DELETE all data in the database!"
+    read -p "Are you sure? (y/N): " confirm
+    
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        print_header "Resetting Database"
+        
+        print_info "Dropping all collections..."
+        docker compose -f $COMPOSE_FILE exec backend quranref-cli db drop-all
+        
+        cmd_db_init
+    else
+        print_info "Database reset cancelled"
+    fi
+}
+
+# Database backup
+cmd_db_backup() {
+    print_header "Backing Up Database"
+    
+    # Create backup directory
+    mkdir -p ./backups
+    
+    # Generate timestamp
+    TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+    BACKUP_FILE="./backups/quranref_${TIMESTAMP}.dump"
+    
+    print_info "Creating backup: $BACKUP_FILE"
+    
+    docker compose -f $COMPOSE_FILE exec arangodb arangodump \
+        --server.endpoint tcp://127.0.0.1:8529 \
+        --server.username root \
+        --server.password "${ARANGO_ROOT_PASSWORD:-Test123!}" \
+        --server.database "${DB_NAME:-quranref}" \
+        --output-directory "/tmp/backup_${TIMESTAMP}" \
+        --overwrite true
+    
+    docker compose -f $COMPOSE_FILE exec arangodb tar czf "/tmp/backup_${TIMESTAMP}.tar.gz" "/tmp/backup_${TIMESTAMP}"
+    docker cp "quranref_arangodb_dev:/tmp/backup_${TIMESTAMP}.tar.gz" "$BACKUP_FILE"
+    
+    print_success "Backup created: $BACKUP_FILE"
+}
+
+# Database restore
+cmd_db_restore() {
+    local backup_file=$1
+    
+    if [ -z "$backup_file" ]; then
+        print_error "Usage: ./devcon db-restore <backup-file>"
+        print_info "Available backups:"
+        ls -la ./backups/*.dump 2>/dev/null || print_warning "No backups found"
+        exit 1
+    fi
+    
+    if [ ! -f "$backup_file" ]; then
+        print_error "Backup file not found: $backup_file"
+        exit 1
+    fi
+    
+    print_warning "This will REPLACE the current database!"
+    read -p "Are you sure? (y/N): " confirm
+    
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        print_header "Restoring Database"
+        
+        # Copy backup to container
+        docker cp "$backup_file" "quranref_arangodb_dev:/tmp/restore.tar.gz"
+        
+        # Extract and restore
+        docker compose -f $COMPOSE_FILE exec arangodb bash -c "
+            cd /tmp && \
+            tar xzf restore.tar.gz && \
+            arangorestore \
+                --server.endpoint tcp://127.0.0.1:8529 \
+                --server.username root \
+                --server.password '${ARANGO_ROOT_PASSWORD:-Test123!}' \
+                --server.database '${DB_NAME:-quranref}' \
+                --input-directory /tmp/backup_* \
+                --overwrite true
+        "
+        
+        print_success "Database restored from $backup_file"
+    else
+        print_info "Restore cancelled"
+    fi
+}
+
+# Clean everything
+cmd_clean() {
+    print_warning "This will stop all services and DELETE all data!"
+    read -p "Are you sure? (y/N): " confirm
+    
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        print_header "Cleaning Development Environment"
+        docker compose -f $COMPOSE_FILE down -v
+        print_success "All services stopped and volumes removed"
+    else
+        print_info "Clean cancelled"
+    fi
+}
+
+# Show detailed process list
+cmd_ps() {
+    print_header "Running Containers"
+    docker compose -f $COMPOSE_FILE ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+}
+
+# Main script logic
+check_docker
+
+case "${1:-help}" in
+    up)
+        cmd_up
+        ;;
+    down)
+        cmd_down
+        ;;
+    restart)
+        cmd_restart
+        ;;
+    status)
+        cmd_status
+        ;;
+    logs)
+        cmd_logs $2
+        ;;
+    shell|sh)
+        cmd_shell $2
+        ;;
+    exec)
+        shift
+        cmd_exec $@
+        ;;
+    build)
+        cmd_build $2
+        ;;
+    sync)
+        cmd_sync
+        ;;
+    test)
+        cmd_test
+        ;;
+    lint)
+        cmd_lint
+        ;;
+    format|fmt)
+        cmd_format
+        ;;
+    db-init)
+        cmd_db_init
+        ;;
+    db-populate)
+        cmd_db_populate
+        ;;
+    db-reset)
+        cmd_db_reset
+        ;;
+    db-backup)
+        cmd_db_backup
+        ;;
+    db-restore)
+        cmd_db_restore $2
+        ;;
+    urls|url)
+        cmd_urls
+        ;;
+    ps)
+        cmd_ps
+        ;;
+    clean)
+        cmd_clean
+        ;;
+    help|--help|-h|"")
+        show_help
+        ;;
+    *)
+        print_error "Unknown command: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

@@ -1,58 +1,64 @@
 <style>
 
-.aya-content {
-  flex-direction: row-reverse;
+.aya-container {
+  margin: 16px 0;
+  padding: 15px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
 }
 
-.aya-content:hover {
-  background-color: rgba(209, 255, 209, 0.5);
+.aya-container:hover {
+  background-color: rgba(209, 255, 209, 0.3);
 }
 
-.surah-en {
-  font-size: 11pt;
+.arabic-section {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
 }
 
-.en-num {
-  font-size: 11pt;
-  vertical-align: bottom;
-  padding-top: 10px;
+.arabic-text {
+  font-size: 24pt;
+  line-height: 2;
+  font-family: 'Amiri', 'Traditional Arabic', serif;
+  direction: rtl;
+  text-align: right;
 }
 
-.col-sm-6, col-lg-6, col-lg-4 {
-  float: right;
+.aya-number-badge {
+  display: inline-block;
+  margin-left: 15px;
+  vertical-align: middle;
 }
 
-.aya-content {
-  margin-top: 5px;
-  padding: 5px;
+.translations-section {
+  padding: 10px 0;
+}
+
+.translation-item {
+  padding: 8px 0;
+  margin-bottom: 10px;
+}
+
+.translation-label {
+  font-size: 10pt;
+  color: #666;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}
+
+.translation-text {
+  font-size: 14pt;
+  line-height: 1.6;
 }
 
 .highlighted-word {
   background-color: #4CAF50 !important;
   color: white !important;
-  padding: 1px 3px !important;
+  padding: 2px 6px !important;
   border-radius: 3px !important;
   font-weight: bold !important;
   display: inline !important;
-}
-
-.arabic-text .highlighted-word {
-  background-color: #4CAF50 !important;
-  color: white !important;
-  padding: 1px 3px !important;
-  border-radius: 3px !important;
-  font-weight: bold !important;
-  display: inline !important;
-}
-
-.arabic-text {
-  font-size: 16pt;
-  line-height: 1.6;
-}
-
-.translation-text {
-  font-size: 14pt;
-  line-height: 1.5;
 }
 
 .ar {
@@ -72,38 +78,48 @@
 </style>
 
 <template>
-  <v-row class="aya-content" dir="rtl">
-    <!-- Translation texts (rendered first to appear on left in RTL) -->
-    <v-col 
-      v-for="(translation, index) in translationTexts" 
-      :key="`${translation.language}-${translation.textType}`"
-      :class="getTranslationClass(translation.language)"
-      class="p-3"
-      :cols="translationColSize"
-    >
-      <div class="translation-text">{{ translation.text }}</div>
-    </v-col>
-    
-    <!-- Arabic text (rendered last to appear on right in RTL) -->
-    <v-col class="p-3 ar" :cols="arabicColSize">
-      <span class="en float-end ms-4" v-if="!displaySurahName">
-        <v-chip>{{ ayaNumber }}</v-chip>
-      </span>
-      <span class="float-end m-4" v-else>
-        <v-chip>
-          <span class="en">{{ ayaNumber }}</span>
-          &nbsp;&nbsp;&nbsp;
-          <span class="ar" style="font-size: 14pt;">{{ surahInfo?.arabic_name }}</span>
+  <v-card class="aya-container" elevation="0">
+    <!-- Arabic Section at the top -->
+    <div class="arabic-section">
+      <div class="ar">
+        <v-chip class="aya-number-badge" size="small" color="primary">
+          <span class="en" v-if="!displaySurahName">{{ ayaNumber }}</span>
+          <span v-else>
+            <span class="en">{{ ayaNumber }}</span>
+            <span class="ar mx-2">{{ surahInfo?.arabic_name }}</span>
+          </span>
         </v-chip>
-      </span>
-      <div class="arabic-text" v-html="highlightedArabicText"></div>
-    </v-col>
-  </v-row>
+        <div class="arabic-text" v-html="highlightedArabicText"></div>
+      </div>
+    </div>
+    
+    <!-- Translations Section below -->
+    <div class="translations-section" v-if="translationTexts.length > 0">
+      <v-row>
+        <v-col 
+          v-for="(translation, index) in translationTexts" 
+          :key="`${translation.language}-${translation.textType}`"
+          :cols="translationColumnSize"
+          class="translation-item"
+        >
+          <div class="translation-label">
+            {{ translation.language }} - {{ translation.textType }}
+          </div>
+          <div 
+            class="translation-text"
+            :class="getTranslationClass(translation.language)"
+          >
+            {{ translation.text }}
+          </div>
+        </v-col>
+      </v-row>
+    </div>
+  </v-card>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { VRow, VCol, VChip } from 'vuetify/components';
+import { VCard, VRow, VCol, VChip } from 'vuetify/components';
 import type { SurahInfo, AyaInfo } from '../type_defs';
 import { useStore } from '../store'
 
@@ -163,16 +179,13 @@ const translationTexts = computed(() => {
   return translations;
 });
 
-// Compute column sizes based on number of translations
-const totalTexts = computed(() => 1 + translationTexts.value.length); // 1 for Arabic + translations
-const arabicColSize = computed(() => {
-  if (totalTexts.value === 1) return 12;
-  if (totalTexts.value === 2) return 6;
-  return 4; // For 3 or more texts
-});
-const translationColSize = computed(() => {
-  if (totalTexts.value === 2) return 6;
-  return 4; // For 3 or more texts
+// Compute column size for translations based on their count
+const translationColumnSize = computed(() => {
+  const count = translationTexts.value.length;
+  if (count === 1) return 12; // Full width for single translation
+  if (count === 2) return 6;  // Half width for two translations
+  if (count === 3) return 4;  // Third width for three translations
+  return 6; // For 4+ translations, use half width (2 per row)
 });
 
 // Get CSS class for translation language

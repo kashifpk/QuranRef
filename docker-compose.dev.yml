@@ -11,7 +11,7 @@ services:
     networks:
       - quranref_dev
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -f http://localhost:8529/_api/version || exit 1"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8529/"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -40,6 +40,7 @@ services:
       # Exclude Python cache and virtual environments
       - /app/__pycache__
       - /app/.pytest_cache
+      - /app/.venv
     ports:
       - "41148:8000"
     networks:
@@ -47,7 +48,7 @@ services:
     depends_on:
       - arangodb
     restart: unless-stopped
-    command: ["python", "-m", "fastapi", "dev", "quranref/main.py", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Command is inherited from Dockerfile.dev CMD
 
   frontend:
     build:

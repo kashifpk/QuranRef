@@ -11,13 +11,15 @@ services:
       - backend/.env
     environment:
       - ENVIRONMENT=production
+      - DEBUG=false
+      - DB_HOSTS=http://db:8529
     depends_on:
       - db
 
   frontend:
     build:
-      context: frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
       - "80:80"
     env_file:

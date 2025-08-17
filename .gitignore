@@ -185,6 +185,8 @@ node_modules
 dist
 dist-ssr
 *.local
+static
+
 
 # Editor directories and files
 .vscode/*
@@ -197,3 +199,6 @@ dist-ssr
 *.sln
 *.sw?
 .aider*
+
+.claude
+
