@@ -23,7 +23,7 @@ services:
         max_attempts: 3
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=traefik-net"
+        - "traefik.swarm.network=traefik-net"
         # Main domain API routing
         - "traefik.http.routers.quranref-api.rule=Host(`quranref.info`) && PathPrefix(`/api`)"
         - "traefik.http.routers.quranref-api.entrypoints=websecure"
@@ -62,7 +62,7 @@ services:
         max_attempts: 3
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=traefik-net"
+        - "traefik.swarm.network=traefik-net"
         - "traefik.http.routers.quranref-frontend.rule=Host(`quranref.info`) || Host(`www.quranref.info`)"
         - "traefik.http.routers.quranref-frontend.entrypoints=websecure"
         - "traefik.http.routers.quranref-frontend.tls=true"

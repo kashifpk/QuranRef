@@ -25,7 +25,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=traefik-net"
+        - "traefik.swarm.network=traefik-net"
         - "traefik.constraint-label=traefik-net"
         - "traefik.http.routers.quranref-secure.rule=Host(`quranref.info`) || Host(`www.quranref.info`)"
         - "traefik.http.routers.quranref-secure.entrypoints=websecure"
