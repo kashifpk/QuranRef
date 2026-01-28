@@ -1,42 +1,35 @@
-### Python App build
-FROM python:3.12-alpine AS app-build
+# QuranRef Production Dockerfile
+# Builds a single image that serves both API and frontend
+
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
+ENV STATIC_DIR=/code/static
 
-# Set the working directory
-RUN mkdir /code
 WORKDIR /code
 
-# Install system dependencies and Rust (needed for uv)
-RUN apk add --no-cache curl build-base
-
-# Install Rust (needed for uv)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
-# Copy the project files
-COPY pyproject.toml README.md /code/
+# Copy project files
+COPY pyproject.toml uv.lock README.md /code/
 COPY quranref /code/quranref
 
-# Install hatchling and dependencies
-RUN uv pip install --system hatchling && \
-    uv pip install --system .
+# Install dependencies
+RUN uv sync --frozen --no-dev
 
-# Copy the rest of the files
-COPY .env /code/.env
+# Copy static files (frontend build output)
 COPY static /code/static
 
-# Create static directory
-RUN mkdir -p /code/static
+# Expose port
+EXPOSE 7000
 
-# Install the application
-RUN uv pip install --system -e .
-
-# Start prod server
-CMD ["python", "-m", "fastapi", "run", "quranref/main.py", "--host", "0.0.0.0", "--port", "8000"]
-
-
+# Run with uvicorn
+CMD ["uv", "run", "uvicorn", "quranref.main:app", "--host", "0.0.0.0", "--port", "7000"]

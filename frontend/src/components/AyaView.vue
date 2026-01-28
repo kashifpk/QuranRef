@@ -97,7 +97,7 @@
     <div class="translations-section" v-if="translationTexts.length > 0">
       <v-row>
         <v-col 
-          v-for="(translation, index) in translationTexts" 
+          v-for="translation in translationTexts" 
           :key="`${translation.language}-${translation.textType}`"
           :cols="translationColumnSize"
           class="translation-item"
@@ -242,8 +242,7 @@ const highlightedArabicText = computed(() => {
   // Now we need to find the corresponding position in the original text
   // We'll map clean text positions to original text positions
   const cleanToOriginalMap: number[] = [];
-  let originalIndex = 0;
-  
+
   for (let i = 0; i < arabicText.length; i++) {
     if (!aarab.includes(arabicText[i])) {
       cleanToOriginalMap.push(i);
