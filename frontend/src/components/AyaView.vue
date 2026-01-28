@@ -203,7 +203,7 @@ const highlightedArabicText = computed(() => {
 .arabic-text {
   font-size: 24pt;
   line-height: 2;
-  font-family: 'Amiri', 'Traditional Arabic', serif;
+  font-family: 'AlQalam', 'Amiri', 'Traditional Arabic', serif;
   direction: rtl;
   text-align: right;
 }

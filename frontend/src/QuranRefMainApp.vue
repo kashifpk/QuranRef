@@ -27,6 +27,13 @@
 
         <div class="header-right">
           <Button
+            icon="pi pi-cog"
+            @click="settingsDialogVisible = true"
+            text
+            rounded
+            v-tooltip.bottom="'Text Settings'"
+          />
+          <Button
             :icon="store.darkMode ? 'pi pi-sun' : 'pi pi-moon'"
             @click="store.toggleDarkMode"
             text
@@ -34,11 +41,11 @@
             v-tooltip.bottom="store.darkMode ? 'Light Mode' : 'Dark Mode'"
           />
           <Button
-            icon="pi pi-heart"
+            icon="pi pi-home"
             @click="$router.push('/')"
             text
             rounded
-            v-tooltip.bottom="'Favorites'"
+            v-tooltip.bottom="'Home'"
           />
           <Button
             icon="pi pi-book"
@@ -71,17 +78,19 @@
             <i class="pi pi-sort-numeric-down"></i>
             <span>Words by Count</span>
           </router-link>
-        </div>
 
-        <Divider />
+          <Divider />
 
-        <div class="settings-section">
-          <h4>Settings</h4>
-          <arabic-text-type-select />
-          <translation-select />
+          <a class="nav-link" @click="openSettings">
+            <i class="pi pi-cog"></i>
+            <span>Text Settings</span>
+          </a>
         </div>
       </div>
     </Drawer>
+
+    <!-- Text Settings Dialog -->
+    <TextSettingsDialog v-model:visible="settingsDialogVisible" />
 
     <!-- Main Content -->
     <main class="app-main">
@@ -106,13 +115,13 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Drawer from 'primevue/drawer';
 import Divider from 'primevue/divider';
-import ArabicTextTypeSelect from './components/ArabicTextTypeSelect.vue';
-import TranslationSelect from './components/TranslationSelect.vue';
+import TextSettingsDialog from './components/TextSettingsDialog.vue';
 
 const router = useRouter();
 const store = useStore();
 const searchTerm = ref('');
 const drawerVisible = ref(false);
+const settingsDialogVisible = ref(false);
 
 // Initialize theme on mount
 onMounted(() => {
@@ -124,6 +133,11 @@ const doSearch = () => {
     router.push({ name: 'search', params: { search_term: searchTerm.value } });
     drawerVisible.value = false;
   }
+};
+
+const openSettings = () => {
+  drawerVisible.value = false;
+  settingsDialogVisible.value = true;
 };
 </script>
 
@@ -235,6 +249,7 @@ const doSearch = () => {
 
 .nav-link:hover {
   background: rgba(76, 175, 80, 0.1);
+  cursor: pointer;
 }
 
 .nav-link i {
@@ -242,18 +257,6 @@ const doSearch = () => {
   color: #4CAF50;
 }
 
-.settings-section {
-  padding: 0 1rem;
-}
-
-.settings-section h4 {
-  margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
 
 /* Main Content */
 .app-main {
@@ -304,10 +307,6 @@ const doSearch = () => {
 
 .dark-mode .nav-link {
   color: #E0E0E0;
-}
-
-.dark-mode .settings-section h4 {
-  color: #999;
 }
 
 /* Responsive Styles */
