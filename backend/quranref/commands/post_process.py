@@ -28,11 +28,25 @@ def link_ayas_to_surahs():
 
 @app.command(name="make-words")
 def make_words():
-    "Extract words from Ayas and store them in the database"
+    """Extract words from Ayas and store them in the database.
+
+    This command is idempotent - running it multiple times will produce
+    the same result. It clears existing word data before rebuilding.
+    """
 
     db = get_db()
-
     qgraph = QuranGraph(connection=db)
+
+    # Clear existing word-related data to ensure idempotency
+    print("[yellow]Clearing existing word data for clean rebuild...[/yellow]")
+
+    # Remove aya-word edges (edges starting with 'AW:')
+    db.aql.execute("FOR e IN has FILTER STARTS_WITH(e._key, 'AW:') REMOVE e IN has")
+
+    # Clear words collection
+    db.aql.execute("FOR doc IN words REMOVE doc IN words")
+
+    print("[blue]Extracting words from ayas...[/blue]")
 
     ayas = db.query(Aya).all()
     for aya in ayas:
@@ -51,16 +65,13 @@ def make_words():
 
         aya_text = obj._relations["aya_texts"][0]._next.text
         aya_words = aya_text.split(" ")
-        # log.debug(aya_words)
 
         for word in aya_words:
             # add word with count=1 if it doesn't already exist, otherwise increment count
             word_doc = Word.new(db, word=word, count=1)
             if not db.exists(word_doc):
                 db.add(word_doc)
-
             else:
-                # log.debug(" --> Document exists")
                 word_doc = db.query(Word).by_key(word_doc._key)
                 word_doc.count += 1
                 db.update(word_doc)
@@ -96,6 +107,13 @@ def update_meta_info():
     _ = db.add(text_types_doc, if_present="update")
 
     print("[green]Text types updated![/green]")
+
+
+@app.command(name="fix-word-counts")
+def fix_word_counts():
+    """Recalculate word counts from actual aya-word edges."""
+    from .fix_word_counts import fix_word_counts as _fix
+    _fix()
 
 
 @app.command(name="remove-bismillah")
