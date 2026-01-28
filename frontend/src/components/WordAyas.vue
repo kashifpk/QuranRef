@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineProps } from 'vue';
+import { ref, watch } from 'vue';
 import { VCard, VCardTitle, VCardText, VChip } from 'vuetify/components';
 import { useStore } from '../store';
 import AyaView from './AyaView.vue';

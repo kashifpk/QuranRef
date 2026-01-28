@@ -7,6 +7,8 @@ import { config } from 'dotenv'
 config({ path: path.join(__dirname, '.env') })
 
 const STATIC_URL = process.env.STATIC_URL || '/static/'
+// Use VITE_BACKEND_URL for proxy target, defaulting to localhost for host development
+const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,7 +19,7 @@ export default defineConfig({
   plugins: [vue()],
   build: {
     target: 'esnext',
-    outDir: resolve('../static/frontend/'),
+    outDir: resolve('../static/'),
     emptyOutDir: true,
     assetsDir: '',
     manifest: 'manifest.json',
@@ -29,7 +31,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': 'http://backend:8000'
+      '/api': BACKEND_URL
     }
   },
   // Configure for SPA routing
