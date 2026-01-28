@@ -215,10 +215,30 @@ const openSettings = () => {
   background: rgba(255, 255, 255, 0.9);
   border: none;
   border-radius: 2rem;
+  color: #333;
+  font-family: 'AlQalam', 'Amiri', 'Traditional Arabic', serif;
+  font-size: 1.1rem;
+}
+
+.search-field :deep(.p-inputtext::placeholder) {
+  color: #666;
 }
 
 .search-field :deep(.p-inputtext:focus) {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.dark-mode .search-field :deep(.p-inputtext) {
+  background: rgba(0, 0, 0, 0.3);
+  color: #E0E0E0;
+}
+
+.dark-mode .search-field :deep(.p-inputtext::placeholder) {
+  color: #999;
+}
+
+.dark-mode .search-field :deep(.p-inputtext:focus) {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
 }
 
 /* Drawer Styles */

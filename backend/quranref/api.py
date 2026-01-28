@@ -156,14 +156,30 @@ async def get_ayas_by_word(
 
 
 @router.get("/words-by-count/{count}")
-async def get_words_by_count(count: int, db: Database = Depends(db)) -> list[str]:
+async def get_words_by_count(count: int, db: Database = Depends(db)) -> list[tuple[str, int]]:
     """
     Get all words with the given count
     """
     words = db.query(Word).filter_by(count=count).sort("word")
-    result = [word.word for word in words.iterator()]
+    result = [(word.word, word.count) for word in words.iterator()]
 
     return result
+
+
+@router.get("/available-word-counts")
+async def get_available_word_counts(db: Database = Depends(db)) -> list[dict]:
+    """
+    Get all available word counts with the number of words for each count.
+    Returns a list of {count, word_count} objects sorted by count descending.
+    """
+    aql = """
+    FOR doc IN words
+        COLLECT count = doc.count WITH COUNT INTO num_words
+        SORT count DESC
+        RETURN {count: count, word_count: num_words}
+    """
+    results = list(db.aql.execute(aql))
+    return results
 
 
 @router.get("/top-most-frequent-words/{limit}")

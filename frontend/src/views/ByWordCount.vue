@@ -1,109 +1,331 @@
 <template>
   <div class="by-word-count">
-    <Card>
-      <template #title>Words by Count</template>
+    <!-- Header Section -->
+    <Card class="header-card">
+      <template #title>
+        <div class="page-title">
+          <i class="pi pi-sort-numeric-down"></i>
+          <span>Words by Frequency</span>
+        </div>
+      </template>
+      <template #subtitle>
+        Explore Quranic words organized by how frequently they appear
+      </template>
+    </Card>
+
+    <!-- Quick Stats -->
+    <div class="stats-row" v-if="wordCounts.length > 0">
+      <Card class="stat-card">
+        <template #content>
+          <div class="stat-content">
+            <div class="stat-value">{{ totalUniqueWords.toLocaleString() }}</div>
+            <div class="stat-label">Unique Words</div>
+          </div>
+        </template>
+      </Card>
+      <Card class="stat-card">
+        <template #content>
+          <div class="stat-content">
+            <div class="stat-value">{{ wordCounts.length }}</div>
+            <div class="stat-label">Frequency Levels</div>
+          </div>
+        </template>
+      </Card>
+      <Card class="stat-card">
+        <template #content>
+          <div class="stat-content">
+            <div class="stat-value">{{ highestCount.toLocaleString() }}</div>
+            <div class="stat-label">Max Occurrences</div>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <Card class="main-content-card">
       <template #content>
-        <div class="count-selector">
-          <label class="select-label">Word count</label>
-          <Select
-            v-model="selectedCount"
-            :options="validCounts"
-            placeholder="Select a count..."
-            @change="getWords"
-            showClear
-            class="count-select"
-          />
-        </div>
+        <Tabs v-model:value="activeTab">
+          <TabList>
+            <Tab value="top">Top Words</Tab>
+            <Tab value="browse">Browse by Count</Tab>
+            <Tab value="rare">Rare Words</Tab>
+          </TabList>
 
-        <div v-if="selectedCount" class="words-list ar">
-          <word-ayas v-for="word in words" :key="word[0]" :word="{ word: word[0], count: word[1] }" />
-        </div>
+          <TabPanels>
+            <!-- Top Words Tab -->
+            <TabPanel value="top">
+              <div class="tab-content">
+                <p class="tab-description">
+                  The most frequently occurring words in the Quran. Click any word to see the verses where it appears.
+                </p>
 
-        <div v-if="mostCommonWords.length > 0 && !selectedCount" class="common-words-section">
-          <Card>
-            <template #title>Top 40 Most Common Words</template>
-            <template #content>
-              <div class="common-words-grid">
-                <div v-for="word in mostCommonWords" :key="word[0]" class="common-word-item">
-                  <Tag severity="info" class="word-count-badge">{{ word[1] }}</Tag>
-                  <span class="ar word-text">{{ word[0] }}</span>
+                <div v-if="loadingTop" class="loading-state">
+                  <ProgressSpinner strokeWidth="4" />
+                  <p>Loading top words...</p>
+                </div>
+
+                <div v-else class="words-list ar">
+                  <WordAyas
+                    v-for="word in mostCommonWords"
+                    :key="word[0]"
+                    :word="{ word: word[0], count: word[1] }"
+                  />
                 </div>
               </div>
-            </template>
-          </Card>
-        </div>
+            </TabPanel>
 
-        <div v-if="loading" class="loading-state">
-          <ProgressSpinner strokeWidth="4" />
-          <p>Loading...</p>
-        </div>
+            <!-- Browse by Count Tab -->
+            <TabPanel value="browse">
+              <div class="tab-content">
+                <p class="tab-description">
+                  Select a frequency to see all words that appear exactly that many times.
+                </p>
+
+                <!-- Count Range Chips -->
+                <div class="range-chips">
+                  <Chip
+                    v-for="range in countRanges"
+                    :key="range.label"
+                    :label="`${range.label} (${range.counts.length})`"
+                    :class="{ 'range-selected': selectedRange === range.label }"
+                    @click="selectRange(range)"
+                  />
+                </div>
+
+                <!-- Count Selector within Range -->
+                <div v-if="selectedRange && currentRangeCounts.length > 0" class="count-selector">
+                  <div class="count-chips">
+                    <Button
+                      v-for="countInfo in currentRangeCounts"
+                      :key="countInfo.count"
+                      :label="String(countInfo.count)"
+                      :severity="selectedCount === countInfo.count ? 'success' : 'secondary'"
+                      :outlined="selectedCount !== countInfo.count"
+                      size="small"
+                      :badge="String(countInfo.word_count)"
+                      badgeSeverity="contrast"
+                      @click="selectCount(countInfo.count)"
+                    />
+                  </div>
+                </div>
+
+                <!-- Words for Selected Count -->
+                <div v-if="selectedCount" class="selected-count-header">
+                  <h3>
+                    Words appearing exactly <Tag severity="success">{{ selectedCount }}</Tag> times
+                    <span class="word-total">({{ words.length }} words)</span>
+                  </h3>
+                </div>
+
+                <div v-if="loadingWords" class="loading-state">
+                  <ProgressSpinner strokeWidth="4" />
+                  <p>Loading words...</p>
+                </div>
+
+                <div v-else-if="words.length > 0" class="words-list ar">
+                  <WordAyas
+                    v-for="word in words"
+                    :key="word[0]"
+                    :word="{ word: word[0], count: word[1] }"
+                  />
+                </div>
+
+                <div v-else-if="selectedCount" class="empty-state">
+                  <i class="pi pi-inbox"></i>
+                  <p>No words found with count {{ selectedCount }}</p>
+                </div>
+              </div>
+            </TabPanel>
+
+            <!-- Rare Words Tab -->
+            <TabPanel value="rare">
+              <div class="tab-content">
+                <p class="tab-description">
+                  Words that appear only once or twice in the entire Quran - unique gems of the divine text.
+                </p>
+
+                <div v-if="loadingRare" class="loading-state">
+                  <ProgressSpinner strokeWidth="4" />
+                  <p>Loading rare words...</p>
+                </div>
+
+                <div v-else class="words-list ar">
+                  <WordAyas
+                    v-for="word in rareWords"
+                    :key="word[0]"
+                    :word="{ word: word[0], count: word[1] }"
+                  />
+                </div>
+              </div>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </template>
     </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Card from 'primevue/card';
-import Select from 'primevue/select';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel from 'primevue/tabpanel';
 import Tag from 'primevue/tag';
+import Chip from 'primevue/chip';
+import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import WordAyas from '../components/WordAyas.vue';
 
+interface WordCountInfo {
+  count: number;
+  word_count: number;
+}
+
+interface CountRange {
+  label: string;
+  min: number;
+  max: number;
+  counts: WordCountInfo[];
+}
+
+const activeTab = ref('top');
 const mostCommonWords = ref<[string, number][]>([]);
-const selectedCount = ref<number | null>(null);
+const rareWords = ref<[string, number][]>([]);
 const words = ref<[string, number][]>([]);
-const loading = ref(false);
+const wordCounts = ref<WordCountInfo[]>([]);
+const selectedRange = ref<string | null>(null);
+const selectedCount = ref<number | null>(null);
 
-// List of valid word counts from the original project
-const validCounts = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-  28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
-  53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-  79, 80, 82, 83, 84, 85, 86, 87, 88, 90, 91, 94, 95, 99, 101, 102, 106, 107, 109, 111, 112, 113,
-  115, 116, 118, 119, 126, 127, 129, 130, 131, 133, 134, 137, 139, 142, 146, 147, 150, 153, 156, 157,
-  163, 164, 165, 168, 171, 178, 182, 188, 189, 190, 214, 217, 220, 221, 223, 229, 240, 241, 245, 250,
-  254, 261, 263, 265, 268, 275, 280, 287, 294, 296, 323, 327, 337, 340, 342, 350, 373, 405, 416, 638,
-  646, 658, 664, 670, 810, 812, 966, 1010, 1185, 2153, 2763,
-];
+const loadingTop = ref(false);
+const loadingRare = ref(false);
+const loadingWords = ref(false);
+const loadingCounts = ref(false);
 
-onMounted(() => {
-  getTopMostCommonWords();
+// Computed stats
+const totalUniqueWords = computed(() =>
+  wordCounts.value.reduce((sum, wc) => sum + wc.word_count, 0)
+);
+
+const highestCount = computed(() =>
+  wordCounts.value.length > 0 ? wordCounts.value[0].count : 0
+);
+
+// Group counts into ranges
+const countRanges = computed<CountRange[]>(() => {
+  const ranges: CountRange[] = [
+    { label: '1-5', min: 1, max: 5, counts: [] },
+    { label: '6-20', min: 6, max: 20, counts: [] },
+    { label: '21-50', min: 21, max: 50, counts: [] },
+    { label: '51-100', min: 51, max: 100, counts: [] },
+    { label: '101-500', min: 101, max: 500, counts: [] },
+    { label: '500+', min: 501, max: Infinity, counts: [] },
+  ];
+
+  for (const wc of wordCounts.value) {
+    for (const range of ranges) {
+      if (wc.count >= range.min && wc.count <= range.max) {
+        range.counts.push(wc);
+        break;
+      }
+    }
+  }
+
+  // Sort counts within each range
+  for (const range of ranges) {
+    range.counts.sort((a, b) => a.count - b.count);
+  }
+
+  return ranges.filter(r => r.counts.length > 0);
 });
 
-const getTopMostCommonWords = async () => {
-  loading.value = true;
+const currentRangeCounts = computed(() => {
+  if (!selectedRange.value) return [];
+  const range = countRanges.value.find(r => r.label === selectedRange.value);
+  return range ? range.counts : [];
+});
+
+// API calls
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
+const fetchTopWords = async () => {
+  loadingTop.value = true;
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const response = await fetch(`${baseUrl}/top-most-frequent-words/40`);
-    const data = await response.json();
-    mostCommonWords.value = data;
+    mostCommonWords.value = await response.json();
   } catch (error) {
-    console.error('Error fetching most common words:', error);
+    console.error('Error fetching top words:', error);
   } finally {
-    loading.value = false;
+    loadingTop.value = false;
   }
 };
 
-const getWords = async () => {
-  if (!selectedCount.value) {
-    return;
-  }
-
-  loading.value = true;
-  words.value = [];
-
+const fetchRareWords = async () => {
+  loadingRare.value = true;
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const response = await fetch(`${baseUrl}/words-by-count/${selectedCount.value}`);
-    const data = await response.json();
-    words.value = data;
+    const response = await fetch(`${baseUrl}/top-least-frequent-words/50`);
+    rareWords.value = await response.json();
+  } catch (error) {
+    console.error('Error fetching rare words:', error);
+  } finally {
+    loadingRare.value = false;
+  }
+};
+
+const fetchWordCounts = async () => {
+  loadingCounts.value = true;
+  try {
+    const response = await fetch(`${baseUrl}/available-word-counts`);
+    wordCounts.value = await response.json();
+  } catch (error) {
+    console.error('Error fetching word counts:', error);
+  } finally {
+    loadingCounts.value = false;
+  }
+};
+
+const fetchWordsByCount = async (count: number) => {
+  loadingWords.value = true;
+  words.value = [];
+  try {
+    const response = await fetch(`${baseUrl}/words-by-count/${count}`);
+    words.value = await response.json();
   } catch (error) {
     console.error('Error fetching words by count:', error);
   } finally {
-    loading.value = false;
+    loadingWords.value = false;
   }
 };
+
+// Actions
+const selectRange = (range: CountRange) => {
+  selectedRange.value = range.label;
+  selectedCount.value = null;
+  words.value = [];
+};
+
+const selectCount = (count: number) => {
+  selectedCount.value = count;
+  fetchWordsByCount(count);
+};
+
+// Watch tab changes to load data
+watch(activeTab, (newTab) => {
+  if (newTab === 'top' && mostCommonWords.value.length === 0) {
+    fetchTopWords();
+  } else if (newTab === 'rare' && rareWords.value.length === 0) {
+    fetchRareWords();
+  } else if (newTab === 'browse' && wordCounts.value.length === 0) {
+    fetchWordCounts();
+  }
+});
+
+onMounted(() => {
+  fetchTopWords();
+  fetchWordCounts();
+});
 </script>
 
 <style scoped>
@@ -112,64 +334,157 @@ const getWords = async () => {
   margin: 0 auto;
 }
 
-.count-selector {
-  margin-bottom: 2rem;
+.header-card {
+  margin-bottom: 1.5rem;
 }
 
-.select-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--app-text, #333);
-  margin-bottom: 0.5rem;
-}
-
-.dark-mode .select-label {
-  color: #e0e0e0;
-}
-
-.count-select {
-  max-width: 300px;
-}
-
-.words-list {
-  font-size: 1.5rem;
-  font-weight: bold;
-  text-align: left;
-}
-
-.common-words-section {
-  margin-top: 1rem;
-}
-
-.common-words-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.common-word-item {
+.page-title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.page-title i {
+  color: #4CAF50;
+}
+
+/* Stats Row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card :deep(.p-card-body) {
+  padding: 1rem;
+}
+
+.stat-card :deep(.p-card-content) {
+  padding: 0;
+}
+
+.stat-content {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4CAF50;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.dark-mode .stat-label {
+  color: #999;
+}
+
+/* Main Content */
+.main-content-card :deep(.p-card-content) {
+  padding: 0;
+}
+
+.tab-content {
+  padding: 1.5rem;
+}
+
+.tab-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.dark-mode .tab-description {
+  color: #999;
+}
+
+/* Range Chips */
+.range-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.range-chips :deep(.p-chip) {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.range-chips :deep(.p-chip:hover) {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.range-chips :deep(.p-chip.range-selected) {
+  background: #4CAF50;
+  color: white;
+}
+
+/* Count Selector */
+.count-selector {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
   background: rgba(76, 175, 80, 0.05);
   border-radius: 0.5rem;
 }
 
-.dark-mode .common-word-item {
+.dark-mode .count-selector {
   background: rgba(76, 175, 80, 0.1);
 }
 
-.word-count-badge {
-  font-size: 0.75rem;
+.count-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.word-text {
-  font-size: 1.25rem;
+.count-chips :deep(.p-button) {
+  min-width: 60px;
+}
+
+/* Selected Count Header */
+.selected-count-header {
+  margin-bottom: 1rem;
+}
+
+.selected-count-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.word-total {
+  color: #666;
+  font-weight: normal;
+  font-size: 0.9rem;
+}
+
+.dark-mode .word-total {
+  color: #999;
+}
+
+/* Words List */
+.words-list {
+  font-size: 1.5rem;
   font-weight: bold;
 }
 
+/* Loading State */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -187,6 +502,22 @@ const getWords = async () => {
   color: #999;
 }
 
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #999;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Arabic text */
 .ar {
   direction: rtl;
   text-align: right;
