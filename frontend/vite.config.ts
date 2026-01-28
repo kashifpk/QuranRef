@@ -32,6 +32,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': BACKEND_URL
+    },
+    watch: {
+      // Polling required for containerized development
+      // Native inotify events reach container but chokidar doesn't receive them
+      usePolling: true,
+      interval: 500
     }
   },
   // Configure for SPA routing

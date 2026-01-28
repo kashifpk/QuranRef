@@ -1,6 +1,8 @@
 import { Component, createApp } from 'vue'
 import { createPinia } from 'pinia'
-import vuetify from './plugins/vuetify.ts'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
+import { primeVueConfig } from './plugins/primevue.ts'
 import router from './router.ts'
 
 
@@ -21,7 +23,8 @@ function mountVueComponents(componentMap: Record<string, Component>) {
       const Component = componentMap[elementClass];
       if (Component) {
         const app = createApp(Component, element.dataset);
-        app.use(vuetify)
+        app.use(PrimeVue, primeVueConfig)
+        app.directive('tooltip', Tooltip)
         app.use(router)
         app.use(pinia)
         app.mount(element);

@@ -1,17 +1,12 @@
 <template>
-  <div>
-    <div class="text-white text-body-2 mb-1">Arabic Text Style</div>
-    <v-select
+  <div class="arabic-text-select">
+    <label class="select-label">Arabic Text Style</label>
+    <Select
       v-model="selectedType"
-      :items="textTypes"
+      :options="textTypes"
       placeholder="Select style"
-      variant="outlined"
-      density="compact"
-      color="green-darken-3"
-      bg-color="white"
-      hide-details
-      persistent-placeholder
-      @update:model-value="changeTextType"
+      @change="changeTextType"
+      class="w-full"
     />
   </div>
 </template>
@@ -19,7 +14,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useStore } from '../store';
-import { VSelect } from 'vuetify/components';
+import Select from 'primevue/select';
 
 const store = useStore();
 const selectedType = ref(store.arabicTextType);
@@ -35,11 +30,38 @@ onMounted(async () => {
 });
 
 // Watch for changes in the store's arabicTextType
-watch(() => store.arabicTextType, (newValue) => {
-  selectedType.value = newValue;
-});
+watch(
+  () => store.arabicTextType,
+  (newValue) => {
+    selectedType.value = newValue;
+  }
+);
 
 const changeTextType = () => {
   store.setArabicTextType(selectedType.value);
 };
 </script>
+
+<style scoped>
+.arabic-text-select {
+  width: 100%;
+}
+
+.select-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-text, #666);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dark-mode .select-label {
+  color: #999;
+}
+
+.w-full {
+  width: 100%;
+}
+</style>

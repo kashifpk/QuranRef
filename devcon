@@ -67,7 +67,8 @@ show_help() {
     printf "  ./devcon [command] [options]\n"
     printf "\n"
     printf "${YELLOW}Core Commands:${NC}\n"
-    printf "  up              Start all services (database, backend, frontend)\n"
+    printf "  up              Start with hot-reload + watch mode (Ctrl+C to stop)\n"
+    printf "  up -d           Start in background (detached, no watch)\n"
     printf "  down            Stop all services\n"
     printf "  restart         Restart all services\n"
     printf "  status          Show status of all services\n"
@@ -113,22 +114,39 @@ show_help() {
 
 # Start all services
 cmd_up() {
-    print_header "Starting Development Environment"
+    local detached=false
 
-    print_info "Starting containers..."
-    $COMPOSE_CMD -f $COMPOSE_FILE up -d
+    # Check for -d flag
+    if [ "$1" = "-d" ]; then
+        detached=true
+    fi
 
-    print_info "Waiting for services to be ready..."
-    sleep 3
+    if [ "$detached" = true ]; then
+        print_header "Starting Development Environment (Detached)"
+        print_info "Starting containers in background..."
+        $COMPOSE_CMD -f $COMPOSE_FILE up -d
 
-    # Check service health
-    if $COMPOSE_CMD -f $COMPOSE_FILE ps | grep -qiE "running|up"; then
-        print_success "All services started successfully!"
-        cmd_urls
-        print_info "Run './devcon logs' to view logs"
+        print_info "Waiting for services to be ready..."
+        sleep 3
+
+        if $COMPOSE_CMD -f $COMPOSE_FILE ps | grep -qiE "running|up"; then
+            print_success "All services started successfully!"
+            cmd_urls
+            print_info "Run './devcon logs' to view logs"
+            print_info "Run './devcon down' to stop services"
+        else
+            print_error "Some services failed to start. Check logs with './devcon logs'"
+            $COMPOSE_CMD -f $COMPOSE_FILE ps
+        fi
     else
-        print_error "Some services failed to start. Check logs with './devcon logs'"
-        $COMPOSE_CMD -f $COMPOSE_FILE ps
+        print_header "Starting Development Environment"
+        print_info "Hot-reload enabled via volume mounts"
+        print_info "Watch mode: auto-rebuilds on Dockerfile/dependency changes"
+        print_info "Press Ctrl+C to stop all services"
+        echo ""
+        cmd_urls
+        echo ""
+        $COMPOSE_CMD -f $COMPOSE_FILE up --watch
     fi
 }
 
@@ -432,7 +450,7 @@ check_runtime
 
 case "${1:-help}" in
     up)
-        cmd_up
+        cmd_up $2
         ;;
     down)
         cmd_down

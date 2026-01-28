@@ -12,6 +12,24 @@ export const useStore = defineStore('quranref_store', () => {
   const availableTranslations = ref<[string, string][]>([]);
   const selectedTranslations = useStorage('quranref-selected-translations', [] as [string, string][]);
 
+  // Dark mode state (persisted to localStorage)
+  const darkMode = useStorage('quranref-dark-mode', false);
+
+  // Initialize theme on app load
+  function initializeTheme() {
+    if (darkMode.value) {
+      document.documentElement.classList.add('dark-mode');
+    } else {
+      document.documentElement.classList.remove('dark-mode');
+    }
+  }
+
+  // Toggle dark/light mode
+  function toggleDarkMode() {
+    darkMode.value = !darkMode.value;
+    initializeTheme();
+  }
+
   // Computed properties (getters)
   const selectedTranslationsString = computed(() => {
     let s = '';
@@ -105,6 +123,7 @@ export const useStore = defineStore('quranref_store', () => {
     availableTextTypes,
     availableTranslations,
     selectedTranslations,
+    darkMode,
 
     // Loading states
     surahInfoLoading,
@@ -118,6 +137,8 @@ export const useStore = defineStore('quranref_store', () => {
     loadTextTypes,
     setArabicTextType,
     addTranslation,
-    removeTranslation
+    removeTranslation,
+    initializeTheme,
+    toggleDarkMode
   }
 })

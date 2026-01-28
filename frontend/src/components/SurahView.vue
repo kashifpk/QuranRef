@@ -1,132 +1,156 @@
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-.surah-view-component {
-  text-align: right;
-
-}
-
-.surah-name {
-  font-size: 26pt;
-  font-weight: bold;
-}
-</style>
-
 <template>
+  <div class="surah-view">
+    <Card class="surah-header">
+      <template #content>
+        <h1 class="ar surah-name">{{ surahInfo?.arabic_name }}</h1>
+        <p class="surah-info" v-if="surahInfo">
+          {{ surahInfo.english_name }} - {{ surahInfo.translated_name }}
+          <span class="surah-meta">
+            ({{ surahInfo.total_ayas }} verses, {{ surahInfo.nuzool_location }})
+          </span>
+        </p>
+      </template>
+    </Card>
 
-  <v-container class="surah-view-component">
-    <v-row>
-      <v-col class="text-center ar surah-name">
-        {{ surahInfo?.arabic_name }}
-      </v-col>
-    </v-row>
+    <div v-if="surahAyas && surahAyas.length > 0" class="ayas-list">
+      <aya-view v-for="aya in surahAyas" :key="aya.aya_key" :aya="aya" :display-surah-name="false" />
+    </div>
 
-    <aya-view v-for="aya in surahAyas" :aya="aya" :display-surah-name="false"></aya-view>
-
-  </v-container>
+    <div v-else class="loading-state">
+      <ProgressSpinner strokeWidth="4" />
+      <p>Loading Surah...</p>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import { mande } from 'mande';
-  import { VContainer, VRow, VCol } from 'vuetify/components';
-  import { ref, onMounted, watch } from 'vue'
-  import { useRoute } from 'vue-router'
-  import { useStore } from '../store'
-  import type { SurahInfo, AyaInfo } from "../type_defs"
-  import AyaView from './AyaView.vue';
+import { mande } from 'mande';
+import { ref, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useStore } from '../store';
+import Card from 'primevue/card';
+import ProgressSpinner from 'primevue/progressspinner';
+import type { SurahInfo, AyaInfo } from '../type_defs';
+import AyaView from './AyaView.vue';
 
-  const props = defineProps({
-    surah_number: Number
-  })
+const props = defineProps({
+  surah_number: Number,
+});
 
-  const store = useStore()
-  // const router = useRouter()
-  const route = useRoute()
+const store = useStore();
+const route = useRoute();
 
-  // import AyaView from './AyaView'
-  // <aya-view :aya="aya"></aya-view>
-  const surahAyas = ref<AyaInfo[]>()
-  const surahInfo = ref<SurahInfo>()
+const surahAyas = ref<AyaInfo[]>();
+const surahInfo = ref<SurahInfo>();
 
+onMounted(async () => {
+  if (props.surah_number !== undefined) {
+    surahInfo.value = store.surahInfo[props.surah_number - 1];
+    await getSurahText();
+  } else {
+    console.error('surah_number is undefined');
+  }
+});
 
-  onMounted(async () => {
-    if (props.surah_number !== undefined) {
-      console.log(props.surah_number)
+watch(
+  () => route.params.surah_number,
+  async (newVal, oldVal) => {
+    console.log('route.params.surah_number changed: ', newVal, ' | was: ', oldVal);
+    await getSurahText();
+  }
+);
 
-      surahInfo.value = store.surahInfo[props.surah_number - 1]
-      await getSurahText()
-    } else {
-      console.error('surah_number is undefined')
-    }
-  })
+// Watch for changes in Arabic text type
+watch(
+  () => store.arabicTextType,
+  async () => {
+    console.log('Arabic text type changed, refreshing surah text');
+    await getSurahText();
+  }
+);
 
-  watch(() => route.params.surah_number, async (newVal, oldVal) => {
-    console.log('route.params.surah_number changed: ', newVal, ' | was: ', oldVal)
-    await getSurahText()
-  })
-  
-  // Watch for changes in Arabic text type
-  watch(() => store.arabicTextType, async () => {
-    console.log('Arabic text type changed, refreshing surah text')
-    await getSurahText()
-  })
-  
-  // Watch for changes in selected translations
-  watch(() => store.selectedTranslations, async () => {
-    console.log('Selected translations changed, refreshing surah text')
-    await getSurahText()
-  }, { deep: true })
+// Watch for changes in selected translations
+watch(
+  () => store.selectedTranslations,
+  async () => {
+    console.log('Selected translations changed, refreshing surah text');
+    await getSurahText();
+  },
+  { deep: true }
+);
 
-  const getSurahText = async () => {
-    console.log('getSurahText')
-    
-    // Build the language specification using user's selections
-    let languagesSpec = `arabic:${store.arabicTextType}`
-    
-    if (store.selectedTranslationsString) {
-      languagesSpec += `_${store.selectedTranslationsString}`
-    }
-    
-    const url = import.meta.env.VITE_API_BASE_URL + "/text/" + props.surah_number + "/" + languagesSpec
-    console.log('Requesting URL:', url)
-    console.log('Languages spec:', languagesSpec)
-    
-    const surahsApi = mande(url)
-    const response = await surahsApi.get()
-    console.log('API Response:', response)
-    surahAyas.value = response as AyaInfo[]
+const getSurahText = async () => {
+  // Build the language specification using user's selections
+  let languagesSpec = `arabic:${store.arabicTextType}`;
+
+  if (store.selectedTranslationsString) {
+    languagesSpec += `_${store.selectedTranslationsString}`;
   }
 
-  // watch: {
-  //     '$store.getters.arabicTextType': function (newVal, oldVal) { // watch it
-  //     console.log('arabicTextType changed: ', newVal, ' | was: ', oldVal)
-  //     this.getSurahText()
-  //     },
-  //     '$store.state.selectedTranslations': function (newVal, oldVal) { // watch it
-  //     this.getSurahText()
-  //     }
-  // },
-  // methods: {
-  //     getSurahText () {
-  //     let env = appConfig.getEnvConfig(process.env.NODE_ENV)
+  const url =
+    import.meta.env.VITE_API_BASE_URL + '/text/' + props.surah_number + '/' + languagesSpec;
 
-  //     let requestURL = env.API_URL + '/qref/' + this.$route.params.surah_number +
-  //         '/arabic,' + this.$store.getters.arabicTextType
-
-  //     let trStr = this.$store.getters.selectedTranslationsString
-  //     if (trStr) {
-  //         requestURL += '_' + trStr
-  //     }
-
-  //     console.log(requestURL)
-  //     this.axios.get(requestURL).then((response) => {
-  //         console.log(response)
-  //         this.surahAyas = response.data
-  //     })
-  //     .catch((error) => {
-  //         console.log(error)
-  //     })
-  //     }
-  // }
-
+  const surahsApi = mande(url);
+  const response = await surahsApi.get();
+  surahAyas.value = response as AyaInfo[];
+};
 </script>
 
+<style scoped>
+.surah-view {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.surah-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.surah-name {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4caf50;
+  margin: 0;
+}
+
+.surah-info {
+  margin: 0.5rem 0 0;
+  color: var(--app-text, #666);
+}
+
+.dark-mode .surah-info {
+  color: #999;
+}
+
+.surah-meta {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.ayas-list {
+  text-align: right;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.loading-state p {
+  color: #666;
+}
+
+.dark-mode .loading-state p {
+  color: #999;
+}
+
+.ar {
+  direction: rtl;
+  text-align: right;
+}
+</style>

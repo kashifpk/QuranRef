@@ -1,8 +1,11 @@
 import 'vite/modulepreload-polyfill'
+import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import vuetify from './plugins/vuetify.ts'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
+import { primeVueConfig } from './plugins/primevue.ts'
 import router from './router.ts'
 import QuranRefMainApp from './QuranRefMainApp.vue'
 import mountVueComponents from './common_vue.ts'
@@ -13,8 +16,9 @@ if (appElement) {
   // Development mode - mount the full app
   const app = createApp(QuranRefMainApp)
   const pinia = createPinia()
-  
-  app.use(vuetify)
+
+  app.use(PrimeVue, primeVueConfig)
+  app.directive('tooltip', Tooltip)
   app.use(router)
   app.use(pinia)
   app.mount('#app')

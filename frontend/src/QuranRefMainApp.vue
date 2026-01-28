@@ -1,103 +1,329 @@
-<style scoped></style>
-
 <template>
-  <v-responsive>
-    <v-app>
+  <div class="app-container" :class="{ 'dark-mode': store.darkMode }">
+    <!-- Header Toolbar -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="header-left">
+          <Button
+            icon="pi pi-bars"
+            @click="drawerVisible = true"
+            text
+            rounded
+            class="menu-button"
+          />
+          <a href="/" class="app-title ar">القرآن الكريم</a>
+        </div>
 
-      <v-app-bar :elevation="0" class="bg-green-darken-4">
-        <template v-slot:prepend>
-          <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-        </template>
-        <v-app-bar-title class="d-flex w-100 justify-center">
-          <a href="/"
-            class="d-flex d-sm-none ar ar-header text-decoration-none font-weight-bold text-green-lighten-5">
-            القرآن الکریم
-          </a>
-        </v-app-bar-title>
+        <div class="header-center">
+          <IconField class="search-field">
+            <InputIcon class="pi pi-search" />
+            <InputText
+              v-model="searchTerm"
+              placeholder="Search..."
+              @keyup.enter="doSearch"
+            />
+          </IconField>
+        </div>
 
-        <template v-slot:append>
-          <v-text-field
-            v-model="searchTerm"
-            label="Search"
-            append-inner-icon="mdi-magnify"
-            variant="solo-inverted"
-            min-width="200"
-            density="compact"
-            single-line
-            hide-details
-            @click:append-inner="doSearch"
-            @keyup.enter="doSearch"
-          ></v-text-field>
-          <v-icon icon="mdi-account"></v-icon>
-          <v-btn href="/" icon="mdi-heart"></v-btn>
-          <v-btn href="/by_word" title="Explore words" icon="mdi-file-word-box"></v-btn>
-          <v-btn icon="mdi-dots-vertical"></v-btn>
-        </template>
+        <div class="header-right">
+          <Button
+            :icon="store.darkMode ? 'pi pi-sun' : 'pi pi-moon'"
+            @click="store.toggleDarkMode"
+            text
+            rounded
+            v-tooltip.bottom="store.darkMode ? 'Light Mode' : 'Dark Mode'"
+          />
+          <Button
+            icon="pi pi-heart"
+            @click="$router.push('/')"
+            text
+            rounded
+            v-tooltip.bottom="'Favorites'"
+          />
+          <Button
+            icon="pi pi-book"
+            @click="$router.push('/by_word')"
+            text
+            rounded
+            v-tooltip.bottom="'Browse by Word'"
+          />
+        </div>
+      </div>
+    </header>
 
+    <!-- Navigation Drawer -->
+    <Drawer v-model:visible="drawerVisible" header="Navigation" class="app-drawer">
+      <div class="drawer-content">
+        <div class="nav-section">
+          <router-link to="/" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-home"></i>
+            <span>Home</span>
+          </router-link>
 
-      </v-app-bar>
+          <Divider />
 
-      <v-navigation-drawer v-model="drawer" class="bg-green-darken-3">
-        <v-list>
-          <v-list-item>
-            <router-link to="/" title="Home" class="text-decoration-none font-weight-bold text-white"><v-icon icon="mdi-home"></v-icon></router-link>
-          </v-list-item>
+          <router-link to="/by_word" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-book"></i>
+            <span>Browse by Word</span>
+          </router-link>
 
-          <v-divider></v-divider>
+          <router-link to="/by_word_count" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-sort-numeric-down"></i>
+            <span>Words by Count</span>
+          </router-link>
+        </div>
 
-          <v-list-item class="text-left pl-8">
-            <router-link to="/by_word" title="Browse by Word" class="text-decoration-none font-weight-bold text-white">By Word</router-link>
-          </v-list-item>
+        <Divider />
 
-          <v-list-item class="text-left pl-8">
-            <router-link to="/by_word_count" title="Words by Count" class="text-decoration-none font-weight-bold text-white">Words by count</router-link>
-          </v-list-item>
+        <div class="settings-section">
+          <h4>Settings</h4>
+          <arabic-text-type-select />
+          <translation-select />
+        </div>
+      </div>
+    </Drawer>
 
-          <v-list-item class="text-left pl-8">
-            <arabic-text-type-select />
-          </v-list-item>
+    <!-- Main Content -->
+    <main class="app-main">
+      <router-view />
+    </main>
 
-          <v-list-item class="text-left pl-8">
-            <translation-select />
-          </v-list-item>
-
-        </v-list>
-      </v-navigation-drawer>
-
-      <v-main>
-        <router-view />
-
-      </v-main>
-
-      <v-footer class="justify-center" border>
-        Arabic texts and translations courtesy of <a class="pl-2" href="http://tanzil.net">tanzil.net</a>
-      </v-footer>
-    </v-app>
-
-
-  </v-responsive>
-
-
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Arabic texts and translations courtesy of</span>
+      <a href="http://tanzil.net" target="_blank" rel="noopener">tanzil.net</a>
+    </footer>
+  </div>
 </template>
 
-
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import { useRouter } from 'vue-router';
-  import {
-    VApp, VResponsive, VMain, VAppBar, VAppBarTitle, VFooter, VAppBarNavIcon, VNavigationDrawer, VDivider, VList, VListItem, VBtn, VIcon, VTextField
-  } from 'vuetify/components';
-  import { RouterView, RouterLink } from 'vue-router';
-  import ArabicTextTypeSelect from './components/ArabicTextTypeSelect.vue';
-  import TranslationSelect from './components/TranslationSelect.vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStore } from './store';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
+import Drawer from 'primevue/drawer';
+import Divider from 'primevue/divider';
+import ArabicTextTypeSelect from './components/ArabicTextTypeSelect.vue';
+import TranslationSelect from './components/TranslationSelect.vue';
 
-  const router = useRouter();
-  const searchTerm = ref('');
-  const drawer = ref(false);
+const router = useRouter();
+const store = useStore();
+const searchTerm = ref('');
+const drawerVisible = ref(false);
 
-  const doSearch = () => {
-    if (searchTerm.value.trim()) {
-      router.push({ name: 'search', params: { search_term: searchTerm.value } });
-    }
-  };
+// Initialize theme on mount
+onMounted(() => {
+  store.initializeTheme();
+});
+
+const doSearch = () => {
+  if (searchTerm.value.trim()) {
+    router.push({ name: 'search', params: { search_term: searchTerm.value } });
+    drawerVisible.value = false;
+  }
+};
 </script>
+
+<style scoped>
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--app-bg, #fafafa);
+  color: var(--app-text, #1a1a1a);
+}
+
+/* Header Styles */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-center {
+  flex: 1;
+  max-width: 400px;
+  margin: 0 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.menu-button {
+  color: white !important;
+}
+
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #E8F5E9;
+  text-decoration: none;
+}
+
+.app-header :deep(.p-button) {
+  color: white;
+}
+
+.app-header :deep(.p-button:hover) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.search-field {
+  width: 100%;
+}
+
+.search-field :deep(.p-inputtext) {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 2rem;
+}
+
+.search-field :deep(.p-inputtext:focus) {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Drawer Styles */
+.app-drawer {
+  --p-drawer-background: var(--app-surface, #ffffff);
+}
+
+.drawer-content {
+  padding: 1rem 0;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--app-text, #1a1a1a);
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.nav-link i {
+  font-size: 1.125rem;
+  color: #4CAF50;
+}
+
+.settings-section {
+  padding: 0 1rem;
+}
+
+.settings-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Main Content */
+.app-main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Footer Styles */
+.app-footer {
+  background: var(--app-surface, #ffffff);
+  border-top: 1px solid var(--p-surface-200, #e5e7eb);
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.app-footer a {
+  color: #4CAF50;
+  text-decoration: none;
+  margin-left: 0.25rem;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Dark Mode Styles */
+.dark-mode {
+  --app-bg: #121212;
+  --app-surface: #1E1E1E;
+  --app-text: #E0E0E0;
+}
+
+.dark-mode .app-header {
+  background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+}
+
+.dark-mode .app-footer {
+  background: #1E1E1E;
+  border-color: #333;
+  color: #999;
+}
+
+.dark-mode .nav-link {
+  color: #E0E0E0;
+}
+
+.dark-mode .settings-section h4 {
+  color: #999;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .header-center {
+    display: none;
+  }
+
+  .app-title {
+    font-size: 1rem;
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
+}
+
+/* Menu button always visible - drawer contains settings */
+</style>

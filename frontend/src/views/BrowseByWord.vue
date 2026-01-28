@@ -1,77 +1,55 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="ar text-center">
-            Browse by Arabic Letters
-          </v-card-title>
-          
-          <v-card-text>
-            <div class="letters-grid ar text-center">
-              <v-btn
-                v-for="letter in letters"
-                :key="letter"
-                :variant="letter === selectedLetter ? 'flat' : 'outlined'"
-                :color="letter === selectedLetter ? 'green' : 'default'"
-                size="large"
-                class="ma-1 ar-letter"
-                @click="getWords(letter)"
-              >
-                {{ letter }}
-              </v-btn>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+  <div class="browse-by-word">
+    <Card>
+      <template #title>
+        <span class="ar">Browse by Arabic Letters</span>
+      </template>
+      <template #content>
+        <div class="letters-grid ar">
+          <Button
+            v-for="letter in letters"
+            :key="letter"
+            :label="letter"
+            :severity="letter === selectedLetter ? 'success' : 'secondary'"
+            :outlined="letter !== selectedLetter"
+            size="large"
+            class="letter-btn ar"
+            @click="getWords(letter)"
+          />
+        </div>
+      </template>
+    </Card>
 
-    <v-row v-if="words.length > 0">
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="ar">
-            Words starting with "{{ selectedLetter }}"
-          </v-card-title>
-          
-          <v-card-text>
-            <div class="words-list ar">
-              <word-ayas 
-                v-for="word in words" 
-                :key="word[0]"
-                :word="{ word: word[0], count: word[1] }" 
-              />
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+    <Card v-if="words.length > 0" class="words-card">
+      <template #title>
+        <span class="ar">Words starting with "{{ selectedLetter }}"</span>
+      </template>
+      <template #content>
+        <div class="words-list ar">
+          <word-ayas v-for="word in words" :key="word[0]" :word="{ word: word[0], count: word[1] }" />
+        </div>
+      </template>
+    </Card>
 
-    <v-row v-if="loading">
-      <v-col cols="12" class="text-center">
-        <v-progress-circular
-          indeterminate
-          color="green"
-          size="64"
-        />
-        <p class="mt-4">Loading...</p>
-      </v-col>
-    </v-row>
-  </v-container>
+    <div v-if="loading" class="loading-state">
+      <ProgressSpinner strokeWidth="4" />
+      <p>Loading...</p>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useAsyncState } from '@vueuse/core';
-import { VContainer, VRow, VCol, VCard, VCardTitle, VCardText, VBtn, VProgressCircular } from 'vuetify/components';
+import Card from 'primevue/card';
+import Button from 'primevue/button';
+import ProgressSpinner from 'primevue/progressspinner';
 import WordAyas from '../components/WordAyas.vue';
 
 const selectedLetter = ref('');
 
 // Use VueUse for better async state management
-const {
-  state: letters,
-  isLoading: lettersLoading
-} = useAsyncState(
+const { state: letters, isLoading: lettersLoading } = useAsyncState(
   async () => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const response = await fetch(`${baseUrl}/letters`);
@@ -84,7 +62,7 @@ const {
 const {
   state: words,
   isLoading: wordsLoading,
-  execute: loadWords
+  execute: loadWords,
 } = useAsyncState(
   async (letter: string) => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -104,21 +82,54 @@ const getWords = (letter: string) => {
 </script>
 
 <style scoped>
-.letters-grid {
-  font-size: 18pt;
-  font-weight: bold;
+.browse-by-word {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.ar-letter {
+.letters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.letter-btn {
   min-width: 60px !important;
   min-height: 60px !important;
-  font-size: 18pt !important;
+  font-size: 1.25rem !important;
   font-weight: bold !important;
 }
 
+.words-card {
+  margin-top: 1.5rem;
+}
+
 .words-list {
-  font-size: 24pt;
+  font-size: 1.5rem;
   font-weight: bold;
+  text-align: right;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.loading-state p {
+  color: #666;
+}
+
+.dark-mode .loading-state p {
+  color: #999;
+}
+
+.ar {
+  direction: rtl;
   text-align: right;
 }
 </style>

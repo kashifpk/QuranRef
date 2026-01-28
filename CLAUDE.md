@@ -14,11 +14,14 @@ QuranRef is a modern web application providing searchable access to the Holy Qur
 
 ```bash
 # Start all services in containers (system-upgrade-proof)
-./dev-docker.sh up      # Start all services
-./dev-docker.sh logs    # View logs from all services  
-./dev-docker.sh down    # Stop all services
-./dev-docker.sh build   # Rebuild after dependency changes
+./devcon up       # Start all services
+./devcon logs     # View logs from all services
+./devcon down     # Stop all services
+./devcon build    # Rebuild after Dockerfile changes
+./devcon sync     # Sync dependencies after package.json/pyproject.toml changes
 ```
+
+**Important: After changing dependencies** (package.json or pyproject.toml), run `./devcon sync` to install new packages in containers. The container uses anonymous volumes for node_modules/venv, so rebuilding alone won't update them.
 
 **Access your application:**
 - Frontend: http://localhost:41149 (Vite dev server)
@@ -38,7 +41,7 @@ QuranRef is a modern web application providing searchable access to the Holy Qur
 
 ```bash
 # Access backend container shell
-./dev-docker.sh shell
+./devcon shell
 
 # Inside container:
 # Run tests with coverage
@@ -73,11 +76,11 @@ docker exec quranref_frontend_dev vue-tsc -b
 
 ```bash
 # Advanced Docker development commands
-./dev-docker.sh shell   # Access backend container shell
-./dev-docker.sh clean   # Clean up all resources
-./dev-docker.sh backend # Show backend logs only
-./dev-docker.sh frontend # Show frontend logs only
-./dev-docker.sh db      # Show database logs only
+./devcon shell   # Access backend container shell
+./devcon clean   # Clean up all resources
+./devcon backend # Show backend logs only
+./devcon frontend # Show frontend logs only
+./devcon db      # Show database logs only
 ```
 
 ### Why Docker-Only Development?
@@ -108,11 +111,12 @@ Key files:
 
 ### Frontend (Vue.js 3 + TypeScript)
 - **Framework**: Vue.js 3 with Composition API and TypeScript
-- **UI Library**: Vuetify (Material Design)
+- **UI Library**: PrimeVue 4 with Aura theme (green palette)
 - **State Management**: Pinia store (`store.ts`)
 - **Routing**: Vue Router 4 with history mode
 - **Build Tool**: Vite with custom mounting system
 - **HTTP Client**: Mande for API communication
+- **Features**: Dark/light mode toggle, responsive design
 
 Key files:
 - `frontend/src/QuranRefMainApp.vue`: Main application shell
@@ -141,7 +145,7 @@ Key files:
 - Use **Vue 3 Composition API** with `<script setup>` syntax
 - Leverage **VueUse** functions for reactivity
 - Follow **TypeScript strict mode** with proper type annotations
-- Use **Vuetify components** for UI consistency
+- Use **PrimeVue 4 components** for UI consistency (Aura theme)
 - Implement **responsive design** with mobile-first approach
 - Use **Pinia** for state management
 
