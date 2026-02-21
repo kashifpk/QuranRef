@@ -8,6 +8,28 @@
   <meta name="keywords" content="Quran Reference Online Arabic Urdu English Translation Search Browse Word Count" />
   
   <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico" />
+  <script>
+    // Apply dark mode immediately to prevent flash of wrong background
+    try {
+      var stored = localStorage.getItem('quranref-dark-mode');
+      var isDark = stored !== null
+        ? JSON.parse(stored) === true
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) {
+        document.documentElement.classList.add('dark-mode');
+      }
+    } catch(e) {}
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      background-color: #fafafa;
+    }
+    html.dark-mode, html.dark-mode body {
+      background-color: #121212;
+      color: #E0E0E0;
+    }
+  </style>
   <link rel="stylesheet" href="/css/style.css">
   <!-- Umami Analytics -->
   <script defer src="https://analytics.compulife.com.pk/script.js" data-website-id="914afec3-af20-4a90-8cda-7b192d80683f"></script>

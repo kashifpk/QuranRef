@@ -11,7 +11,7 @@
             rounded
             class="menu-button"
           />
-          <a href="/" class="app-title ar">القرآن الكريم</a>
+          <router-link to="/" class="app-title ar">القرآن الكريم</router-link>
         </div>
 
         <div class="header-center">

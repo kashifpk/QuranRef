@@ -13,7 +13,10 @@ export const useStore = defineStore('quranref_store', () => {
   const selectedTranslations = useStorage('quranref-selected-translations', [] as [string, string][]);
 
   // Dark mode state (persisted to localStorage)
-  const darkMode = useStorage('quranref-dark-mode', false);
+  // On first visit, follow system preference; thereafter use the stored value
+  const hasStoredPreference = localStorage.getItem('quranref-dark-mode') !== null;
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const darkMode = useStorage('quranref-dark-mode', hasStoredPreference ? false : systemPrefersDark);
 
   // Initialize theme on app load
   function initializeTheme() {

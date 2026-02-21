@@ -7,6 +7,10 @@ body {
   /*margin-top: 60px;*/
 }
 
+.dark-mode body {
+  color: #E0E0E0;
+}
+
 @font-face {
   font-family: 'AlQalam';
   src: url('/fonts/AlQalamQuran.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
