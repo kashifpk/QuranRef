@@ -247,13 +247,15 @@ def import_json(
             g.bulk_add_edges(has_word_triples)
             print(f"[green]  {len(has_word_triples)} HAS_WORD edges imported.[/green]")
 
-    # 6. Import AYA_TEXT edges (Aya→Text)
+    # 6. Import AYA_TEXT edges (Aya→Text) — batched to avoid OOM on small servers
     aya_texts_file = data_dir / "aya_texts_edges.json"
     if aya_texts_file.exists():
         print("[blue]Importing AYA_TEXT edges...[/blue]")
         with open(aya_texts_file) as f:
             aya_texts_data = json.load(f)
 
+        batch_size = 50_000
+        total = 0
         aya_text_triples = []
         for e in aya_texts_data:
             _from_col, from_key = e["_from"].split("/", 1)
@@ -265,9 +267,16 @@ def import_json(
                 edge = AyaText(language=e["language"], text_type=e["text_type"])
                 aya_text_triples.append((aya, edge, text))
 
+            if len(aya_text_triples) >= batch_size:
+                g.bulk_add_edges(aya_text_triples)
+                total += len(aya_text_triples)
+                print(f"  ... {total} AYA_TEXT edges imported so far")
+                aya_text_triples = []
+
         if aya_text_triples:
             g.bulk_add_edges(aya_text_triples)
-            print(f"[green]  {len(aya_text_triples)} AYA_TEXT edges imported.[/green]")
+            total += len(aya_text_triples)
+        print(f"[green]  {total} AYA_TEXT edges imported.[/green]")
 
     # 7. Import meta_info
     meta_file = data_dir / "meta_info.json"
@@ -286,3 +295,106 @@ def import_json(
         print(f"[green]  {len(meta_data)} meta_info records imported.[/green]")
 
     print("[green]JSON import complete![/green]")
+
+
+@app.command(name="export-json")
+def export_json(
+    output_dir: Path = typer.Argument(
+        ...,
+        help="Path to directory where JSON export files will be written.",
+    ),
+):
+    "Export all graph data and meta_info to JSON files"
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    g = get_graph()
+
+    # 1. Export Surahs
+    surahs = g.query(Surah).all()
+    surahs_data = [
+        {
+            "_key": s.id,
+            "surah_number": s.surah_number,
+            "arabic_name": s.arabic_name,
+            "english_name": s.english_name,
+            "translated_name": s.translated_name,
+            "nuzool_location": s.nuzool_location,
+            "nuzool_order": s.nuzool_order,
+            "rukus": s.rukus,
+            "total_ayas": s.total_ayas,
+        }
+        for s in surahs
+    ]
+    _write_json(output_dir / "surahs.json", surahs_data)
+    print(f"[green]  {len(surahs_data)} surahs exported.[/green]")
+
+    # 2. Export Ayas
+    ayas = g.query(Aya).all()
+    ayas_data = [
+        {"_key": a.id, "surah_key": a.surah_key, "aya_number": a.aya_number}
+        for a in ayas
+    ]
+    _write_json(output_dir / "ayas.json", ayas_data)
+    print(f"[green]  {len(ayas_data)} ayas exported.[/green]")
+
+    # 3. Export Texts
+    texts = g.query(Text).all()
+    texts_data = [{"_key": t.id, "text": t.text} for t in texts]
+    _write_json(output_dir / "texts.json", texts_data)
+    print(f"[green]  {len(texts_data)} texts exported.[/green]")
+
+    # 4. Export Words
+    words = g.query(Word).all()
+    words_data = [{"_key": w.id, "word": w.word, "count": w.count} for w in words]
+    _write_json(output_dir / "words.json", words_data)
+    print(f"[green]  {len(words_data)} words exported.[/green]")
+
+    # 5. Export HAS_AYA and HAS_WORD edges
+    has_aya_rows = g.cypher(
+        "MATCH (s:Surah)-[e:HAS_AYA]->(a:Aya) RETURN s.id, a.id",
+        columns=["surah_id", "aya_id"],
+    )
+    has_word_rows = g.cypher(
+        "MATCH (a:Aya)-[e:HAS_WORD]->(w:Word) RETURN a.id, w.id",
+        columns=["aya_id", "word_id"],
+    )
+    has_edges = [
+        {"_from": f"surahs/{r['surah_id']}", "_to": f"ayas/{r['aya_id']}"}
+        for r in has_aya_rows
+    ] + [
+        {"_from": f"ayas/{r['aya_id']}", "_to": f"words/{r['word_id']}"}
+        for r in has_word_rows
+    ]
+    _write_json(output_dir / "has_edges.json", has_edges)
+    print(f"[green]  {len(has_edges)} has edges exported.[/green]")
+
+    # 6. Export AYA_TEXT edges
+    aya_text_rows = g.cypher(
+        "MATCH (a:Aya)-[e:AYA_TEXT]->(t:Text) RETURN a.id, t.id, e.language, e.text_type",
+        columns=["aya_id", "text_id", "language", "text_type"],
+    )
+    aya_texts_data = [
+        {
+            "_from": f"ayas/{r['aya_id']}",
+            "_to": f"texts/{r['text_id']}",
+            "language": r["language"],
+            "text_type": r["text_type"],
+        }
+        for r in aya_text_rows
+    ]
+    _write_json(output_dir / "aya_texts_edges.json", aya_texts_data)
+    print(f"[green]  {len(aya_texts_data)} AYA_TEXT edges exported.[/green]")
+
+    # 7. Export meta_info
+    with raw_connection() as conn:
+        cursor = conn.execute("SELECT key, value FROM meta_info")
+        meta_data = [{"_key": row[0], "value": row[1]} for row in cursor.fetchall()]
+    _write_json(output_dir / "meta_info.json", meta_data)
+    print(f"[green]  {len(meta_data)} meta_info records exported.[/green]")
+
+    print(f"[green]Export complete! Files written to {output_dir}[/green]")
+
+
+def _write_json(path: Path, data: list) -> None:
+    with open(path, "w") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)

@@ -1,0 +1,69 @@
+---
+- name: Ensure application directory exists
+  file:
+    path: "{{ app_base }}"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: "0755"
+
+- name: Sync backend code
+  ansible.posix.synchronize:
+    src: "{{ local_project_root }}/backend/"
+    dest: "{{ backend_dir }}/"
+    rsync_opts:
+      - "--exclude=.venv"
+      - "--exclude=__pycache__"
+      - "--exclude=.pytest_cache"
+      - "--exclude=.ruff_cache"
+      - "--exclude=htmlcov"
+      - "--exclude=.coverage"
+      - "--exclude=tests"
+      - "--exclude=data/age-export"
+    delete: yes
+
+- name: Sync static files (pre-built frontend)
+  ansible.posix.synchronize:
+    src: "{{ local_project_root }}/static/"
+    dest: "{{ static_dir }}/"
+    delete: yes
+
+- name: Deploy production .env
+  template:
+    src: env.production.j2
+    dest: "{{ backend_dir }}/.env"
+    owner: "{{ app_user }}"
+    mode: "0600"
+
+- name: Install Python dependencies with uv
+  command: "{{ uv_path }} sync --no-dev --no-sources"
+  args:
+    chdir: "{{ backend_dir }}"
+  environment:
+    UV_PYTHON: python3.12
+
+- name: Create systemd user directory
+  file:
+    path: "/home/{{ app_user }}/.config/systemd/user"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: "0755"
+
+- name: Deploy systemd service
+  template:
+    src: quranref.service.j2
+    dest: "/home/{{ app_user }}/.config/systemd/user/quranref.service"
+    owner: "{{ app_user }}"
+    mode: "0644"
+  notify: restart quranref
+
+- name: Reload systemd user daemon
+  systemd:
+    daemon_reload: yes
+    scope: user
+
+- name: Enable and start quranref service
+  systemd:
+    name: quranref
+    enabled: yes
+    state: started
+    scope: user

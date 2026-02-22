@@ -1,0 +1,59 @@
+---
+- name: Install build dependencies for Apache AGE
+  apt:
+    name:
+      - build-essential
+      - libreadline-dev
+      - zlib1g-dev
+      - flex
+      - bison
+      - postgresql-server-dev-{{ pg_version }}
+    state: present
+    update_cache: yes
+
+- name: Create AGE build directory
+  file:
+    path: "{{ age_build_dir }}"
+    state: directory
+
+- name: Download Apache AGE {{ age_version }}
+  get_url:
+    url: "https://github.com/apache/age/releases/download/PG16%2Fv{{ age_version }}-rc0/apache-age-{{ age_version }}-src.tar.gz"
+    dest: "{{ age_build_dir }}/apache-age-{{ age_version }}.tar.gz"
+
+- name: Extract Apache AGE source
+  unarchive:
+    src: "{{ age_build_dir }}/apache-age-{{ age_version }}.tar.gz"
+    dest: "{{ age_build_dir }}"
+    remote_src: yes
+
+- name: Check if AGE is already installed
+  stat:
+    path: "/usr/share/postgresql/{{ pg_version }}/extension/age.control"
+  register: age_installed
+
+- name: Compile and install Apache AGE
+  make:
+    chdir: "{{ age_build_dir }}/apache-age-{{ age_version }}"
+    target: "{{ item }}"
+    params:
+      PG_CONFIG: "{{ pg_config }}"
+  loop:
+    - install
+  when: not age_installed.stat.exists
+
+- name: Add AGE to shared_preload_libraries
+  lineinfile:
+    path: /etc/postgresql/{{ pg_version }}/main/postgresql.conf
+    regexp: "^shared_preload_libraries"
+    line: "shared_preload_libraries = 'age'"
+    state: present
+  notify: restart postgresql
+
+- name: Ensure PostgreSQL is listening on localhost
+  lineinfile:
+    path: /etc/postgresql/{{ pg_version }}/main/postgresql.conf
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = 'localhost'"
+    state: present
+  notify: restart postgresql

@@ -1,0 +1,43 @@
+---
+# One-time data import from local AGE database export
+# Run after setup.yml and before verifying the deployment
+
+- name: Import QuranRef data from JSON export
+  hosts: hosting_vps
+  remote_user: kashif
+  vars:
+    local_export_dir: "{{ local_project_root }}/backend/data/age-export"
+    remote_export_dir: "/tmp/quranref-import"
+
+  tasks:
+    - name: Create remote import directory
+      file:
+        path: "{{ remote_export_dir }}"
+        state: directory
+
+    - name: Transfer JSON export files
+      ansible.posix.synchronize:
+        src: "{{ local_export_dir }}/"
+        dest: "{{ remote_export_dir }}/"
+        delete: yes
+
+    - name: Run import-json command
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli db import-json {{ remote_export_dir }}"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Run post-processing - update meta info
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli post-process update-meta-info"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Clean up remote import directory
+      file:
+        path: "{{ remote_export_dir }}"
+        state: absent
+
+    - name: Restart quranref service
+      systemd:
+        name: quranref
+        state: restarted
+        scope: user

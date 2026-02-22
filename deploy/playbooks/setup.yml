@@ -1,0 +1,33 @@
+---
+# Full setup playbook: AGE install + DB setup + app deployment
+# Run once on fresh server or when upgrading AGE
+
+# --- System tasks (require root) ---
+- name: Install Apache AGE and configure PostgreSQL
+  hosts: hosting_vps
+  become: true
+  remote_user: root
+  roles:
+    - age_install
+    - postgres_setup
+  post_tasks:
+    - name: Enable lingering for app user (persist user services)
+      command: "loginctl enable-linger {{ app_user }}"
+      changed_when: false
+
+# --- Application tasks (run as kashif) ---
+- name: Deploy QuranRef application
+  hosts: hosting_vps
+  remote_user: kashif
+  roles:
+    - app_deploy
+
+# --- Database initialization (run as kashif) ---
+- name: Initialize QuranRef database schema
+  hosts: hosting_vps
+  remote_user: kashif
+  tasks:
+    - name: Initialize graph, labels, indexes, and meta_info table
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli db init"
+      args:
+        chdir: "{{ backend_dir }}"

@@ -1,0 +1,29 @@
+# Application
+app_name: quranref
+app_port: 7000
+app_user: kashif
+app_base: /home/kashif/QuranRef
+backend_dir: "{{ app_base }}/backend"
+frontend_dir: "{{ app_base }}/frontend"
+venv_dir: "{{ backend_dir }}/.venv"
+uv_path: /home/kashif/.local/bin/uv
+
+# Database
+db_host: localhost
+db_port: 5432
+db_name: quranref
+db_username: quranref
+db_password: compulife
+
+# PostgreSQL
+pg_version: "16"
+pg_config: /usr/bin/pg_config
+
+# Apache AGE
+age_version: "1.6.0"
+age_build_dir: /tmp/age-build
+
+# Paths
+static_dir: "{{ app_base }}/static"
+project_root: "{{ playbook_dir }}/.."
+local_project_root: "{{ project_root }}/.."

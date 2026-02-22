@@ -1,0 +1,9 @@
+---
+# Regular deployment: sync code + restart service
+# Use for routine code updates after initial setup
+
+- name: Deploy QuranRef application
+  hosts: hosting_vps
+  remote_user: kashif
+  roles:
+    - app_deploy

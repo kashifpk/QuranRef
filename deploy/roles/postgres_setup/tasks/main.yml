@@ -1,0 +1,65 @@
+---
+- name: Install psycopg2 for Ansible PostgreSQL modules
+  apt:
+    name: python3-psycopg2
+    state: present
+
+- name: Create database user with superuser (required for AGE LOAD)
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: "{{ db_username }}"
+    password: "{{ db_password }}"
+    role_attr_flags: SUPERUSER
+    state: present
+
+- name: Create database
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ db_name }}"
+    owner: "{{ db_username }}"
+    state: present
+
+- name: Enable AGE extension
+  become_user: postgres
+  community.postgresql.postgresql_ext:
+    name: age
+    db: "{{ db_name }}"
+    state: present
+
+- name: Grant schema permissions to app user
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    db: "{{ db_name }}"
+    privs: USAGE,CREATE
+    type: schema
+    obj: ag_catalog
+    role: "{{ db_username }}"
+
+- name: Grant table permissions on ag_catalog tables
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    db: "{{ db_name }}"
+    privs: SELECT,INSERT,UPDATE,DELETE
+    type: table
+    schema: ag_catalog
+    objs: ALL_IN_SCHEMA
+    role: "{{ db_username }}"
+
+- name: Grant sequence permissions on ag_catalog
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    db: "{{ db_name }}"
+    privs: USAGE,SELECT
+    type: sequence
+    schema: ag_catalog
+    objs: ALL_IN_SCHEMA
+    role: "{{ db_username }}"
+
+- name: Grant public schema permissions
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    db: "{{ db_name }}"
+    privs: USAGE,CREATE
+    type: schema
+    obj: public
+    role: "{{ db_username }}"

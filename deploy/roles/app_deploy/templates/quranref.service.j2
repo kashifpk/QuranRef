@@ -1,0 +1,14 @@
+[Unit]
+Description=QuranRef Web Application
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory={{ backend_dir }}
+Environment="PATH={{ venv_dir }}/bin:{{ uv_path | dirname }}:/usr/local/bin:/usr/bin:/bin"
+ExecStart={{ uv_path }} run --no-dev --no-sources uvicorn quranref.main:app --host 127.0.0.1 --port {{ app_port }} --workers 2
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

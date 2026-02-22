@@ -1,0 +1,6 @@
+---
+- name: restart quranref
+  systemd:
+    name: quranref
+    state: restarted
+    scope: user
