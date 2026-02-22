@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Any
 
 from dotenv import dotenv_values
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from . import PROJECT_ROOT
@@ -10,8 +10,8 @@ from . import PROJECT_ROOT
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=PROJECT_ROOT / ".env", 
-        env_file_encoding="utf-8", 
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
         extra='allow',
         case_sensitive=False
     )
@@ -22,9 +22,18 @@ class Settings(BaseSettings):
     db_username: str = Field(..., env="DB_USERNAME")
     db_password: str = Field(..., env="DB_PASSWORD")
     db_name: str = Field(..., env="DB_NAME")
-    db_hosts: str = Field(..., env="DB_HOSTS")
+    db_host: str = Field("localhost", env="DB_HOST")
+    db_port: int = Field(5432, env="DB_PORT")
 
     debug: bool = False
+
+    @computed_field
+    @property
+    def db_dsn(self) -> str:
+        return (
+            f"postgresql://{self.db_username}:{self.db_password}"
+            f"@{self.db_host}:{self.db_port}/{self.db_name}"
+        )
 
     @field_validator("debug", mode="before")
     @classmethod

@@ -1,36 +1,23 @@
 """
 Quran Models
 
-Contains models for storing Quran Ayas, Arabic Texts, Translations, References etc
+Contains models for storing Quran Ayas, Arabic Texts, Translations, References etc.
+Uses Apache AGE graph database via age-orm.
 """
 
-from typing import Literal, Any
+from typing import Literal
 
-from pydantic import Field
-# from pydantic.json_schema import SkipJsonSchema
-from arango_orm import Database, Collection, Relation, Graph, GraphConnection
-# from arango_orm.references import Relationship, relationship
-from arango_orm.config import CollectionConfig, IndexSpec
-from arango_orm.exceptions import DocumentNotFoundError
+from age_orm import Edge, Graph, Vertex
 
 from .utils import text_to_digest
 
 
-class MetaInfo(Collection):
-    "Meta information about the data present in the db"
-
-    __collection__ = "meta_info"
-
-    key_: str = Field(..., alias="_key")
-    value: Any
-
-
-class Surah(Collection):
+class Surah(Vertex):
     "Surah related info"
 
-    __collection__ = "surahs"
+    __label__ = "Surah"
 
-    # surah _key is the surah number as string
+    id: str  # surah number as string
     surah_number: int
     arabic_name: str
     english_name: str
@@ -40,119 +27,94 @@ class Surah(Collection):
     rukus: int
     total_ayas: int
 
-    # ayas: SkipJsonSchema[list["Aya"]] = relationship(__name__ + ".Aya", "key_", target_field="surah_key")
 
-
-class Aya(Collection):
+class Aya(Vertex):
     "Aya database representation"
 
-    __collection__ = "ayas"
+    __label__ = "Aya"
 
-    _collection_config = CollectionConfig(
-        indexes=[
-            IndexSpec(index_type="hash", fields=["_key"], unique=True, sparse=False),
-        ]
-    )
-
-    key_: str = Field(..., alias="_key")
+    id: str  # format: "{surah_number}:{aya_number}"
     surah_key: str
     aya_number: int
 
-    # surah: Surah = relationship(Surah, "surah_key")
-
     @classmethod
-    def new(cls, db: Database, surah_number: int, aya_number: int) -> "Aya":
+    def new(cls, graph: Graph, surah_number: int, aya_number: int) -> "Aya":
         aya_key = f"{surah_number}:{aya_number}"
-        aya = cls(key_=aya_key, surah_key=str(surah_number), aya_number=aya_number)
-        aya: "Aya" = db.add(aya, if_present="ignore")
-
+        existing = graph.query(Aya).by_property("id", aya_key)
+        if existing:
+            return existing
+        aya = cls(id=aya_key, surah_key=str(surah_number), aya_number=aya_number)
+        graph.add(aya)
         return aya
 
     @classmethod
-    def get_or_new(cls, db: Database, surah_number: int, aya_number: int) -> "Aya":
+    def get_or_new(cls, graph: Graph, surah_number: int, aya_number: int) -> "Aya":
         aya_key = f"{surah_number}:{aya_number}"
-        try:
-            aya = db.query(Aya).by_key(aya_key)
-        except DocumentNotFoundError:
-            aya = cls.new(db, surah_number, aya_number)
-
-        return aya
+        existing = graph.query(Aya).by_property("id", aya_key)
+        if existing:
+            return existing
+        return cls.new(graph, surah_number, aya_number)
 
 
-class Text(Collection):
-    "Linkage between Aya and various translations"
+class Text(Vertex):
+    "Stores deduplicated text content"
 
-    __collection__ = "texts"
+    __label__ = "Text"
 
-    # _key is digest of text
-    # key is hash diget of text
+    id: str  # SHA-256 digest of text
     text: str
 
     @classmethod
-    def new(cls, db: Database, text: str) -> "Text":
-        # Add aya text
+    def new(cls, graph: Graph, text: str) -> "Text":
         doc_key = text_to_digest(text)
-        doc = cls(key_=doc_key, text=text)
-        db.add(doc, if_present="ignore")
-
+        existing = graph.query(Text).by_property("id", doc_key)
+        if existing:
+            return existing
+        doc = cls(id=doc_key, text=text)
+        graph.add(doc)
         return doc
 
 
-class Has(Relation):
-    __collection__ = "has"
+class Word(Vertex):
+    "Represents a single word of the Quran"
+
+    __label__ = "Word"
+
+    id: str  # sha256 hash of word
+    word: str
+    count: int = 1
+
+    @classmethod
+    def new(cls, word: str, count: int = 1) -> "Word":
+        word_hash = text_to_digest(word)
+        return cls(id=word_hash, word=word, count=count)
 
 
-class AyaText(Relation):
-    "Linkage between Aya and various texts and translations"
+class HasAya(Edge):
+    "Links Surah to Aya"
 
-    __collection__ = "aya_texts"
+    __label__ = "HAS_AYA"
 
-    # Key is aya_number-text_key-language-text-type
+
+class HasWord(Edge):
+    "Links Aya to Word"
+
+    __label__ = "HAS_WORD"
+
+
+class AyaText(Edge):
+    "Links Aya to Text with language and text_type metadata"
+
+    __label__ = "AYA_TEXT"
+
     language: str
     text_type: str
 
     @classmethod
-    def new(cls, db: Database, aya: Aya, aya_text: str, language: str, text_type: str) -> "AyaText":
-        text_doc = Text.new(db, aya_text)
-
-        aya_text_key = f"{aya.key_}:{text_doc.key_}:{language}:{text_type}"
-        aya_text_doc = Graph().relation(
-            aya, cls(key_=aya_text_key, language=language, text_type=text_type), text_doc
-        )
-        aya_text_doc: "AyaText" = db.add(aya_text_doc, if_present="ignore")
-
-        return aya_text_doc
-
-
-class Word(Collection):
-    "Represents a single word of the Quran"
-
-    __collection__ = "words"
-
-    _collection_config = CollectionConfig(
-        indexes=[
-            IndexSpec(index_type="skiplist", fields=["word"], unique=False, sparse=False),
-            IndexSpec(index_type="skiplist", fields=["count"], unique=False, sparse=False),
-        ]
-    )
-
-    key_: str = Field(..., alias="_key")  # sha1 hash of word
-    word: str
-    count: int | None = 1
-
-    @classmethod
-    def new(cls, db: Database, word: str, count=1) -> "Word":
-        word_hash = text_to_digest(word)
-        word_document = cls(key_=word_hash, word=word, count=count)
-        # word_document: "Word" = db.add(word_document, if_present="ignore")
-
-        return word_document
-
-
-class QuranGraph(Graph):
-    __graph__ = "quran_graph"
-
-    graph_connections: list[GraphConnection] = [
-        GraphConnection([Surah, Aya], Has, [Aya, Word]),
-        GraphConnection(Aya, AyaText, Text)
-    ]
+    def new(
+        cls, graph: Graph, aya: Aya, aya_text: str, language: str, text_type: str
+    ) -> "AyaText":
+        text_doc = Text.new(graph, aya_text)
+        edge = cls(language=language, text_type=text_type)
+        graph.connect(aya, edge, text_doc)
+        return edge

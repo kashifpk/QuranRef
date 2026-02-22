@@ -48,7 +48,6 @@
           <TabList>
             <Tab value="top">Top Words</Tab>
             <Tab value="browse">Browse by Count</Tab>
-            <Tab value="rare">Rare Words</Tab>
           </TabList>
 
           <TabPanels>
@@ -137,27 +136,7 @@
               </div>
             </TabPanel>
 
-            <!-- Rare Words Tab -->
-            <TabPanel value="rare">
-              <div class="tab-content">
-                <p class="tab-description">
-                  Words that appear only once or twice in the entire Quran - unique gems of the divine text.
-                </p>
 
-                <div v-if="loadingRare" class="loading-state">
-                  <ProgressSpinner strokeWidth="4" />
-                  <p>Loading rare words...</p>
-                </div>
-
-                <div v-else class="words-list ar">
-                  <WordAyas
-                    v-for="word in rareWords"
-                    :key="word[0]"
-                    :word="{ word: word[0], count: word[1] }"
-                  />
-                </div>
-              </div>
-            </TabPanel>
           </TabPanels>
         </Tabs>
       </template>
@@ -193,14 +172,12 @@ interface CountRange {
 
 const activeTab = ref('top');
 const mostCommonWords = ref<[string, number][]>([]);
-const rareWords = ref<[string, number][]>([]);
 const words = ref<[string, number][]>([]);
 const wordCounts = ref<WordCountInfo[]>([]);
 const selectedRange = ref<string | null>(null);
 const selectedCount = ref<number | null>(null);
 
 const loadingTop = ref(false);
-const loadingRare = ref(false);
 const loadingWords = ref(false);
 const loadingCounts = ref(false);
 
@@ -262,18 +239,6 @@ const fetchTopWords = async () => {
   }
 };
 
-const fetchRareWords = async () => {
-  loadingRare.value = true;
-  try {
-    const response = await fetch(`${baseUrl}/top-least-frequent-words/50`);
-    rareWords.value = await response.json();
-  } catch (error) {
-    console.error('Error fetching rare words:', error);
-  } finally {
-    loadingRare.value = false;
-  }
-};
-
 const fetchWordCounts = async () => {
   loadingCounts.value = true;
   try {
@@ -315,8 +280,6 @@ const selectCount = (count: number) => {
 watch(activeTab, (newTab) => {
   if (newTab === 'top' && mostCommonWords.value.length === 0) {
     fetchTopWords();
-  } else if (newTab === 'rare' && rareWords.value.length === 0) {
-    fetchRareWords();
   } else if (newTab === 'browse' && wordCounts.value.length === 0) {
     fetchWordCounts();
   }

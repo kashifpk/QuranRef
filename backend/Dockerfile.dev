@@ -23,6 +23,7 @@ RUN uv --version
 COPY . .
 
 # Create a virtual environment and install dependencies
+# Install age-orm from mounted source if available, otherwise from PyPI
 RUN uv venv && \
     . .venv/bin/activate && \
     uv sync --all-extras
@@ -37,5 +38,5 @@ ENV VIRTUAL_ENV=/app/.venv
 # Expose the application port
 EXPOSE 8000
 
-# Development command with hot-reload  
-CMD ["/bin/bash", "-c", ". /app/.venv/bin/activate && exec python -m fastapi dev quranref/main.py --host 0.0.0.0 --port 8000 --reload"]
+# Development command: install age-orm from mounted source then start server
+CMD ["/bin/bash", "-c", ". /app/.venv/bin/activate && if [ -d /age-orm ]; then pip install -e /age-orm; fi && exec python -m fastapi dev quranref/main.py --host 0.0.0.0 --port 8000 --reload"]

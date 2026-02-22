@@ -1,12 +1,25 @@
-from arango import ArangoClient
-from arango_orm import Database
+from age_orm import Database, Graph
 
 from .settings import get_settings
 
+GRAPH_NAME = "quran_graph"
 
-def db() -> Database:
-    settings = get_settings()
-    client = ArangoClient(hosts=settings.db_hosts)
-    _db = client.db(settings.db_name, username=settings.db_username, password=settings.db_password)
+_db: Database | None = None
 
-    return Database(_db)
+
+def get_db() -> Database:
+    global _db
+    if _db is None:
+        settings = get_settings()
+        _db = Database(settings.db_dsn)
+    return _db
+
+
+def graph() -> Graph:
+    db = get_db()
+    return db.graph(GRAPH_NAME)
+
+
+def raw_connection():
+    db = get_db()
+    return db._pool.connection()

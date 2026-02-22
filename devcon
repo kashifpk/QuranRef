@@ -107,9 +107,9 @@ show_help() {
     printf "  ./devcon db-init      # Initialize database\n"
     printf "\n"
     printf "${YELLOW}Service URLs:${NC}\n"
-    printf "  Frontend:  http://localhost:41149\n"
-    printf "  Backend:   http://localhost:41148\n"
-    printf "  ArangoDB:  http://localhost:18529\n"
+    printf "  Frontend:    http://localhost:41149\n"
+    printf "  Backend:     http://localhost:41148\n"
+    printf "  PostgreSQL:  localhost:15432\n"
 }
 
 # Start all services
@@ -173,10 +173,10 @@ cmd_status() {
 # Show service URLs
 cmd_urls() {
     print_header "Service URLs"
-    printf "${GREEN}Frontend:${NC}  http://localhost:41149 (Vue.js with hot-reload)\n"
-    printf "${GREEN}Backend:${NC}   http://localhost:41148 (FastAPI with auto-reload)\n"
-    printf "${GREEN}API Docs:${NC}  http://localhost:41148/docs (Swagger UI)\n"
-    printf "${GREEN}ArangoDB:${NC}  http://localhost:18529 (Database Admin)\n"
+    printf "${GREEN}Frontend:${NC}    http://localhost:41149 (Vue.js with hot-reload)\n"
+    printf "${GREEN}Backend:${NC}     http://localhost:41148 (FastAPI with auto-reload)\n"
+    printf "${GREEN}API Docs:${NC}    http://localhost:41148/docs (Swagger UI)\n"
+    printf "${GREEN}PostgreSQL:${NC}  localhost:15432 (Database)\n"
 }
 
 # Show logs
@@ -196,9 +196,9 @@ cmd_logs() {
                 print_header "Frontend Logs"
                 $COMPOSE_CMD -f $COMPOSE_FILE logs -f --tail=50 frontend
                 ;;
-            db|database|arango|arangodb)
+            db|database|postgres|pg)
                 print_header "Database Logs"
-                $COMPOSE_CMD -f $COMPOSE_FILE logs -f --tail=50 arangodb
+                $COMPOSE_CMD -f $COMPOSE_FILE logs -f --tail=50 postgres
                 ;;
             *)
                 print_error "Unknown service: $service"
@@ -224,12 +224,11 @@ cmd_shell() {
             print_info "Bun environment ready. Try: bun run build"
             $COMPOSE_CMD -f $COMPOSE_FILE exec frontend sh
             ;;
-        db|database|arango|arangodb)
-            print_header "Connecting to ArangoDB"
-            $COMPOSE_CMD -f $COMPOSE_FILE exec arangodb arangosh \
-                --server.endpoint tcp://127.0.0.1:8529 \
-                --server.username root \
-                --server.password "${ARANGO_ROOT_PASSWORD:-Test123!}"
+        db|database|postgres|pg)
+            print_header "Connecting to PostgreSQL"
+            $COMPOSE_CMD -f $COMPOSE_FILE exec postgres psql \
+                -U "${DB_USERNAME:-quranref}" \
+                -d "${DB_NAME:-quranref}"
             ;;
         *)
             print_error "Unknown service: $service"
@@ -275,6 +274,9 @@ cmd_sync() {
     print_info "Backend: Installing Python dependencies..."
     $COMPOSE_CMD -f $COMPOSE_FILE exec backend uv sync
 
+    print_info "Backend: Installing age-orm from source..."
+    $COMPOSE_CMD -f $COMPOSE_FILE exec backend pip install -e /age-orm
+
     print_info "Frontend: Installing JavaScript dependencies..."
     $COMPOSE_CMD -f $COMPOSE_FILE exec frontend bun install
 
@@ -310,15 +312,6 @@ cmd_db_init() {
     print_info "Populating Surah data..."
     $COMPOSE_CMD -f $COMPOSE_FILE exec backend quranref-cli db populate-surahs
 
-    print_info "Importing Quran text..."
-    $COMPOSE_CMD -f $COMPOSE_FILE exec backend quranref-cli db import-text
-
-    print_info "Creating relationships..."
-    $COMPOSE_CMD -f $COMPOSE_FILE exec backend quranref-cli post-process link-ayas-to-surahs
-
-    print_info "Processing words..."
-    $COMPOSE_CMD -f $COMPOSE_FILE exec backend quranref-cli post-process make-words
-
     print_success "Database initialized successfully!"
 }
 
@@ -327,10 +320,7 @@ cmd_db_populate() {
     print_header "Populating Database"
 
     $COMPOSE_CMD -f $COMPOSE_FILE exec backend bash -c "
-        quranref-cli db populate-surahs &&
-        quranref-cli db import-text &&
-        quranref-cli post-process link-ayas-to-surahs &&
-        quranref-cli post-process make-words
+        quranref-cli db populate-surahs
     "
 
     print_success "Database populated!"
@@ -344,8 +334,11 @@ cmd_db_reset() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         print_header "Resetting Database"
 
-        print_info "Dropping all collections..."
-        $COMPOSE_CMD -f $COMPOSE_FILE exec backend quranref-cli db drop-all
+        print_info "Dropping database and recreating..."
+        $COMPOSE_CMD -f $COMPOSE_FILE exec postgres psql \
+            -U "${DB_USERNAME:-quranref}" \
+            -d "${DB_NAME:-quranref}" \
+            -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS age; SET search_path = ag_catalog, public;"
 
         cmd_db_init
     else
@@ -362,20 +355,15 @@ cmd_db_backup() {
 
     # Generate timestamp
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-    BACKUP_FILE="./backups/quranref_${TIMESTAMP}.dump"
+    BACKUP_FILE="./backups/quranref_${TIMESTAMP}.sql.gz"
 
     print_info "Creating backup: $BACKUP_FILE"
 
-    $COMPOSE_CMD -f $COMPOSE_FILE exec arangodb arangodump \
-        --server.endpoint tcp://127.0.0.1:8529 \
-        --server.username root \
-        --server.password "${ARANGO_ROOT_PASSWORD:-Test123!}" \
-        --server.database "${DB_NAME:-quranref}" \
-        --output-directory "/tmp/backup_${TIMESTAMP}" \
-        --overwrite true
-
-    $COMPOSE_CMD -f $COMPOSE_FILE exec arangodb tar czf "/tmp/backup_${TIMESTAMP}.tar.gz" "/tmp/backup_${TIMESTAMP}"
-    $CONTAINER_RUNTIME cp "quranref_arangodb_dev:/tmp/backup_${TIMESTAMP}.tar.gz" "$BACKUP_FILE"
+    $COMPOSE_CMD -f $COMPOSE_FILE exec -T postgres pg_dump \
+        -U "${DB_USERNAME:-quranref}" \
+        -d "${DB_NAME:-quranref}" \
+        --no-owner --no-privileges \
+        | gzip > "$BACKUP_FILE"
 
     print_success "Backup created: $BACKUP_FILE"
 }
@@ -387,7 +375,7 @@ cmd_db_restore() {
     if [ -z "$backup_file" ]; then
         print_error "Usage: ./devcon db-restore <backup-file>"
         print_info "Available backups:"
-        ls -la ./backups/*.dump 2>/dev/null || print_warning "No backups found"
+        ls -la ./backups/*.sql.gz 2>/dev/null || print_warning "No backups found"
         exit 1
     fi
 
@@ -402,21 +390,9 @@ cmd_db_restore() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         print_header "Restoring Database"
 
-        # Copy backup to container
-        $CONTAINER_RUNTIME cp "$backup_file" "quranref_arangodb_dev:/tmp/restore.tar.gz"
-
-        # Extract and restore
-        $COMPOSE_CMD -f $COMPOSE_FILE exec arangodb bash -c "
-            cd /tmp && \
-            tar xzf restore.tar.gz && \
-            arangorestore \
-                --server.endpoint tcp://127.0.0.1:8529 \
-                --server.username root \
-                --server.password '${ARANGO_ROOT_PASSWORD:-Test123!}' \
-                --server.database '${DB_NAME:-quranref}' \
-                --input-directory /tmp/backup_* \
-                --overwrite true
-        "
+        gunzip -c "$backup_file" | $COMPOSE_CMD -f $COMPOSE_FILE exec -T postgres psql \
+            -U "${DB_USERNAME:-quranref}" \
+            -d "${DB_NAME:-quranref}"
 
         print_success "Database restored from $backup_file"
     else

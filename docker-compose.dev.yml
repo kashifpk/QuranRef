@@ -1,17 +1,19 @@
 services:
-  arangodb:
-    image: arangodb:3.8.9
-    container_name: quranref_arangodb_dev
+  postgres:
+    image: apache/age:PG16_latest
+    container_name: quranref_postgres_dev
     environment:
-      - ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD:-Test123!}
+      - POSTGRES_USER=${DB_USERNAME:-quranref}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-compulife}
+      - POSTGRES_DB=${DB_NAME:-quranref}
     ports:
-      - "18529:8529"
+      - "15432:5432"
     volumes:
-      - arangodb_dev_data:/var/lib/arangodb3
+      - postgres_dev_data:/var/lib/postgresql/data
     networks:
       - quranref_dev
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8529/"]
+      test: ["CMD-SHELL", "pg_isready -U quranref -d quranref"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -26,8 +28,9 @@ services:
       - ENVIRONMENT=development
       - DEBUG=true
       - AM_I_CONTAINERIZED=1
-      # Database connection to arangodb service
-      - DB_HOSTS=http://arangodb:8529
+      # Database connection to postgres service
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_NAME=${DB_NAME:-quranref}
       - DB_USERNAME=${DB_USERNAME:-quranref}
       - DB_PASSWORD=${DB_PASSWORD:-compulife}
@@ -37,6 +40,8 @@ services:
     volumes:
       # Mount source code for hot-reload
       - ./backend:/app:cached
+      # Mount age-orm source for editable install
+      - /MyWork/Projects/age-forge/age-orm:/age-orm:cached
       # Exclude Python cache and virtual environments
       - /app/__pycache__
       - /app/.pytest_cache
@@ -46,7 +51,8 @@ services:
     networks:
       - quranref_dev
     depends_on:
-      - arangodb
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     # Command is inherited from Dockerfile.dev CMD
     develop:
@@ -97,8 +103,8 @@ services:
           target: /app/package.json
 
 volumes:
-  arangodb_dev_data:
-    name: quranref_arangodb_dev_data
+  postgres_dev_data:
+    name: quranref_postgres_dev_data
   bun_cache:
     name: quranref_bun_cache
 

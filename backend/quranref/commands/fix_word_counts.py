@@ -1,33 +1,33 @@
 """Fix word counts by recalculating from actual aya edges."""
 
-import typer
 from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ..db import db as get_db
+from ..db import graph as get_graph
 
 
 def fix_word_counts():
     """Recalculate word counts from actual aya-word edges."""
 
-    db = get_db()
+    g = get_graph()
 
     print("[yellow]Recalculating word counts from edges...[/yellow]")
 
-    # Get count of edges per word
-    aql = """
-    FOR e IN has
-        FILTER STARTS_WITH(e._to, 'words/')
-        COLLECT word_id = e._to WITH COUNT INTO edge_count
-        RETURN {word_id: word_id, count: edge_count}
-    """
+    # Get count of HAS_WORD edges per word using Cypher
+    results = g.cypher(
+        "MATCH (a:Aya)-[:HAS_WORD]->(w:Word) "
+        "RETURN id(w) as word_gid, w.word as word, count(a) as edge_count",
+        columns=["word_gid", "word", "edge_count"],
+        return_type="raw",
+    )
 
-    edge_counts = {r['word_id']: r['count'] for r in db.aql.execute(aql)}
+    edge_counts = {r["word_gid"]: r["edge_count"] for r in results}
     print(f"[blue]Found {len(edge_counts)} words with edges[/blue]")
 
     # Get all words
-    words = list(db.aql.execute("FOR doc IN words RETURN doc"))
-    print(f"[blue]Total words in collection: {len(words)}[/blue]")
+    from ..models import Word
+    all_words = g.query(Word).all()
+    print(f"[blue]Total words: {len(all_words)}[/blue]")
 
     fixed_count = 0
     with Progress(
@@ -35,19 +35,14 @@ def fix_word_counts():
         TextColumn("[progress.description]{task.description}"),
         transient=True,
     ) as progress:
-        task = progress.add_task("Fixing counts...", total=len(words))
+        task = progress.add_task("Fixing counts...", total=len(all_words))
 
-        for word_doc in words:
-            word_id = word_doc['_id']
-            current_count = word_doc.get('count', 0)
-            actual_count = edge_counts.get(word_id, 0)
+        for word in all_words:
+            actual_count = edge_counts.get(word.graph_id, 0)
 
-            if current_count != actual_count:
-                # Update the word count
-                db.aql.execute(
-                    "UPDATE @key WITH {count: @count} IN words",
-                    bind_vars={'key': word_doc['_key'], 'count': actual_count}
-                )
+            if word.count != actual_count:
+                word.count = actual_count
+                g.update(word)
                 fixed_count += 1
 
             progress.advance(task)
@@ -56,12 +51,13 @@ def fix_word_counts():
 
     # Verify with a sample
     print("\n[yellow]Verification sample:[/yellow]")
-    sample_aql = """
-    FOR doc IN words
-        FILTER doc.word == 'كاشف'
-        RETURN {word: doc.word, count: doc.count}
-    """
-    for r in db.aql.execute(sample_aql):
+    sample = g.cypher(
+        "MATCH (w:Word) WHERE w.word = $word RETURN w.word, w.count",
+        columns=["word", "count"],
+        return_type="raw",
+        word="كاشف",
+    )
+    for r in sample:
         print(f"  {r}")
 
 

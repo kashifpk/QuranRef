@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-QuranRef is a modern web application providing searchable access to the Holy Quran and its translations. It uses a **client-server architecture** with a FastAPI backend and Vue.js frontend, leveraging ArangoDB's graph database capabilities for complex Islamic text relationships.
+QuranRef is a modern web application providing searchable access to the Holy Quran and its translations. It uses a **client-server architecture** with a FastAPI backend and Vue.js frontend, leveraging Apache AGE (PostgreSQL graph extension) for complex Islamic text relationships.
 
 ## Development Commands
 
@@ -26,16 +26,7 @@ QuranRef is a modern web application providing searchable access to the Holy Qur
 **Access your application:**
 - Frontend: http://localhost:41149 (Vite dev server)
 - Backend API: http://localhost:41148 (FastAPI)
-- ArangoDB: http://localhost:18529 (Database admin)
-
-**Data Migration (if upgrading from Podman):**
-```bash
-# Check if you have existing Podman data
-./migrate-podman-to-docker.sh check
-
-# Migrate existing data from Podman to Docker
-./migrate-podman-to-docker.sh migrate
-```
+- PostgreSQL: localhost:15432 (Database)
 
 ### Backend Development (Inside Container)
 
@@ -52,11 +43,14 @@ ruff check
 ruff format
 
 # CLI management commands (database operations)
-quranref-cli db init                    # Initialize database structure
+quranref-cli db init                    # Initialize graph, labels, indexes, meta_info table
 quranref-cli db populate-surahs         # Load Surah metadata
-quranref-cli db import-text             # Import Arabic text and translations
-quranref-cli post-process link-ayas-to-surahs  # Create graph relationships
+quranref-cli db import-text             # Import Arabic text and translations from text files
+quranref-cli db import-json <data-dir>  # Bulk import from JSON exports (migration)
+quranref-cli post-process link-ayas-to-surahs  # Create HAS_AYA graph relationships
 quranref-cli post-process make-words    # Extract and count words
+quranref-cli post-process update-meta-info     # Populate text-types metadata
+quranref-cli post-process fix-word-counts      # Recalculate word counts from edges
 ```
 
 ### Frontend Development (Automatic)
@@ -86,19 +80,21 @@ docker exec quranref_frontend_dev vue-tsc -b
 ### Why Docker-Only Development?
 
 **Benefits of this approach:**
-- ✅ **System-Upgrade-Proof**: Locked Docker images prevent version drift
-- ✅ **Port Conflict-Free**: Custom ports (18529, 41148, 41149) avoid conflicts
-- ✅ **Production Parity**: Mirrors Docker Swarm production environment
-- ✅ **Team Consistency**: Works identically across all developer machines
-- ✅ **Excellent Hot-Reload**: Optimized volume mounts for FastAPI and Vite
-- ✅ **Simple Onboarding**: One command starts everything
+- System-Upgrade-Proof: Locked Docker images prevent version drift
+- Port Conflict-Free: Custom ports (15432, 41148, 41149) avoid conflicts
+- Production Parity: Mirrors Docker Swarm production environment
+- Team Consistency: Works identically across all developer machines
+- Excellent Hot-Reload: Optimized volume mounts for FastAPI and Vite
+- Simple Onboarding: One command starts everything
 
 ## Architecture Overview
 
-### Backend (FastAPI + ArangoDB)
+### Backend (FastAPI + Apache AGE)
 - **Framework**: FastAPI with async/await patterns
-- **Database**: ArangoDB graph database with collections: `surahs`, `ayas`, `texts`, `words`, `meta_info`
-- **Models**: ArangoDB documents using arango-orm (`models.py`)
+- **Database**: Apache AGE (PostgreSQL graph extension) via age-orm
+- **Graph**: `quran_graph` with vertex labels: `Surah`, `Aya`, `Text`, `Word` and edge labels: `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`
+- **MetaInfo**: Regular PostgreSQL table (`meta_info`) for key-value metadata
+- **Models**: age-orm Vertex/Edge models (`models.py`)
 - **API**: REST endpoints at `/api/v1/` for Quran data and search
 - **CLI**: Typer-based management tools (`quranref-cli`)
 - **Configuration**: Pydantic settings with environment-based config
@@ -106,7 +102,8 @@ docker exec quranref_frontend_dev vue-tsc -b
 Key files:
 - `backend/quranref/main.py`: Application entry point
 - `backend/quranref/api.py`: REST API endpoints
-- `backend/quranref/models.py`: ArangoDB document models
+- `backend/quranref/models.py`: AGE graph vertex/edge models
+- `backend/quranref/db.py`: Database connection and graph factory
 - `backend/quranref/cli.py`: Management CLI commands
 
 ### Frontend (Vue.js 3 + TypeScript)
@@ -125,10 +122,11 @@ Key files:
 - `frontend/src/type_defs.ts`: TypeScript interfaces
 
 ### Database Design
-- **Graph Structure**: Surahs → Ayas → Words with `has` relationships
-- **Text Storage**: Deduplicated using SHA-256 hashes
-- **Multi-language**: Arabic text variants + 100+ translations
-- **Indexing**: Strategic indexes on `word`, `count`, and hash fields
+- **Graph Structure**: Surah -[HAS_AYA]-> Aya -[HAS_WORD]-> Word, Aya -[AYA_TEXT]-> Text
+- **Text Storage**: Deduplicated using SHA-256 hashes (stored as `id` property)
+- **Multi-language**: Arabic text variants + 100+ translations via AYA_TEXT edge properties
+- **Indexing**: Unique indexes on vertex `id` fields, indexes on `word`, `count`, `surah_key`
+- **MetaInfo**: Regular PostgreSQL table for key-value store (not a graph vertex)
 
 ## Development Conventions
 
@@ -163,8 +161,9 @@ Key files:
 The Docker setup uses `.env.dev` for container-specific environment variables:
 
 ```bash
-# Database credentials
-ARANGO_ROOT_PASSWORD=Test123!
+# Database credentials (PostgreSQL + Apache AGE)
+DB_HOST=postgres
+DB_PORT=5432
 DB_NAME=quranref
 DB_USERNAME=quranref
 DB_PASSWORD=compulife
@@ -175,9 +174,11 @@ DEBUG=true
 ```
 
 **Container networking automatically handles:**
-- Backend connects to database via `http://arangodb:8529` (internal)
+- Backend connects to database via `postgres:5432` (internal)
 - Frontend connects to backend via `http://localhost:41148` (external)
-- All services accessible on host via custom ports (18529, 41148, 41149)
+- All services accessible on host via custom ports (15432, 41148, 41149)
+
+**age-orm development**: The age-orm source is mounted at `/age-orm` in the backend container for editable install. Production builds install from PyPI.
 
 ## Testing and Quality
 
@@ -198,10 +199,11 @@ DEBUG=true
 
 The application manages Quranic text through a structured pipeline:
 
-1. **Import**: Raw text files → ArangoDB collections
-2. **Link**: Create Surah-Aya graph relationships  
-3. **Process**: Extract words with frequency counts
-4. **Index**: Update search indexes and metadata
+1. **Init**: Create graph, vertex/edge labels, indexes, and meta_info table
+2. **Import**: JSON bulk import (migration) or text file import
+3. **Link**: Create Surah-Aya graph relationships (HAS_AYA edges)
+4. **Process**: Extract words with frequency counts (Word vertices + HAS_WORD edges)
+5. **Meta**: Update text-types metadata in meta_info table
 
 Use `quranref-cli` commands for all data operations to maintain consistency.
 
