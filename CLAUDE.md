@@ -77,6 +77,23 @@ docker exec quranref_frontend_dev vue-tsc -b
 ./devcon db      # Show database logs only
 ```
 
+### Local Development (without Docker)
+
+```bash
+# Backend (from backend/ directory) — runs on port 41148
+python -m quranref
+
+# Frontend (from frontend/ directory) — runs on port 41149
+bun run dev
+
+# Run backend tests
+uv run pytest
+```
+
+Ports are hardcoded: backend `41148` in `__main__.py`, frontend `41149` in `vite.config.ts`. The Vite dev server proxies `/api/*` to the backend.
+
+Environment: `direnv` loads `.env.dev` automatically. Google OAuth credentials go in `backend/.env` (gitignored) — do NOT put them in `.env.dev` as direnv would export empty values that override `backend/.env`.
+
 ### Why Docker-Only Development?
 
 **Benefits of this approach:**
@@ -102,6 +119,9 @@ docker exec quranref_frontend_dev vue-tsc -b
 Key files:
 - `backend/quranref/main.py`: Application entry point
 - `backend/quranref/api.py`: REST API endpoints
+- `backend/quranref/auth.py`: Google OAuth + JWT auth endpoints
+- `backend/quranref/auth_utils.py`: JWT create/verify helpers
+- `backend/quranref/dependencies.py`: Auth dependencies for protected endpoints
 - `backend/quranref/models.py`: AGE graph vertex/edge models
 - `backend/quranref/db.py`: Database connection and graph factory
 - `backend/quranref/cli.py`: Management CLI commands
@@ -127,6 +147,16 @@ Key files:
 - **Multi-language**: Arabic text variants + 100+ translations via AYA_TEXT edge properties
 - **Indexing**: Unique indexes on vertex `id` fields, indexes on `word`, `count`, `surah_key`
 - **MetaInfo**: Regular PostgreSQL table for key-value store (not a graph vertex)
+- **Users**: Regular PostgreSQL table for Google OAuth user accounts
+
+### Authentication
+- **Google OAuth 2.0** server-side authorization code flow via authlib
+- **JWT tokens** stored in httpOnly cookies (72h expiry)
+- All existing endpoints remain **public** — auth is optional
+- `get_current_user` (optional) and `require_current_user` (strict 401) dependencies in `dependencies.py` for future protected endpoints
+- Auth endpoints at `/api/v1/auth/`: `login`, `callback`, `me`, `logout`
+- Google OAuth credentials stored in `backend/.env` (gitignored), not in `.env.dev`
+- Production credentials deployed via Ansible template (`env.production.j2`)
 
 ## Development Conventions
 
@@ -216,26 +246,35 @@ Key API endpoints for development (available at http://localhost:41148):
 - `GET /api/v1/words-by-letter/{letter}` - Word browsing
 - `GET /api/v1/ayas-by-word/{word}/{languages}` - Verse lookup by word
 
+Auth endpoints:
+- `GET /api/v1/auth/login` - Redirect to Google OAuth
+- `GET /api/v1/auth/callback` - Google OAuth callback (sets JWT cookie)
+- `GET /api/v1/auth/me` - Current user info or `{"user": null}`
+- `POST /api/v1/auth/logout` - Clear auth cookie
+
 The frontend uses these endpoints through the Pinia store and component-level API calls.
 
 ## Deployment
 
-**For deployment tasks, use the specialized deployment agent:**
+Production runs on a VPS with **systemd + Caddy** (not Docker). Deployment uses **Ansible**:
 
-The project includes a deployment agent configuration in `.claude-agents/` that handles:
-- Building and tagging Docker images
-- Pushing to production registry
-- Deploying to Docker Swarm
-- Monitoring deployment status
-- Handling rollbacks
+```bash
+# Build frontend first
+cd frontend && bun run build && cd ..
 
-To deploy, simply ask: "Deploy the frontend to production" or "Deploy to swarm"
+# Deploy via Ansible (syncs code, deploys .env, installs deps, restarts service)
+cd deploy && ansible-playbook playbooks/deploy.yml -i inventory.yml
 
-The agent knows about:
-- Docker contexts (production via SSH)
-- Registry configuration (localhost:5000)
-- Service names and URLs
-- Common deployment issues and solutions
-- Emergency procedures
+# If database schema changed (e.g., new tables), run on production:
+ssh kashif@hosting_vps "cd /home/kashif/QuranRef/backend && .venv/bin/quranref-cli db init"
+```
 
-See `.claude-agents/deploy-agent.md` for detailed deployment procedures.
+Key deployment files:
+- `deploy/playbooks/deploy.yml`: Main deployment playbook
+- `deploy/roles/app_deploy/templates/env.production.j2`: Production environment template
+- `deploy/group_vars/all.yml`: Ansible variables (secrets reference vault)
+- `deploy/group_vars/vault.yml`: Encrypted secrets (gitignored, encrypt with `ansible-vault`)
+
+Production URLs:
+- Frontend: https://quranref.info
+- API: https://quranref.info/api/v1
