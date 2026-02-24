@@ -107,6 +107,7 @@ celerybeat.pid
 .env
 .env.local
 .env-docker
+deploy/group_vars/vault.yml
 .venv
 env/
 venv/

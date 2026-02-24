@@ -15,7 +15,7 @@ db_name: quranref
 db_username: quranref
 db_password: compulife
 
-# Google OAuth (secrets should be in vault)
+# Google OAuth (secrets in vault.yml - run: ansible-vault encrypt deploy/group_vars/vault.yml)
 google_client_id: "{{ vault_google_client_id }}"
 google_client_secret: "{{ vault_google_client_secret }}"
 jwt_secret_key: "{{ vault_jwt_secret_key }}"
