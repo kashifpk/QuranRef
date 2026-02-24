@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     google_client_secret: str = Field("", env="GOOGLE_CLIENT_SECRET")
     jwt_secret_key: str = Field("change-me-in-production-minimum-32bytes!", env="JWT_SECRET_KEY")
     jwt_algorithm: str = "HS256"
-    jwt_expiry_hours: int = Field(72, env="JWT_EXPIRY_HOURS")
+    jwt_expiry_hours: int = Field(720, env="JWT_EXPIRY_HOURS")
     frontend_url: str = Field("http://localhost:41149", env="FRONTEND_URL")
     backend_url: str = Field("http://localhost:41148", env="BACKEND_URL")
 
