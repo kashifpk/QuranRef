@@ -107,7 +107,7 @@ celerybeat.pid
 .env
 .env.local
 .env-docker
-deploy/group_vars/vault.yml
+deploy/group_vars/all/vault.yml
 .venv
 env/
 venv/
@@ -212,7 +212,7 @@ credentials/
 backend/data/age-export/
 
 # Ansible vault (encrypted secrets)
-deploy/group_vars/vault.yml
+deploy/group_vars/all/vault.yml
 
 # Keep agent definitions but ignore other claude files
 .claude/*
