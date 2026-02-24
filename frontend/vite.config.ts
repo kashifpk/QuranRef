@@ -8,7 +8,7 @@ config({ path: path.join(__dirname, '.env') })
 
 const STATIC_URL = process.env.STATIC_URL || '/static/'
 // Use VITE_BACKEND_URL for proxy target, defaulting to localhost for host development
-const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:41148'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -29,7 +29,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 41149,
     proxy: {
       '/api': BACKEND_URL
     },
@@ -42,7 +42,7 @@ export default defineConfig({
   },
   // Configure for SPA routing
   preview: {
-    port: 5173,
+    port: 41149,
     host: '0.0.0.0'
   }
 })

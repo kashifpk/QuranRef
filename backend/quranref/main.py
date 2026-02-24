@@ -5,9 +5,12 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from . import API_BASE
 from .api import router as api_router
+from .auth import router as auth_router
+from .settings import get_settings
 
 app = FastAPI(
     title="QuranRef API",
@@ -19,7 +22,6 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",   # Vite dev server
         "http://localhost:41149",  # Local development frontend
         "https://quranref.info",   # Production frontend
         "https://www.quranref.info",  # Production frontend with www
@@ -29,8 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the API router
+# Session middleware (required by authlib for OAuth state)
+settings = get_settings()
+app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret_key)
+
+# Include routers
 app.include_router(api_router, prefix=API_BASE)
+app.include_router(auth_router, prefix=API_BASE)
 
 # Determine static files directory
 # In Docker: /code/static, locally: ../static relative to backend
@@ -74,3 +81,5 @@ else:
             "docs": "/docs",
             "note": "Frontend not found. Run 'bun run build' in frontend/ directory."
         }
+
+DEV_PORT = 41148

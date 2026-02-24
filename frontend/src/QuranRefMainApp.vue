@@ -26,6 +26,7 @@
         </div>
 
         <div class="header-right">
+          <UserMenu />
           <Button
             icon="pi pi-cog"
             @click="settingsDialogVisible = true"
@@ -116,6 +117,7 @@ import InputIcon from 'primevue/inputicon';
 import Drawer from 'primevue/drawer';
 import Divider from 'primevue/divider';
 import TextSettingsDialog from './components/TextSettingsDialog.vue';
+import UserMenu from './components/UserMenu.vue';
 
 const router = useRouter();
 const store = useStore();
@@ -123,9 +125,10 @@ const searchTerm = ref('');
 const drawerVisible = ref(false);
 const settingsDialogVisible = ref(false);
 
-// Initialize theme on mount
+// Initialize theme and check auth on mount
 onMounted(() => {
   store.initializeTheme();
+  store.checkAuth();
 });
 
 const doSearch = () => {

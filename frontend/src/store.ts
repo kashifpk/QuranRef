@@ -2,7 +2,7 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo } from "./type_defs"
+import type { SurahInfo, UserInfo } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -46,6 +46,40 @@ export const useStore = defineStore('quranref_store', () => {
 
     return s;
   });
+
+  // Auth state
+  const currentUser = ref<UserInfo | null>(null);
+  const authLoading = ref(false);
+
+  async function checkAuth() {
+    authLoading.value = true;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const response = await fetch(baseUrl + '/auth/me', { credentials: 'include' });
+      const data = await response.json();
+      currentUser.value = data.user;
+    } catch (error) {
+      console.error('Failed to check auth:', error);
+      currentUser.value = null;
+    } finally {
+      authLoading.value = false;
+    }
+  }
+
+  function login() {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    window.location.href = baseUrl + '/auth/login';
+  }
+
+  async function logout() {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      await fetch(baseUrl + '/auth/logout', { method: 'POST', credentials: 'include' });
+      currentUser.value = null;
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  }
 
   // Loading state for surah info
   const surahInfoLoading = ref(false);
@@ -120,6 +154,13 @@ export const useStore = defineStore('quranref_store', () => {
   }
 
   return {
+    // Auth
+    currentUser,
+    authLoading,
+    checkAuth,
+    login,
+    logout,
+
     // State
     surahInfo,
     arabicTextType,

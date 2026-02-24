@@ -105,6 +105,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
 .env-docker
 .venv
 env/
@@ -202,6 +203,9 @@ static
 
 # Claude temporary work
 .claude-work/
+
+# OAuth credentials
+credentials/
 
 # AGE data exports (transient)
 backend/data/age-export/

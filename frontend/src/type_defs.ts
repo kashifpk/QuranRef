@@ -19,3 +19,10 @@ export interface AyaInfo {
     aya_key: string;
     texts: AyaTexts;
 }
+
+export interface UserInfo {
+    id: number;
+    email: string;
+    name: string;
+    picture_url: string;
+}

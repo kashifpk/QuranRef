@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS meta_info (
 )
 """
 
+USERS_DDL = """
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    google_id TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    picture_url TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)
+"""
+
 # --- Test data ---
 
 ARABIC_TEXTS = {
@@ -197,9 +209,10 @@ def test_graph(test_db):
     g.create_index(Word, "word")
     g.create_index(Word, "count")
 
-    # Create meta_info table
+    # Create SQL tables
     with test_db._pool.connection() as conn:
         conn.execute(META_INFO_DDL)
+        conn.execute(USERS_DDL)
         conn.commit()
 
     _seed_test_data(g, test_db)

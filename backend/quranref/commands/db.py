@@ -18,6 +18,18 @@ CREATE TABLE IF NOT EXISTS meta_info (
 )
 """
 
+USERS_DDL = """
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    google_id TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    picture_url TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)
+"""
+
 
 @app.command()
 def init():
@@ -41,9 +53,10 @@ def init():
     g.create_index(Word, "word")
     g.create_index(Word, "count")
 
-    # Create meta_info SQL table
+    # Create SQL tables
     with raw_connection() as conn:
         conn.execute(META_INFO_DDL)
+        conn.execute(USERS_DDL)
         conn.commit()
 
     print("[green]Database initialization done.[/green]")
