@@ -20,6 +20,7 @@
       - "--exclude=tests"
       - "--exclude=data/age-export"
     delete: yes
+  notify: restart quranref
 
 - name: Sync static files (pre-built frontend)
   ansible.posix.synchronize:
@@ -40,6 +41,7 @@
     chdir: "{{ backend_dir }}"
   environment:
     UV_PYTHON: python3.12
+  notify: restart quranref
 
 - name: Create systemd user directory
   file:
