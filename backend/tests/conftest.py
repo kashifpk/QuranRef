@@ -9,11 +9,14 @@ import pytest
 from age_orm import Database
 from dotenv import dotenv_values
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 import quranref.db as db_module
 from quranref.db import GRAPH_NAME
 from quranref.main import app
 from quranref.models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
+from quranref.sql_models import Base
 from quranref.utils import text_to_digest
 
 TEST_DB_NAME = "quranref_test"
@@ -27,25 +30,7 @@ DB_PASSWORD = _env_dev.get("DB_PASSWORD", "compulife")
 
 ADMIN_DSN = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/postgres"
 TEST_DSN = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}"
-
-META_INFO_DDL = """
-CREATE TABLE IF NOT EXISTS meta_info (
-    key TEXT PRIMARY KEY,
-    value JSONB NOT NULL
-)
-"""
-
-USERS_DDL = """
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    google_id TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL DEFAULT '',
-    picture_url TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_login TIMESTAMPTZ NOT NULL DEFAULT NOW()
-)
-"""
+TEST_SA_DSN = f"postgresql+psycopg://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}"
 
 # --- Test data ---
 
@@ -190,7 +175,15 @@ def test_db():
 
 
 @pytest.fixture(scope="session")
-def test_graph(test_db):
+def test_engine():
+    """Create a SQLAlchemy engine for the test database."""
+    engine = create_engine(TEST_SA_DSN)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def test_graph(test_db, test_engine):
     """Create graph with labels, indexes, seed data."""
     g = test_db.graph(GRAPH_NAME, create=True)
 
@@ -209,11 +202,8 @@ def test_graph(test_db):
     g.create_index(Word, "word")
     g.create_index(Word, "count")
 
-    # Create SQL tables
-    with test_db._pool.connection() as conn:
-        conn.execute(META_INFO_DDL)
-        conn.execute(USERS_DDL)
-        conn.commit()
+    # Create SQL tables via SQLAlchemy models
+    Base.metadata.create_all(test_engine)
 
     _seed_test_data(g, test_db)
 
@@ -221,12 +211,19 @@ def test_graph(test_db):
 
 
 @pytest.fixture(scope="session")
-def client(test_db, test_graph):
+def client(test_db, test_graph, test_engine):
     """FastAPI TestClient with test database and graph injected."""
     original_db = db_module._db
+    original_engine = db_module._engine
+    original_session_factory = db_module._session_factory
+
     db_module._db = test_db
+    db_module._engine = test_engine
+    db_module._session_factory = sessionmaker(bind=test_engine)
 
     with TestClient(app) as c:
         yield c
 
     db_module._db = original_db
+    db_module._engine = original_engine
+    db_module._session_factory = original_session_factory

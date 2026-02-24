@@ -28,6 +28,14 @@
         <div class="header-right">
           <UserMenu />
           <Button
+            v-if="store.currentUser"
+            icon="pi pi-bookmark"
+            @click="$router.push('/bookmarks')"
+            text
+            rounded
+            v-tooltip.bottom="'My Bookmarks'"
+          />
+          <Button
             icon="pi pi-cog"
             @click="settingsDialogVisible = true"
             text
@@ -80,6 +88,16 @@
             <span>Words by Count</span>
           </router-link>
 
+          <router-link
+            v-if="store.currentUser"
+            to="/bookmarks"
+            class="nav-link"
+            @click="drawerVisible = false"
+          >
+            <i class="pi pi-bookmark"></i>
+            <span>My Bookmarks</span>
+          </router-link>
+
           <Divider />
 
           <a class="nav-link" @click="openSettings">
@@ -126,9 +144,10 @@ const drawerVisible = ref(false);
 const settingsDialogVisible = ref(false);
 
 // Initialize theme and check auth on mount
-onMounted(() => {
+onMounted(async () => {
   store.initializeTheme();
-  store.checkAuth();
+  await store.checkAuth();
+  store.loadBookmarks();
 });
 
 const doSearch = () => {

@@ -2,7 +2,7 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -76,9 +76,106 @@ export const useStore = defineStore('quranref_store', () => {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
       await fetch(baseUrl + '/auth/logout', { method: 'POST', credentials: 'include' });
       currentUser.value = null;
+      readingBookmark.value = null;
+      noteBookmarks.value = [];
     } catch (error) {
       console.error('Failed to logout:', error);
     }
+  }
+
+  // --- Bookmarks ---
+  const readingBookmark = ref<Bookmark | null>(null);
+  const noteBookmarks = ref<Bookmark[]>([]);
+  const bookmarksLoading = ref(false);
+
+  async function loadBookmarks() {
+    if (!currentUser.value) return;
+    bookmarksLoading.value = true;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const resp = await fetch(baseUrl + '/bookmarks', { credentials: 'include' });
+      if (resp.ok) {
+        const data: BookmarksData = await resp.json();
+        readingBookmark.value = data.reading;
+        noteBookmarks.value = data.notes;
+      }
+    } catch (error) {
+      console.error('Failed to load bookmarks:', error);
+    } finally {
+      bookmarksLoading.value = false;
+    }
+  }
+
+  async function setReadingBookmark(ayaKey: string) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(baseUrl + '/bookmarks/reading', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ aya_key: ayaKey }),
+    });
+    if (resp.ok) {
+      readingBookmark.value = await resp.json();
+    }
+  }
+
+  async function deleteReadingBookmark() {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(baseUrl + '/bookmarks/reading', {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (resp.ok) {
+      readingBookmark.value = null;
+    }
+  }
+
+  async function addNoteBookmark(ayaKey: string, note: string) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(baseUrl + '/bookmarks/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ aya_key: ayaKey, note }),
+    });
+    if (resp.ok) {
+      const bookmark: Bookmark = await resp.json();
+      noteBookmarks.value.unshift(bookmark);
+    }
+  }
+
+  async function updateNoteBookmark(id: number, note: string) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(baseUrl + `/bookmarks/notes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ note }),
+    });
+    if (resp.ok) {
+      const updated: Bookmark = await resp.json();
+      const idx = noteBookmarks.value.findIndex(b => b.id === id);
+      if (idx !== -1) noteBookmarks.value[idx] = updated;
+    }
+  }
+
+  async function deleteNoteBookmark(id: number) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(baseUrl + `/bookmarks/notes/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (resp.ok) {
+      noteBookmarks.value = noteBookmarks.value.filter(b => b.id !== id);
+    }
+  }
+
+  function isReadingBookmark(ayaKey: string): boolean {
+    return readingBookmark.value?.aya_key === ayaKey;
+  }
+
+  function getNotesForAya(ayaKey: string): Bookmark[] {
+    return noteBookmarks.value.filter(b => b.aya_key === ayaKey);
   }
 
   // Loading state for surah info
@@ -175,6 +272,19 @@ export const useStore = defineStore('quranref_store', () => {
 
     // Getters
     selectedTranslationsString,
+
+    // Bookmarks
+    readingBookmark,
+    noteBookmarks,
+    bookmarksLoading,
+    loadBookmarks,
+    setReadingBookmark,
+    deleteReadingBookmark,
+    addNoteBookmark,
+    updateNoteBookmark,
+    deleteNoteBookmark,
+    isReadingBookmark,
+    getNotesForAya,
 
     // Actions
     loadSurahInfo,

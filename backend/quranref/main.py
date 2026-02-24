@@ -10,6 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import API_BASE
 from .api import router as api_router
 from .auth import router as auth_router
+from .bookmarks import router as bookmarks_router
 from .settings import get_settings
 
 app = FastAPI(
@@ -38,6 +39,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret_key)
 # Include routers
 app.include_router(api_router, prefix=API_BASE)
 app.include_router(auth_router, prefix=API_BASE)
+app.include_router(bookmarks_router, prefix=API_BASE)
 
 # Determine static files directory
 # In Docker: /code/static, locally: ../static relative to backend

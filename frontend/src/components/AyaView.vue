@@ -1,7 +1,74 @@
 <template>
   <Card class="aya-container">
-    <!-- Arabic Section at the top -->
     <template #content>
+      <!-- Bookmark indicators -->
+      <div class="bookmark-indicators" v-if="store.currentUser">
+        <i
+          v-if="store.isReadingBookmark(props.aya.aya_key)"
+          class="pi pi-bookmark-fill reading-indicator"
+          v-tooltip.top="'Reading position'"
+        ></i>
+        <i
+          v-if="ayaNotes.length > 0"
+          class="pi pi-file-edit note-indicator"
+          v-tooltip.top="ayaNotes.length + ' note' + (ayaNotes.length > 1 ? 's' : '')"
+        ></i>
+      </div>
+
+      <!-- Actions button (top-right, hover only) -->
+      <div class="aya-actions" v-if="store.currentUser">
+        <Button
+          icon="pi pi-ellipsis-v"
+          text
+          rounded
+          size="small"
+          class="aya-actions-btn"
+          @click="togglePopover"
+        />
+        <Popover ref="popoverRef">
+          <div class="aya-popover-menu">
+            <button
+              class="popover-item"
+              @click="handleToggleReading"
+            >
+              <i :class="store.isReadingBookmark(props.aya.aya_key) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"></i>
+              <span>{{ store.isReadingBookmark(props.aya.aya_key) ? 'Remove reading position' : 'Set as reading position' }}</span>
+            </button>
+            <button
+              class="popover-item"
+              @click="showNoteDialog = true; popoverRef?.hide()"
+            >
+              <i class="pi pi-file-edit"></i>
+              <span>Add note bookmark</span>
+            </button>
+          </div>
+        </Popover>
+      </div>
+
+      <!-- Add Note Dialog -->
+      <Dialog
+        v-model:visible="showNoteDialog"
+        header="Add Note Bookmark"
+        :modal="true"
+        :style="{ width: '400px' }"
+      >
+        <div class="note-dialog-content">
+          <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
+          <Textarea
+            v-model="noteText"
+            rows="4"
+            class="note-textarea"
+            placeholder="Write your note..."
+            autofocus
+          />
+        </div>
+        <template #footer>
+          <Button label="Cancel" text @click="showNoteDialog = false" />
+          <Button label="Save" @click="handleAddNote" :disabled="!noteText.trim()" />
+        </template>
+      </Dialog>
+
+      <!-- Arabic Section at the top -->
       <div class="arabic-section">
         <div class="ar">
           <Tag class="aya-number-badge" severity="success">
@@ -43,6 +110,10 @@
 import { ref, onMounted, computed } from 'vue';
 import Card from 'primevue/card';
 import Tag from 'primevue/tag';
+import Button from 'primevue/button';
+import Popover from 'primevue/popover';
+import Dialog from 'primevue/dialog';
+import Textarea from 'primevue/textarea';
 import type { SurahInfo, AyaInfo } from '../type_defs';
 import { useStore } from '../store';
 
@@ -55,6 +126,32 @@ interface AyaViewProps {
 const store = useStore();
 const props = defineProps<AyaViewProps>();
 const surahInfo = ref<SurahInfo>();
+const popoverRef = ref();
+const showNoteDialog = ref(false);
+const noteText = ref('');
+
+const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
+
+const togglePopover = (event: Event) => {
+  popoverRef.value?.toggle(event);
+};
+
+const handleToggleReading = async () => {
+  popoverRef.value?.hide();
+  if (store.isReadingBookmark(props.aya.aya_key)) {
+    await store.deleteReadingBookmark();
+  } else {
+    await store.setReadingBookmark(props.aya.aya_key);
+  }
+};
+
+const handleAddNote = async () => {
+  if (noteText.value.trim()) {
+    await store.addNoteBookmark(props.aya.aya_key, noteText.value.trim());
+    noteText.value = '';
+    showNoteDialog.value = false;
+  }
+};
 
 onMounted(() => {
   surahInfo.value = store.surahInfo[parseInt(props.aya.aya_key.split(':')[0]) - 1];
@@ -176,6 +273,7 @@ const highlightedArabicText = computed(() => {
   margin: 16px 0;
   border-radius: 8px;
   transition: background-color 0.3s;
+  position: relative;
 }
 
 .aya-container:hover {
@@ -188,6 +286,92 @@ const highlightedArabicText = computed(() => {
 
 .aya-container .p-card-content {
   padding: 0;
+  position: relative;
+}
+
+/* Bookmark indicators (top-right) */
+.bookmark-indicators {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.reading-indicator {
+  color: #4CAF50;
+  font-size: 1rem;
+}
+
+.note-indicator {
+  color: #FF9800;
+  font-size: 1rem;
+}
+
+/* Actions button (top-left, hover only) */
+.aya-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.aya-container:hover .aya-actions {
+  opacity: 1;
+}
+
+.aya-actions-btn {
+  color: var(--p-text-muted-color) !important;
+}
+
+/* Popover menu */
+.aya-popover-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.popover-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--p-text-color);
+  border-radius: var(--p-content-border-radius);
+  text-align: left;
+}
+
+.popover-item:hover {
+  background: var(--p-content-hover-background);
+}
+
+.popover-item i {
+  color: var(--p-primary-color);
+  font-size: 1rem;
+}
+
+/* Note dialog */
+.note-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-aya-ref {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.note-textarea {
+  width: 100%;
 }
 
 .arabic-section {

@@ -1,10 +1,14 @@
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Cookie, HTTPException, Request
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import Session
 
 from .auth_utils import create_access_token, verify_access_token
-from .db import raw_connection
+from .db import get_session
 from .settings import get_settings
+from .sql_models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -51,7 +55,7 @@ async def login(request: Request):
 
 
 @router.get("/callback", name="auth_callback")
-async def callback(request: Request):
+async def callback(request: Request, session: Session = Depends(get_session)):
     """Handle Google OAuth callback, upsert user, set JWT cookie, redirect to frontend."""
     _ensure_google_client()
     settings = get_settings()
@@ -65,18 +69,23 @@ async def callback(request: Request):
     picture_url = userinfo.get("picture", "")
 
     # Upsert user
-    with raw_connection() as conn:
-        cursor = conn.execute(
-            "INSERT INTO users (google_id, email, name, picture_url) "
-            "VALUES (%s, %s, %s, %s) "
-            "ON CONFLICT (google_id) DO UPDATE SET "
-            "email = EXCLUDED.email, name = EXCLUDED.name, "
-            "picture_url = EXCLUDED.picture_url, last_login = NOW() "
-            "RETURNING id, email",
-            (google_id, email, name, picture_url),
+    stmt = (
+        insert(User)
+        .values(google_id=google_id, email=email, name=name, picture_url=picture_url)
+        .on_conflict_do_update(
+            index_elements=["google_id"],
+            set_=dict(
+                email=email,
+                name=name,
+                picture_url=picture_url,
+                last_login=text("NOW()"),
+            ),
         )
-        row = cursor.fetchone()
-        conn.commit()
+        .returning(User.id, User.email)
+    )
+    result = session.execute(stmt)
+    row = result.one()
+    session.commit()
 
     user_id, user_email = row
     jwt_token = create_access_token(user_id, user_email)
@@ -89,7 +98,10 @@ async def callback(request: Request):
 
 
 @router.get("/me")
-async def me(access_token: str | None = Cookie(default=None)):
+async def me(
+    access_token: str | None = Cookie(default=None),
+    session: Session = Depends(get_session),
+):
     """Return current user info or null. Never returns 401."""
     if not access_token:
         return {"user": None}
@@ -99,22 +111,17 @@ async def me(access_token: str | None = Cookie(default=None)):
         return {"user": None}
 
     user_id = payload["sub"]
-    with raw_connection() as conn:
-        cursor = conn.execute(
-            "SELECT id, email, name, picture_url FROM users WHERE id = %s",
-            (user_id,),
-        )
-        row = cursor.fetchone()
+    user = session.get(User, user_id)
 
-    if not row:
+    if not user:
         return {"user": None}
 
     return {
         "user": {
-            "id": row[0],
-            "email": row[1],
-            "name": row[2],
-            "picture_url": row[3],
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "picture_url": user.picture_url,
         }
     }
 

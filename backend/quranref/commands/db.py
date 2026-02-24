@@ -11,29 +11,21 @@ from ..models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
 
 app = typer.Typer(name="Database structure related operations")
 
-META_INFO_DDL = """
-CREATE TABLE IF NOT EXISTS meta_info (
-    key TEXT PRIMARY KEY,
-    value JSONB NOT NULL
-)
-"""
 
-USERS_DDL = """
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    google_id TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL DEFAULT '',
-    picture_url TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_login TIMESTAMPTZ NOT NULL DEFAULT NOW()
-)
-"""
+@app.command()
+def migrate():
+    """Run Alembic database migrations."""
+    from alembic import command
+    from alembic.config import Config
+
+    alembic_cfg = Config(str(Path(__file__).parent.parent.parent / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
+    print("[green]Migrations complete.[/green]")
 
 
 @app.command()
 def init():
-    "Create database graph, ensure labels, indexes, and meta_info table"
+    "Create database graph, ensure labels, indexes, and run migrations"
 
     db = get_db()
     g = db.graph(GRAPH_NAME, create=True)
@@ -53,11 +45,8 @@ def init():
     g.create_index(Word, "word")
     g.create_index(Word, "count")
 
-    # Create SQL tables
-    with raw_connection() as conn:
-        conn.execute(META_INFO_DDL)
-        conn.execute(USERS_DDL)
-        conn.commit()
+    # Run SQL migrations (creates/updates users, meta_info, bookmarks, etc.)
+    migrate()
 
     print("[green]Database initialization done.[/green]")
 

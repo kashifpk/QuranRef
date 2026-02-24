@@ -23,11 +23,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useStore } from '../store';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 
 const store = useStore();
+const router = useRouter();
 const menuRef = ref();
 
 const toggleMenu = (event: Event) => {
@@ -44,6 +46,11 @@ const menuItems = computed(() => [
         disabled: true,
       },
       { separator: true },
+      {
+        label: 'My Bookmarks',
+        icon: 'pi pi-bookmark',
+        command: () => router.push('/bookmarks'),
+      },
       {
         label: 'Sign Out',
         icon: 'pi pi-sign-out',

@@ -26,3 +26,17 @@ export interface UserInfo {
     name: string;
     picture_url: string;
 }
+
+export interface Bookmark {
+    id: number;
+    bookmark_type: 'reading' | 'note';
+    aya_key: string;
+    note: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface BookmarksData {
+    reading: Bookmark | null;
+    notes: Bookmark[];
+}

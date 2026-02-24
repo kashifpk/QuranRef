@@ -13,7 +13,13 @@
     </Card>
 
     <div v-if="surahAyas && surahAyas.length > 0" class="ayas-list">
-      <aya-view v-for="aya in surahAyas" :key="aya.aya_key" :aya="aya" :display-surah-name="false" />
+      <aya-view
+        v-for="aya in surahAyas"
+        :key="aya.aya_key"
+        :id="'aya-' + aya.aya_key"
+        :aya="aya"
+        :display-surah-name="false"
+      />
     </div>
 
     <div v-else class="loading-state">
@@ -25,7 +31,7 @@
 
 <script setup lang="ts">
 import { mande } from 'mande';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from '../store';
 import Card from 'primevue/card';
@@ -43,10 +49,22 @@ const route = useRoute();
 const surahAyas = ref<AyaInfo[]>();
 const surahInfo = ref<SurahInfo>();
 
+function scrollToAya() {
+  const ayaNum = route.query.aya as string | undefined;
+  if (!ayaNum) return;
+  nextTick(() => {
+    const el = document.getElementById(`aya-${props.surah_number}:${ayaNum}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}
+
 onMounted(async () => {
   if (props.surah_number !== undefined) {
     surahInfo.value = store.surahInfo[props.surah_number - 1];
     await getSurahText();
+    scrollToAya();
   } else {
     console.error('surah_number is undefined');
   }
