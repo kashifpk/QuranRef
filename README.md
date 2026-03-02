@@ -97,7 +97,7 @@ For running services directly on your host (requires uv, bun, and ArangoDB insta
 ./dev.sh all  # Start all services on host
 ```
 
-Access at standard ports: Frontend (5173), Backend (8000), ArangoDB (8529).
+Access at: Frontend (http://localhost:41149), Backend (http://localhost:41148).
 
 ## Daily Development Workflow
 
@@ -158,7 +158,7 @@ quranref-cli post-process make-words    # Extract word data
 ```bash
 cd backend
 uv sync              # Install dependencies from pyproject.toml
-uv run fastapi dev quranref/main.py --host 0.0.0.0 --port 8000
+python -m quranref   # Starts dev server on http://localhost:41148
 ```
 
 ## Frontend Development (Vue.js + Bun)

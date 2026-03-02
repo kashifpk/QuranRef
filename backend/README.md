@@ -65,11 +65,8 @@ cd backend
 # Install dependencies with uv
 uv sync
 
-# Run development server with auto-reload
-uv run fastapi dev quranref/main.py --host 0.0.0.0 --port 8000
-
-# Or using uvicorn directly
-uv run uvicorn quranref.main:app --reload --host 0.0.0.0 --port 8000
+# Run development server with auto-reload (starts on http://localhost:41148)
+python -m quranref
 
 # Run tests
 uv run pytest

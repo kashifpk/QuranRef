@@ -71,7 +71,7 @@ bun install
 # Start development server with HMR
 bun run dev
 
-# The app will be available at http://localhost:5173
+# The app will be available at http://localhost:41149
 ```
 
 ## Available Scripts
@@ -108,12 +108,10 @@ Create a `.env` file in the frontend directory:
 STATIC_URL=/
 
 # API configuration
-VITE_API_BASE_URL=http://localhost:41148/api/v1  # Docker development
-# VITE_API_BASE_URL=http://localhost:8000/api/v1   # Direct host development
+VITE_API_BASE_URL=http://localhost:41148/api/v1
 
 # Website base URL
-VITE_WEBSITE_BASE_URL=http://localhost:41149      # Docker development
-# VITE_WEBSITE_BASE_URL=http://localhost:5173      # Direct host development
+VITE_WEBSITE_BASE_URL=http://localhost:41149
 ```
 
 ## Key Components
@@ -229,15 +227,11 @@ defineProps<{
 ## Troubleshooting
 
 ### Port Already in Use
-- Docker development uses port 41149
-- Direct host uses port 5173
-- Change with: `bun run dev --port 3000`
+- Development uses port 41149 (hardcoded in `vite.config.ts`)
 
 ### API Connection Issues
-- Verify backend is running
-- Check VITE_API_BASE_URL in `.env`
-- For Docker: use http://localhost:41148
-- For host: use http://localhost:8000
+- Verify backend is running on http://localhost:41148
+- The Vite dev server proxies `/api/*` to the backend automatically
 
 ### Build Errors
 - Clear cache: `rm -rf node_modules .vite`
