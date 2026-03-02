@@ -54,3 +54,148 @@ body {
   text-align: left;
 
 }
+
+/* ============================================
+   NoteFont — composite unicode-range font family
+   Automatically picks the right font per character.
+   ============================================ */
+
+/* Arabic script (Arabic, Urdu, Persian, Pashto, Kurdish, Sindhi, Uyghur) — Noto Naskh Arabic (92KB woff2) */
+@font-face {
+  font-family: 'NoteFont';
+  src: url('/fonts/NotoNaskhArabic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'NoteFont';
+  src: url('/fonts/NotoNaskhArabic-Regular.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+/* Latin + extended Latin + combining diacriticals (English, French, German, Turkish, etc.) */
+@font-face {
+  font-family: 'NoteFont';
+  src: local('Avenir'), local('Helvetica Neue'), local('Arial'), local('sans-serif');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF;
+}
+@font-face {
+  font-family: 'NoteFont';
+  src: local('Avenir'), local('Helvetica Neue'), local('Arial'), local('sans-serif');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+0300-036F, U+1E00-1EFF;
+}
+
+/* Utility class for note font */
+.note-font {
+  font-family: 'NoteFont', 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ============================================
+   Markdown rendering styles for notes
+   ============================================ */
+.note-markdown {
+  font-family: 'NoteFont', 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.note-markdown p {
+  margin: 0 0 0.5em 0;
+}
+
+.note-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.note-markdown strong {
+  font-weight: 700;
+}
+
+.note-markdown em {
+  font-style: italic;
+}
+
+.note-markdown a {
+  color: var(--p-primary-color, #4CAF50);
+  text-decoration: none;
+}
+
+.note-markdown a:hover {
+  text-decoration: underline;
+}
+
+.note-markdown a.aya-ref-link {
+  font-weight: 600;
+  background: rgba(76, 175, 80, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.note-markdown a.aya-ref-link:hover {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.note-markdown ul,
+.note-markdown ol {
+  margin: 0.25em 0 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.note-markdown li {
+  margin: 0.15em 0;
+}
+
+.note-markdown blockquote {
+  margin: 0.5em 0;
+  padding: 0.25em 0.75em;
+  border-left: 3px solid var(--p-primary-color, #4CAF50);
+  color: var(--p-text-muted-color, #666);
+}
+
+.note-markdown code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.dark-mode .note-markdown code {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.note-markdown pre {
+  margin: 0.5em 0;
+  padding: 0.5em 0.75em;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.dark-mode .note-markdown pre {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.note-markdown pre code {
+  background: none;
+  padding: 0;
+}
+
+.note-markdown hr {
+  border: none;
+  border-top: 1px solid var(--p-content-border-color, #ddd);
+  margin: 0.75em 0;
+}

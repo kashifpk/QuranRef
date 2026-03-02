@@ -73,10 +73,10 @@
 
                   <!-- Editing mode -->
                   <div v-if="editingNoteId === note.id" class="note-edit">
-                    <Textarea
+                    <MarkdownNote
                       v-model="editNoteText"
-                      rows="3"
-                      class="note-edit-textarea"
+                      mode="edit"
+                      :rows="3"
                     />
                     <div class="note-edit-actions">
                       <Button label="Save" size="small" @click="saveNoteEdit(note.id)" :disabled="!editNoteText.trim()" />
@@ -85,7 +85,11 @@
                   </div>
 
                   <!-- Display mode -->
-                  <p v-else class="note-text">{{ note.note }}</p>
+                  <MarkdownNote
+                    v-else
+                    :modelValue="note.note"
+                    mode="display"
+                  />
 
                   <div class="note-actions" v-if="editingNoteId !== note.id">
                     <Button
@@ -132,7 +136,7 @@ import { useStore } from '../store';
 import type { Bookmark } from '../type_defs';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import Textarea from 'primevue/textarea';
+import MarkdownNote from '../components/MarkdownNote.vue';
 
 const store = useStore();
 const router = useRouter();

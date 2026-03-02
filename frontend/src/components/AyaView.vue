@@ -10,8 +10,9 @@
         ></i>
         <i
           v-if="ayaNotes.length > 0"
-          class="pi pi-file-edit note-indicator"
+          class="pi pi-file-edit note-indicator note-indicator-clickable"
           v-tooltip.top="ayaNotes.length + ' note' + (ayaNotes.length > 1 ? 's' : '')"
+          @click="showViewNotesDialog = true"
         ></i>
       </div>
 
@@ -50,22 +51,63 @@
         v-model:visible="showNoteDialog"
         header="Add Note Bookmark"
         :modal="true"
-        :style="{ width: '400px' }"
+        :style="{ width: '500px' }"
       >
         <div class="note-dialog-content">
           <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
-          <Textarea
+          <MarkdownNote
             v-model="noteText"
-            rows="4"
-            class="note-textarea"
-            placeholder="Write your note..."
-            autofocus
+            mode="edit"
+            placeholder="Write your note... (markdown & @surah:aya supported)"
           />
         </div>
         <template #footer>
           <Button label="Cancel" text @click="showNoteDialog = false" />
           <Button label="Save" @click="handleAddNote" :disabled="!noteText.trim()" />
         </template>
+      </Dialog>
+
+      <!-- View Notes Dialog -->
+      <Dialog
+        v-model:visible="showViewNotesDialog"
+        header="Notes"
+        :modal="true"
+        :style="{ width: '500px' }"
+      >
+        <div class="note-dialog-content">
+          <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
+          <div class="view-notes-list">
+            <div
+              v-for="note in ayaNotes"
+              :key="note.id"
+              class="view-note-item"
+            >
+              <!-- Editing -->
+              <div v-if="editingNoteId === note.id" class="view-note-edit">
+                <MarkdownNote
+                  v-model="editNoteText"
+                  mode="edit"
+                  :rows="3"
+                />
+                <div class="view-note-edit-actions">
+                  <Button label="Save" size="small" @click="saveNoteEdit(note.id)" :disabled="!editNoteText.trim()" />
+                  <Button label="Cancel" size="small" text @click="cancelNoteEdit" />
+                </div>
+              </div>
+              <!-- Display -->
+              <div v-else>
+                <MarkdownNote :modelValue="note.note" mode="display" />
+                <div class="view-note-actions">
+                  <span class="view-note-date en">{{ formatDate(note.created_at) }}</span>
+                  <div class="view-note-buttons">
+                    <Button icon="pi pi-pencil" text rounded size="small" @click="startNoteEdit(note)" v-tooltip.top="'Edit'" />
+                    <Button icon="pi pi-trash" severity="danger" text rounded size="small" @click="handleDeleteNote(note.id)" v-tooltip.top="'Delete'" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </Dialog>
 
       <!-- Arabic Section at the top -->
@@ -113,8 +155,8 @@ import Tag from 'primevue/tag';
 import Button from 'primevue/button';
 import Popover from 'primevue/popover';
 import Dialog from 'primevue/dialog';
-import Textarea from 'primevue/textarea';
-import type { SurahInfo, AyaInfo } from '../type_defs';
+import MarkdownNote from './MarkdownNote.vue';
+import type { SurahInfo, AyaInfo, Bookmark } from '../type_defs';
 import { useStore } from '../store';
 
 interface AyaViewProps {
@@ -129,6 +171,9 @@ const surahInfo = ref<SurahInfo>();
 const popoverRef = ref();
 const showNoteDialog = ref(false);
 const noteText = ref('');
+const showViewNotesDialog = ref(false);
+const editingNoteId = ref<number | null>(null);
+const editNoteText = ref('');
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
 
@@ -152,6 +197,39 @@ const handleAddNote = async () => {
     showNoteDialog.value = false;
   }
 };
+
+function startNoteEdit(note: Bookmark) {
+  editingNoteId.value = note.id;
+  editNoteText.value = note.note;
+}
+
+function cancelNoteEdit() {
+  editingNoteId.value = null;
+  editNoteText.value = '';
+}
+
+async function saveNoteEdit(noteId: number) {
+  if (editNoteText.value.trim()) {
+    await store.updateNoteBookmark(noteId, editNoteText.value.trim());
+    editingNoteId.value = null;
+    editNoteText.value = '';
+  }
+}
+
+async function handleDeleteNote(noteId: number) {
+  await store.deleteNoteBookmark(noteId);
+  if (ayaNotes.value.length === 0) {
+    showViewNotesDialog.value = false;
+  }
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 onMounted(() => {
   surahInfo.value = store.surahInfo[parseInt(props.aya.aya_key.split(':')[0]) - 1];
@@ -309,6 +387,14 @@ const highlightedArabicText = computed(() => {
   font-size: 1rem;
 }
 
+.note-indicator-clickable {
+  cursor: pointer;
+}
+
+.note-indicator-clickable:hover {
+  color: #F57C00;
+}
+
 /* Actions button (top-left, hover only) */
 .aya-actions {
   position: absolute;
@@ -372,6 +458,51 @@ const highlightedArabicText = computed(() => {
 
 .note-textarea {
   width: 100%;
+}
+
+/* View Notes dialog */
+.view-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.view-note-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--p-content-border-color, #eee);
+}
+
+.view-note-item:last-child {
+  border-bottom: none;
+}
+
+.view-note-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.view-note-date {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.view-note-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.view-note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.view-note-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .arabic-section {
