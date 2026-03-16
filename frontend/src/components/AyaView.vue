@@ -52,7 +52,7 @@
         header="Add Note Bookmark"
         :modal="true"
         :style="{ width: '500px' }"
-        @show="setTimeout(() => noteEditorRef?.focus(), 0)"
+        @show="focusNoteEditor"
       >
         <div class="note-dialog-content">
           <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
@@ -177,6 +177,10 @@ const showViewNotesDialog = ref(false);
 const editingNoteId = ref<number | null>(null);
 const editNoteText = ref('');
 const noteEditorRef = ref();
+
+const focusNoteEditor = () => {
+  setTimeout(() => noteEditorRef.value?.focus(), 0);
+};
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
 
