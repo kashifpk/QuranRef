@@ -193,17 +193,11 @@ function handleLinkClick(event: MouseEvent) {
   }
 }
 
-function focus() {
-  nextTick(() => textareaRef.value?.focus());
-}
-
 onMounted(() => {
-  if (props.mode === 'edit') {
-    focus();
+  if (props.mode === 'edit' && textareaRef.value) {
+    nextTick(() => textareaRef.value?.focus());
   }
 });
-
-defineExpose({ focus });
 </script>
 
 <style scoped>

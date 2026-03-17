@@ -52,12 +52,11 @@
         header="Add Note Bookmark"
         :modal="true"
         :style="{ width: '500px' }"
-        @show="focusNoteEditor"
+        :closable="false"
       >
         <div class="note-dialog-content">
           <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
           <MarkdownNote
-            ref="noteEditorRef"
             v-model="noteText"
             mode="edit"
             placeholder="Write your note... (markdown & @surah:aya supported)"
@@ -176,11 +175,6 @@ const noteText = ref('');
 const showViewNotesDialog = ref(false);
 const editingNoteId = ref<number | null>(null);
 const editNoteText = ref('');
-const noteEditorRef = ref();
-
-const focusNoteEditor = () => {
-  setTimeout(() => noteEditorRef.value?.focus(), 0);
-};
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
 
