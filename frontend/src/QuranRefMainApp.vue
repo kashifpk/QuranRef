@@ -88,6 +88,11 @@
             <span>Words by Count</span>
           </router-link>
 
+          <router-link to="/by_root" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-sitemap"></i>
+            <span>Browse by Root</span>
+          </router-link>
+
           <router-link
             v-if="store.currentUser"
             to="/bookmarks"
@@ -120,6 +125,9 @@
     <footer class="app-footer">
       <span>Arabic texts and translations courtesy of</span>
       <a href="http://tanzil.net" target="_blank" rel="noopener">tanzil.net</a>
+      <span class="footer-separator">|</span>
+      <span>Word morphology from the</span>
+      <a href="https://corpus.quran.com" target="_blank" rel="noopener">Quranic Arabic Corpus</a>
     </footer>
   </div>
 </template>
@@ -170,6 +178,11 @@ const openSettings = () => {
   flex-direction: column;
   background-color: var(--app-bg, #fafafa);
   color: var(--app-text, #1a1a1a);
+}
+
+.footer-separator {
+  margin: 0 0.5rem;
+  opacity: 0.5;
 }
 
 /* Header Styles */

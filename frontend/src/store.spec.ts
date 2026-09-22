@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { useStore } from './store'
 
@@ -101,6 +102,32 @@ describe('bookmarks', () => {
     await store.logout()
     expect(store.currentUser).toBeNull()
     expect(store.noteBookmarks).toEqual([])
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('word by word', () => {
+  it('is off by default and remembers the meaning language', async () => {
+    const store = useStore()
+    expect(store.wordByWord).toBe(false)
+    expect(store.glossLanguage).toBe('english')
+    store.wordByWord = true
+    store.glossLanguage = 'urdu'
+    await nextTick()
+    expect(JSON.parse(localStorage.getItem('quranref-word-by-word') || 'false')).toBe(true)
+    expect(localStorage.getItem('quranref-gloss-language')).toBe('urdu')
+  })
+
+  it('fetches the words of an aya once and caches them', async () => {
+    const tokens = [{ position: 1, text: 'بِسْمِ', text_simple: 'بسم', tag: 'N', root: 'سمو',
+      lemma: 'اسْم', features: '', segments: [], glosses: {} }]
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => jsonResponse(tokens))
+    vi.stubGlobal('fetch', fetchMock)
+    const store = useStore()
+    expect(await store.loadAyaWords('1:1')).toEqual(tokens)
+    expect(await store.loadAyaWords('1:1')).toEqual(tokens)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/aya-words/1:1')
     vi.unstubAllGlobals()
   })
 })

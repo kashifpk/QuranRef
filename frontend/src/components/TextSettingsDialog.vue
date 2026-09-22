@@ -11,6 +11,7 @@
       <TabList>
         <Tab value="0">Arabic Style</Tab>
         <Tab value="1">Translations</Tab>
+        <Tab value="2">Word by Word</Tab>
       </TabList>
       <TabPanels>
         <!-- Arabic Text Style Tab -->
@@ -131,6 +132,35 @@
             </div>
           </div>
         </TabPanel>
+
+        <!-- Word by Word Tab -->
+        <TabPanel value="2">
+          <div class="wbw-section">
+            <p class="section-description">
+              Show each aya word by word from the Uthmani text, with the meaning used in that
+              aya under each word. Click a word for its lemma, root and grammar.
+            </p>
+            <div class="wbw-option">
+              <ToggleSwitch v-model="store.wordByWord" inputId="wbw-toggle" />
+              <label for="wbw-toggle">Word by word mode</label>
+            </div>
+            <div class="wbw-option">
+              <label for="gloss-language">Meaning language</label>
+              <Select
+                v-model="store.glossLanguage"
+                :options="glossLanguages"
+                optionLabel="name"
+                optionValue="code"
+                inputId="gloss-language"
+                class="gloss-select"
+              />
+            </div>
+            <p class="section-description">
+              Word morphology comes from the Quranic Arabic Corpus. Meanings appear once
+              word-by-word translations have been imported for the chosen language.
+            </p>
+          </div>
+        </TabPanel>
       </TabPanels>
     </Tabs>
 
@@ -156,12 +186,18 @@ import Checkbox from 'primevue/checkbox';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import Chip from 'primevue/chip';
+import ToggleSwitch from 'primevue/toggleswitch';
+import Select from 'primevue/select';
 
 const store = useStore();
 
 const visible = defineModel<boolean>('visible', { default: false });
 
 const selectedStyle = ref(store.arabicTextType);
+const glossLanguages = [
+  { code: 'english', name: 'English' },
+  { code: 'urdu', name: 'Urdu' },
+];
 const selectedLanguage = ref<string | null>(null);
 const bismillahPreviews = ref<Record<string, string>>({});
 const textTypesData = ref<Record<string, string[]>>({});
@@ -583,4 +619,20 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+.wbw-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.wbw-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.gloss-select {
+  min-width: 12rem;
+}
+
 </style>

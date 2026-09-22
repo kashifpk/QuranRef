@@ -7,6 +7,9 @@ import BrowseByWord from "./views/BrowseByWord.vue"
 import ByWordCount from "./views/ByWordCount.vue"
 import SearchResults from "./views/SearchResults.vue"
 import BookmarksView from "./views/BookmarksView.vue"
+import BrowseByRoot from "./views/BrowseByRoot.vue"
+import LemmaView from "./views/LemmaView.vue"
+import RootView from "./views/RootView.vue"
 
 const routes = [
   { name: 'home', path: "/", component: HomeView },
@@ -22,6 +25,9 @@ const routes = [
   { name: 'by_word_count', path: '/by_word_count', component: ByWordCount },
   { name: 'search', path: '/search/:search_term', component: SearchResults, props: true },
   { name: 'bookmarks', path: '/bookmarks', component: BookmarksView },
+  { name: 'browse_by_root', path: '/by_root', component: BrowseByRoot },
+  { name: 'root_view', path: '/root/:root', component: RootView, props: true },
+  { name: 'lemma_view', path: '/lemma/:lemma', component: LemmaView, props: true },
   { path: '/:pathMatch(.*)', component: NotFoundView },
 ]
 

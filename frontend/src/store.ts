@@ -2,7 +2,7 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo, Bookmark, BookmarksData } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -11,6 +11,29 @@ export const useStore = defineStore('quranref_store', () => {
   const availableTextTypes = ref<string[]>([]);
   const availableTranslations = ref<[string, string][]>([]);
   const selectedTranslations = useStorage('quranref-selected-translations', [] as [string, string][]);
+
+  // Word-by-word reading mode and the language of the per-word meanings shown under each word
+  const wordByWord = useStorage('quranref-word-by-word', false);
+  const glossLanguage = useStorage('quranref-gloss-language', 'english');
+
+  // Per-aya word morphology, fetched on demand and kept for the session
+  const ayaWordsCache = new Map<string, TokenInfo[]>();
+
+  async function loadAyaWords(ayaKey: string): Promise<TokenInfo[]> {
+    const cached = ayaWordsCache.get(ayaKey);
+    if (cached) return cached;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    try {
+      const resp = await fetch(baseUrl + '/aya-words/' + ayaKey);
+      if (!resp.ok) return [];
+      const tokens: TokenInfo[] = await resp.json();
+      ayaWordsCache.set(ayaKey, tokens);
+      return tokens;
+    } catch (error) {
+      console.error('Failed to load aya words:', error);
+      return [];
+    }
+  }
 
   // Dark mode state (persisted to localStorage)
   // On first visit, follow system preference; thereafter use the stored value
@@ -265,6 +288,9 @@ export const useStore = defineStore('quranref_store', () => {
     availableTranslations,
     selectedTranslations,
     darkMode,
+    wordByWord,
+    glossLanguage,
+    loadAyaWords,
 
     // Loading states
     surahInfoLoading,

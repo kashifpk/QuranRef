@@ -121,7 +121,18 @@
               <span class="ar mx-2">{{ surahInfo?.arabic_name }}</span>
             </span>
           </Tag>
-          <div class="arabic-text" v-html="highlightedArabicText"></div>
+          <template v-if="store.wordByWord && tokens.length > 0">
+            <WordByWordAya
+              :tokens="tokens"
+              :gloss-language="store.glossLanguage"
+              :selected-position="selectedToken?.position ?? null"
+              @select="onWordSelect"
+            />
+            <Popover ref="wordPopoverRef" @hide="selectedToken = null">
+              <WordDetails :token="selectedToken" />
+            </Popover>
+          </template>
+          <div v-else class="arabic-text" v-html="highlightedArabicText"></div>
         </div>
       </div>
 
@@ -150,14 +161,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import Card from 'primevue/card';
 import Tag from 'primevue/tag';
 import Button from 'primevue/button';
 import Popover from 'primevue/popover';
 import Dialog from 'primevue/dialog';
 import MarkdownNote from './MarkdownNote.vue';
-import type { SurahInfo, AyaInfo, Bookmark } from '../type_defs';
+import WordByWordAya from './WordByWordAya.vue';
+import WordDetails from './WordDetails.vue';
+import type { SurahInfo, AyaInfo, Bookmark, TokenInfo } from '../type_defs';
 import { useStore } from '../store';
 
 interface AyaViewProps {
@@ -177,6 +190,24 @@ const editingNoteId = ref<number | null>(null);
 const editNoteText = ref('');
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
+
+// Word-by-word mode: tokens are fetched when the mode is on (and cached in the store)
+const tokens = ref<TokenInfo[]>([]);
+const selectedToken = ref<TokenInfo | null>(null);
+const wordPopoverRef = ref();
+
+async function ensureTokens() {
+  if (store.wordByWord && tokens.value.length === 0) {
+    tokens.value = await store.loadAyaWords(props.aya.aya_key);
+  }
+}
+
+watch(() => store.wordByWord, ensureTokens);
+
+function onWordSelect(token: TokenInfo, event: MouseEvent) {
+  selectedToken.value = token;
+  wordPopoverRef.value?.show(event);
+}
 
 const togglePopover = (event: Event) => {
   popoverRef.value?.toggle(event);
@@ -234,6 +265,7 @@ function formatDate(dateStr: string): string {
 
 onMounted(() => {
   surahInfo.value = store.surahInfo[parseInt(props.aya.aya_key.split(':')[0]) - 1];
+  ensureTokens();
 });
 
 const ayaNumber = computed(() => {
