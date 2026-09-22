@@ -12,7 +12,22 @@ from dotenv import dotenv_values
 from fastapi.testclient import TestClient
 from quranref.db import GRAPH_NAME
 from quranref.main import app
-from quranref.models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
+from quranref.models import (
+    Aya,
+    AyaText,
+    HasAya,
+    HasLemma,
+    HasRoot,
+    HasToken,
+    HasWord,
+    IsForm,
+    Lemma,
+    Root,
+    Surah,
+    Text,
+    Token,
+    Word,
+)
 from quranref.search_index import rebuild_search_index
 from quranref.sql_models import Base
 from quranref.utils import text_to_digest
@@ -144,6 +159,50 @@ def _seed_test_data(g, db):
             edge_triples.append((aya, HasWord(), word_objects[word_str]))
     g.bulk_add_edges(edge_triples)
 
+    # Morphology: tokens for 1:1 and 1:3 with roots, lemmas and English glosses
+    roots = {r: Root(id=r, root=r, letters=3) for r in ["سمو", "أله", "رحم"]}
+    lemma_specs = {"اسْم": "سمو", "اللَّه": "أله", "رَحْمٰن": "رحم", "رَحِيم": "رحم"}
+    lemmas = {lm: Lemma(id=lm, lemma=lm, root=rt, pos="N") for lm, rt in lemma_specs.items()}
+    g.bulk_add(list(roots.values()))
+    g.bulk_add(list(lemmas.values()))
+    token_specs = [
+        ("1:1", 1, "بِسْمِ", "بسم", "اسْم", "In (the) name"),
+        ("1:1", 2, "ٱللَّهِ", "الله", "اللَّه", "(of) Allah"),
+        ("1:1", 3, "ٱلرَّحْمَٰنِ", "الرحمن", "رَحْمٰن", "the Most Gracious"),
+        ("1:1", 4, "ٱلرَّحِيمِ", "الرحيم", "رَحِيم", "the Most Merciful"),
+        ("1:3", 1, "ٱلرَّحْمَٰنِ", "الرحمن", "رَحْمٰن", "The Most Gracious"),
+        ("1:3", 2, "ٱلرَّحِيمِ", "الرحيم", "رَحِيم", "the Especially Merciful"),
+    ]
+    tokens = []
+    for aya_key, position, text, simple, lemma, gloss in token_specs:
+        surah, aya_num = aya_key.split(":")
+        tokens.append(
+            Token(
+                id=f"{aya_key}:{position}",
+                surah_number=int(surah),
+                aya_number=int(aya_num),
+                position=position,
+                text=text,
+                text_simple=simple,
+                tag="N",
+                root=lemma_specs[lemma],
+                lemma=lemma,
+                features=f"ROOT:{lemma_specs[lemma]}|LEM:{lemma}|M|GEN",
+                segments=[{"form": text, "tag": "N", "features": f"LEM:{lemma}"}],
+                glosses={"english": gloss},
+            )
+        )
+    g.bulk_add(tokens)
+    has_token, has_lemma, is_form = [], [], []
+    for token, (aya_key, position, _t, simple, lemma, _g) in zip(tokens, token_specs, strict=True):
+        has_token.append((aya_map[aya_key], HasToken(position=position), token))
+        has_lemma.append((token, HasLemma(), lemmas[lemma]))
+        is_form.append((token, IsForm(), word_objects[simple]))
+    has_root = [(lm, HasRoot(), roots[lm.root]) for lm in lemmas.values()]
+    # bulk_add_edges takes one edge label per call
+    for triples in (has_token, has_lemma, is_form, has_root):
+        g.bulk_add_edges(triples)
+
     # meta_info table data
     text_types = {"arabic": ["simple-clean"], "english": ["maududi"]}
     with db._pool.connection() as conn:
@@ -199,9 +258,9 @@ def test_graph(test_db, test_engine):
     g = test_db.graph(GRAPH_NAME, create=True)
 
     # Ensure vertex and edge labels
-    for vertex_cls in [Surah, Aya, Text, Word]:
+    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token]:
         g.ensure_label(vertex_cls)
-    for edge_cls in [HasAya, HasWord, AyaText]:
+    for edge_cls in [HasAya, HasWord, AyaText, HasToken, HasLemma, HasRoot, IsForm]:
         g.ensure_label(edge_cls, kind="e")
 
     # Create indexes

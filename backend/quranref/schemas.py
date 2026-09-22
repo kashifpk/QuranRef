@@ -65,3 +65,63 @@ class NoteBookmarkRequest(BaseModel):
 
 class NoteBookmarkUpdateRequest(BaseModel):
     note: str
+
+
+# --- Word morphology schemas ---
+
+
+class TokenSchema(BaseModel):
+    """One word of an aya with its morphology."""
+
+    position: int
+    text: str
+    text_simple: str = ""
+    tag: str
+    root: str | None = None
+    lemma: str | None = None
+    features: str = ""
+    segments: list[dict] = []
+    glosses: dict[str, str] = {}
+
+
+class LemmaOccurrenceSchema(BaseModel):
+    aya_key: str
+    position: int
+    text: str
+    text_simple: str = ""
+    glosses: dict[str, str] = {}
+    aya_text: str = ""
+
+
+class LemmaMeaningSchema(BaseModel):
+    gloss: str
+    count: int
+
+
+class LemmaSchema(BaseModel):
+    lemma: str
+    pos: str
+    root: str | None = None
+    count: int
+    meanings: dict[str, list[LemmaMeaningSchema]]
+    occurrences: list[LemmaOccurrenceSchema]
+
+
+class RootLemmaSchema(BaseModel):
+    lemma: str
+    pos: str
+    count: int
+
+
+class RootSchema(BaseModel):
+    root: str
+    letters: int
+    count: int
+    lemmas: list[RootLemmaSchema]
+
+
+class WordMorphologySchema(BaseModel):
+    lemma: str | None = None
+    root: str | None = None
+    pos: str | None = None
+    count: int

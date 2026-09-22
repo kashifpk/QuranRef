@@ -12,6 +12,7 @@ from .api import router as api_router
 from .auth import router as auth_router
 from .bookmarks import router as bookmarks_router
 from .settings import get_settings
+from .words import router as words_router
 
 app = FastAPI(
     title="QuranRef API", description="API for Quran Reference Application", version="2.0.0"
@@ -38,6 +39,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret_key)
 app.include_router(api_router, prefix=API_BASE)
 app.include_router(auth_router, prefix=API_BASE)
 app.include_router(bookmarks_router, prefix=API_BASE)
+app.include_router(words_router, prefix=API_BASE)
 
 # Determine static files directory
 # In Docker: /code/static, locally: ../static relative to backend
