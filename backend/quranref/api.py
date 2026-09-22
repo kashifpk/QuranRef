@@ -259,79 +259,58 @@ def get_text(
     return _process_aya_results(results)
 
 
+def _aya_sort_key(aya_key: str) -> tuple[int, int]:
+    surah, aya = aya_key.split(":", 1)
+    return int(surah), int(aya)
+
+
 @router.get("/search/{search_term}/{search_language_spec}/{translation_languages_spec}")
 def search(
     search_term: str,
     search_language_spec: str,
     translation_languages_spec: str = "",
     g: Graph = Depends(graph),
-):
+) -> list[AyaResultSchema]:
     """
-    Search for the given term in the Quran and return the ayas containing the term.
+    Search for the given term in the Quran and return the ayas containing the term,
+    with the matched text and the requested translations. One Cypher query, regardless
+    of how many ayas match.
     """
-
-    search_results = []
+    if not search_term:
+        return []
 
     language, text_type = search_language_spec.split(":", 1)
-    language_translations = []
 
-    for lang in translation_languages_spec.split("_"):
-        language_translations.append(lang.split(":", 1))
-
-    if not search_term:
-        return search_results
-
-    log.info(f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}")
-
-    # Find ayas matching the search term via their text
-    matched = g.cypher(
+    cypher = (
         "MATCH (a:Aya)-[e:AYA_TEXT]->(t:Text) "
         "WHERE e.language = $lang AND e.text_type = $tt AND t.text CONTAINS $term "
-        "RETURN a.id, t.text",
-        columns=["aya_id", "text"],
-        lang=language,
-        tt=text_type,
-        term=search_term,
     )
+    params: dict = {"lang": language, "tt": text_type, "term": search_term}
+    columns = ["aya_id", "matched_text"]
 
-    log.info(f"Found {len(matched)} aya matches")
+    if translation_languages_spec:
+        tr_filter, tr_params = _build_language_filter(translation_languages_spec, edge_alias="e2")
+        cypher += f"OPTIONAL MATCH (a)-[e2:AYA_TEXT]->(t2:Text) WHERE {tr_filter} "
+        cypher += "RETURN a.id, t.text, e2.language, e2.text_type, t2.text"
+        params.update(tr_params)
+        columns += ["tr_language", "tr_text_type", "tr_text"]
+    else:
+        cypher += "RETURN a.id, t.text"
 
-    if not matched:
-        return search_results
+    log.info(f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}")
+    rows = g.cypher(cypher, columns=columns, **params)
 
-    # Build translation filter
-    tr_parts = []
-    tr_params = {}
-    for idx, (tr_lang, tr_text_type) in enumerate(language_translations):
-        tr_parts.append(f"(e.language = $tr_lang_{idx} AND e.text_type = $tr_tt_{idx})")
-        tr_params[f"tr_lang_{idx}"] = tr_lang
-        tr_params[f"tr_tt_{idx}"] = tr_text_type
-
-    for m in matched:
-        aya_key = m["aya_id"]
-        search_result = {
-            "aya_key": aya_key,
-            "texts": {language: {text_type: m["text"]}},
-        }
-
-        # Get translations if requested
-        if language_translations and tr_parts:
-            tr_filter = " OR ".join(tr_parts)
-
-            tr_results = g.cypher(
-                "MATCH (a:Aya)-[e:AYA_TEXT]->(t:Text) "
-                f"WHERE a.id = $aya_id AND ({tr_filter}) "
-                "RETURN e.language, e.text_type, t.text",
-                columns=["language", "text_type", "text"],
-                aya_id=aya_key,
-                **tr_params,
+    results: dict[str, AyaResultSchema] = {}
+    for r in rows:
+        aya_key = r["aya_id"]
+        if aya_key not in results:
+            results[aya_key] = AyaResultSchema(
+                aya_key=aya_key, texts={language: {text_type: r["matched_text"]}}
             )
+        # OPTIONAL MATCH yields null translation columns for ayas without a match
+        tr_language = r.get("tr_language")
+        if tr_language:
+            results[aya_key].texts.setdefault(tr_language, {})[r["tr_text_type"]] = r["tr_text"]
 
-            for tr in tr_results:
-                if tr["language"] not in search_result["texts"]:
-                    search_result["texts"][tr["language"]] = {}
-                search_result["texts"][tr["language"]][tr["text_type"]] = tr["text"]
-
-        search_results.append(search_result)
-
-    return search_results
+    log.info(f"Found {len(results)} aya matches")
+    return sorted(results.values(), key=lambda a: _aya_sort_key(a.aya_key))

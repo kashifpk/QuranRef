@@ -250,3 +250,19 @@ class TestSearch:
         # Should have both search language and translation
         assert "arabic" in first["texts"]
         assert "english" in first["texts"]
+
+    def test_unavailable_translation_keeps_the_match(self, client):
+        resp = client.get(url("search/الله/arabic:simple-clean/french:nobody"))
+        assert resp.status_code == 200
+        results = resp.json()
+        assert len(results) > 0
+        assert list(results[0]["texts"]) == ["arabic"]
+
+    def test_results_are_ordered_by_surah_and_aya(self, client):
+        resp = client.get(url("search/الرحيم/arabic:simple-clean/english:maududi"))
+        assert resp.status_code == 200
+        keys = [r["aya_key"] for r in resp.json()]
+        assert keys == ["1:1", "1:3"]
+        for r in resp.json():
+            assert r["texts"]["arabic"]["simple-clean"]
+            assert r["texts"]["english"]["maududi"]
