@@ -11,7 +11,7 @@ def _sa_dsn() -> str:
     """Return the SQLAlchemy-compatible DSN using the psycopg (v3) driver."""
     dsn = get_settings().db_dsn
     if dsn.startswith("postgresql://"):
-        dsn = "postgresql+psycopg://" + dsn[len("postgresql://"):]
+        dsn = "postgresql+psycopg://" + dsn[len("postgresql://") :]
     return dsn
 
 

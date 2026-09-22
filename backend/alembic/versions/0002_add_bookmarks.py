@@ -5,6 +5,7 @@ Revises: 0001
 Create Date: 2026-02-25
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -31,9 +32,7 @@ def upgrade() -> None:
         sa.Column("note", sa.Text, nullable=False, server_default=""),
         sa.Column("created_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
         sa.Column("updated_at", sa.DateTime, nullable=False, server_default=sa.text("NOW()")),
-        sa.CheckConstraint(
-            "bookmark_type IN ('reading', 'note')", name="ck_bookmark_type"
-        ),
+        sa.CheckConstraint("bookmark_type IN ('reading', 'note')", name="ck_bookmark_type"),
     )
     op.create_index("idx_bookmarks_user_id", "bookmarks", ["user_id"])
     op.create_index(
