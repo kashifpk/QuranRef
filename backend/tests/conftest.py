@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from quranref.db import GRAPH_NAME
 from quranref.main import app
 from quranref.models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
+from quranref.search_index import rebuild_search_index
 from quranref.sql_models import Base
 from quranref.utils import text_to_digest
 from sqlalchemy import create_engine
@@ -153,6 +154,8 @@ def _seed_test_data(g, db):
         )
         conn.commit()
 
+    rebuild_search_index(g, db)
+
 
 # --- Fixtures ---
 
@@ -169,6 +172,8 @@ def test_db():
     # Enable AGE extension
     with db._pool.connection() as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS age")
+        # age-orm puts ag_catalog first in the search path; pin the extension to public
+        conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public")
         conn.execute("LOAD 'age'")
         conn.execute('SET search_path = ag_catalog, "$user", public')
         conn.commit()

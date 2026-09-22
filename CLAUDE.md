@@ -31,6 +31,7 @@ CLI, run as `uv run quranref-cli <group> <command>`:
 - `db import-text <language> <text_name> <file>`: import Arabic text or a translation
 - `db import-json <dir>` and `db export-json`: bulk graph import and export (used for migrations)
 - `post-process link-ayas-to-surahs`, `make-words`, `update-meta-info`, `fix-word-counts`, `remove-bismillah`
+- `post-process build-search-index`: rebuild the `aya_search` table (normalized texts, pg_trgm index) that the search endpoint queries; run after any text import
 
 ### Frontend (run from frontend/)
 
@@ -98,7 +99,7 @@ Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts
 - Text vertices are deduplicated by SHA-256 hash stored as `id`
 - Arabic text variants and translations are AYA_TEXT edges with `language` and `text_type` properties
 - Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`
-- `meta_info`, `users`, `bookmarks` are ordinary PostgreSQL tables managed by Alembic
+- `meta_info`, `users`, `bookmarks`, `aya_search` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
 
 ### Authentication
 
@@ -166,6 +167,7 @@ FRONTEND_URL=http://localhost:41149
 3. Link: `post-process link-ayas-to-surahs`
 4. Words: `post-process make-words`
 5. Meta: `post-process update-meta-info`
+6. Search: `post-process build-search-index`
 
 ## API Usage
 

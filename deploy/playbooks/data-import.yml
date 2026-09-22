@@ -31,6 +31,11 @@
       args:
         chdir: "{{ backend_dir }}"
 
+    - name: Run post-processing - build search index
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli post-process build-search-index"
+      args:
+        chdir: "{{ backend_dir }}"
+
     - name: Clean up remote import directory
       file:
         path: "{{ remote_export_dir }}"

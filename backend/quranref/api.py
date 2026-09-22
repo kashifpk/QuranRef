@@ -3,10 +3,14 @@ import logging
 
 from age_orm import Graph
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import Session
 
-from .db import graph, raw_connection
+from .db import get_session, graph, raw_connection
 from .models import Surah, Word
 from .schemas import AyaResultSchema
+from .sql_models import AyaSearch
+from .textnorm import normalize_for_search
 
 log = logging.getLogger(__name__)
 
@@ -264,53 +268,65 @@ def _aya_sort_key(aya_key: str) -> tuple[int, int]:
     return int(surah), int(aya)
 
 
+def _like_pattern(term: str) -> str:
+    """Substring LIKE pattern for a normalized term, with LIKE wildcards escaped."""
+    escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
 @router.get("/search/{search_term}/{search_language_spec}/{translation_languages_spec}")
 def search(
     search_term: str,
     search_language_spec: str,
     translation_languages_spec: str = "",
-    g: Graph = Depends(graph),
+    session: Session = Depends(get_session),
 ) -> list[AyaResultSchema]:
     """
-    Search for the given term in the Quran and return the ayas containing the term,
-    with the matched text and the requested translations. One Cypher query, regardless
-    of how many ayas match.
+    Search for the given term and return the ayas containing it, with the matched text
+    and the requested translations.
+
+    Matching is done on the aya_search table, where both the stored text and the term
+    are normalized (diacritics removed, letter variants folded, case folded), so
+    searching for الله finds اللَّهِ and "merciful" finds "Merciful".
     """
-    if not search_term:
+    language, text_type = search_language_spec.split(":", 1)
+    term = normalize_for_search(search_term)
+    if not term:
         return []
 
-    language, text_type = search_language_spec.split(":", 1)
-
-    cypher = (
-        "MATCH (a:Aya)-[e:AYA_TEXT]->(t:Text) "
-        "WHERE e.language = $lang AND e.text_type = $tt AND t.text CONTAINS $term "
-    )
-    params: dict = {"lang": language, "tt": text_type, "term": search_term}
-    columns = ["aya_id", "matched_text"]
-
-    if translation_languages_spec:
-        tr_filter, tr_params = _build_language_filter(translation_languages_spec, edge_alias="e2")
-        cypher += f"OPTIONAL MATCH (a)-[e2:AYA_TEXT]->(t2:Text) WHERE {tr_filter} "
-        cypher += "RETURN a.id, t.text, e2.language, e2.text_type, t2.text"
-        params.update(tr_params)
-        columns += ["tr_language", "tr_text_type", "tr_text"]
-    else:
-        cypher += "RETURN a.id, t.text"
-
     log.info(f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}")
-    rows = g.cypher(cypher, columns=columns, **params)
+    matched = session.execute(
+        select(AyaSearch.aya_key, AyaSearch.text).where(
+            AyaSearch.language == language,
+            AyaSearch.text_type == text_type,
+            AyaSearch.text_norm.like(_like_pattern(term), escape="\\"),
+        )
+    ).all()
 
-    results: dict[str, AyaResultSchema] = {}
-    for r in rows:
-        aya_key = r["aya_id"]
-        if aya_key not in results:
-            results[aya_key] = AyaResultSchema(
-                aya_key=aya_key, texts={language: {text_type: r["matched_text"]}}
-            )
-        # OPTIONAL MATCH yields null translation columns for ayas without a match
-        tr_language = r.get("tr_language")
-        if tr_language:
-            results[aya_key].texts.setdefault(tr_language, {})[r["tr_text_type"]] = r["tr_text"]
-
+    results: dict[str, AyaResultSchema] = {
+        aya_key: AyaResultSchema(aya_key=aya_key, texts={language: {text_type: text}})
+        for aya_key, text in matched
+    }
     log.info(f"Found {len(results)} aya matches")
+
+    pairs = [
+        tuple(spec.split(":", 1)) for spec in translation_languages_spec.split("_") if ":" in spec
+    ]
+    if results and pairs:
+        translations = session.execute(
+            select(
+                AyaSearch.aya_key, AyaSearch.language, AyaSearch.text_type, AyaSearch.text
+            ).where(
+                AyaSearch.aya_key.in_(list(results)),
+                or_(
+                    *[
+                        and_(AyaSearch.language == lang, AyaSearch.text_type == tt)
+                        for lang, tt in pairs
+                    ]
+                ),
+            )
+        ).all()
+        for aya_key, lang, tt, text in translations:
+            results[aya_key].texts.setdefault(lang, {})[tt] = text
+
     return sorted(results.values(), key=lambda a: _aya_sort_key(a.aya_key))

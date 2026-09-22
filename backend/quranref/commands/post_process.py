@@ -149,6 +149,19 @@ def update_meta_info():
     print("[green]Text types updated![/green]")
 
 
+@app.command(name="build-search-index")
+def build_search_index():
+    """Rebuild the aya_search table (normalized texts) from the graph.
+
+    Run after importing or changing any text so search reflects it.
+    """
+    from ..db import get_db
+    from ..search_index import rebuild_search_index
+
+    written = rebuild_search_index(get_graph(), get_db())
+    print(f"[green]Search index rebuilt: {written} rows.[/green]")
+
+
 @app.command(name="fix-word-counts")
 def fix_word_counts_cmd():
     """Recalculate word counts from actual aya-word edges."""

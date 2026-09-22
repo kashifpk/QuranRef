@@ -62,9 +62,12 @@ db import-text <language> <translator> data/translations/<file>
 post-process link-ayas-to-surahs
 post-process make-words
 post-process update-meta-info
+post-process build-search-index          # rebuild the normalized search table after any text change
 ```
 
 `db import-json <dir>` and `db export-json` move the whole graph in and out as JSON, which is the way to migrate between PostgreSQL or AGE versions. `post-process fix-word-counts` recalculates word counts from edges.
+
+Search runs on the `aya_search` table, a normalized copy of every aya text with a trigram index (`pg_trgm`), so queries are diacritic, case and letter-variant insensitive. Rebuild it with `post-process build-search-index` whenever texts are imported or changed.
 
 ### Tests and quality
 
