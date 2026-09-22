@@ -74,6 +74,7 @@ uv run pytest                        # creates and drops quranref_test on the co
 uv run ruff check quranref tests
 uv run ruff format quranref tests
 cd ../frontend
+bun run test                         # Vitest unit and component tests (src/**/*.spec.ts)
 bun run vue-tsc -b                   # type check
 bun run build                        # type check, then production build into ../static
 ```

@@ -37,6 +37,7 @@ CLI, run as `uv run quranref-cli <group> <command>`:
 ```bash
 bun install
 bun run dev                          # http://localhost:41149, Vite proxies /api to the backend
+bun run test                         # Vitest unit and component tests (src/**/*.spec.ts)
 bun run vue-tsc -b                   # type check
 bun run build                        # type check, then production build into ../static
 ```
@@ -53,7 +54,7 @@ Ports are hardcoded: backend 41148 in `__main__.py`, frontend 41149 in `vite.con
 
 ### CI
 
-`.github/workflows/ci.yml` runs ruff check, ruff format check and pytest against an `apache/age` service container, and vue-tsc plus the Vite build for the frontend.
+`.github/workflows/ci.yml` runs ruff check, ruff format check and pytest against `apache/age` service containers for PostgreSQL 16 and 18, and Vitest, vue-tsc and the Vite build for the frontend.
 
 ## Architecture Overview
 
@@ -154,7 +155,7 @@ FRONTEND_URL=http://localhost:41149
 ## Testing and Quality
 
 - Backend: pytest with fixtures and type annotations, pytest-mock for mocking, minimum 50% coverage. Tests need a reachable PostgreSQL with AGE; they create and drop `quranref_test`
-- Frontend: `vue-tsc -b` for type checking
+- Frontend: Vitest with @vue/test-utils and happy-dom (`bun run test`, files `src/**/*.spec.ts`), `vue-tsc -b` for type checking
 - Security: `bandit -q -r quranref`
 - Run ruff, pytest and vue-tsc before committing
 

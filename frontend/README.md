@@ -7,6 +7,7 @@ Vue 3 and TypeScript single-page app built with Vite. UI components come from Pr
 ```bash
 bun install
 bun run dev          # http://localhost:41149, /api is proxied to http://localhost:41148
+bun run test         # Vitest unit and component tests (src/**/*.spec.ts)
 bun run vue-tsc -b   # type check
 bun run build        # type check, then production build into ../static
 bun run preview      # serve the production build locally
