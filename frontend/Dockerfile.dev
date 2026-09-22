@@ -11,8 +11,8 @@ RUN bun install --frozen-lockfile
 # The source code will be mounted as a volume
 # This allows for hot-reload during development
 
-# Expose port for Vite dev server
-EXPOSE 5173
+# Vite dev server port (set in vite.config.ts)
+EXPOSE 41149
 
 # Development command with hot-reload
 # Note: --host 0.0.0.0 allows external connections (from host)

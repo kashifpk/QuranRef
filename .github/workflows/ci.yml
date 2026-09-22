@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (ruff + pytest, ${{ matrix.age_image }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Production (PostgreSQL 16 + AGE 1.6.0) and local development (PostgreSQL 18 + AGE 1.8.0)
+        age_image: [release_PG16_1.6.0, release_PG18_1.8.0]
+    services:
+      postgres:
+        image: apache/age:${{ matrix.age_image }}
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Settings() reads these at import time. The test fixtures read the same
+      # names, preferring environment variables over .env.dev.
+      ENVIRONMENT: testing
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: quranref
+      DB_USERNAME: ci
+      DB_PASSWORD: ci
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # --no-sources ignores the local age-orm path and installs it from PyPI
+      - name: Install dependencies
+        run: uv sync --all-extras --no-sources
+      - name: Lint
+        run: uv run --no-sources ruff check quranref tests
+      - name: Format check
+        run: uv run --no-sources ruff format --check quranref tests
+      - name: Tests
+        run: uv run --no-sources pytest -q -p no:cacheprovider
+
+  frontend:
+    name: Frontend (vue-tsc + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Type check and build
+        run: bun run build

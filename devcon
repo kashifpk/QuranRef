@@ -109,7 +109,7 @@ show_help() {
     printf "${YELLOW}Service URLs:${NC}\n"
     printf "  Frontend:    http://localhost:41149\n"
     printf "  Backend:     http://localhost:41148\n"
-    printf "  PostgreSQL:  localhost:15432\n"
+    printf "  PostgreSQL:  localhost:${DEV_DB_PORT:-15432}\n"
 }
 
 # Start all services
@@ -176,7 +176,7 @@ cmd_urls() {
     printf "${GREEN}Frontend:${NC}    http://localhost:41149 (Vue.js with hot-reload)\n"
     printf "${GREEN}Backend:${NC}     http://localhost:41148 (FastAPI with auto-reload)\n"
     printf "${GREEN}API Docs:${NC}    http://localhost:41148/docs (Swagger UI)\n"
-    printf "${GREEN}PostgreSQL:${NC}  localhost:15432 (Database)\n"
+    printf "${GREEN}PostgreSQL:${NC}  localhost:${DEV_DB_PORT:-15432} (Database)\n"
 }
 
 # Show logs
@@ -272,10 +272,10 @@ cmd_sync() {
     print_header "Syncing Dependencies"
 
     print_info "Backend: Installing Python dependencies..."
-    $COMPOSE_CMD -f $COMPOSE_FILE exec backend uv sync
+    $COMPOSE_CMD -f $COMPOSE_FILE exec backend uv sync --all-extras --no-sources
 
     print_info "Backend: Installing age-orm from source..."
-    $COMPOSE_CMD -f $COMPOSE_FILE exec backend pip install -e /age-orm
+    $COMPOSE_CMD -f $COMPOSE_FILE exec backend uv pip install -e /age-orm
 
     print_info "Frontend: Installing JavaScript dependencies..."
     $COMPOSE_CMD -f $COMPOSE_FILE exec frontend bun install

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Host-based development stack: backend on 41148, frontend on 41149, both detached
+# from the terminal. Runtime files (pids, logs) go to .claude-work/, which is gitignored.
+# Container-based alternative: ./devcon
+set -u
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUN="$ROOT/.claude-work"
+mkdir -p "$RUN"
+
+case "${1:-}" in
+  start)
+    set -a; . "$ROOT/.env.dev"; set +a
+    ( cd "$ROOT/backend" && setsid nohup uv run python -m quranref > "$RUN/backend.log" 2>&1 & echo $! > "$RUN/backend.pid" )
+    ( cd "$ROOT/frontend" && setsid nohup bun run dev > "$RUN/frontend.log" 2>&1 & echo $! > "$RUN/frontend.pid" )
+    echo "backend  http://localhost:41148  (log: $RUN/backend.log)"
+    echo "frontend http://localhost:41149  (log: $RUN/frontend.log)"
+    ;;
+  stop)
+    for s in backend frontend; do
+      if [ -f "$RUN/$s.pid" ]; then
+        kill -- -"$(cat "$RUN/$s.pid")" 2>/dev/null && echo "$s stopped"
+        rm -f "$RUN/$s.pid"
+      fi
+    done
+    ;;
+  status)
+    for s in backend frontend; do
+      if [ -f "$RUN/$s.pid" ] && kill -0 "$(cat "$RUN/$s.pid")" 2>/dev/null; then
+        echo "$s running (process group $(cat "$RUN/$s.pid"))"
+      else
+        echo "$s not running"
+      fi
+    done
+    ;;
+  logs)
+    tail -n 30 -f "$RUN/backend.log" "$RUN/frontend.log"
+    ;;
+  *)
+    echo "usage: $0 start|stop|status|logs"
+    exit 1
+    ;;
+esac

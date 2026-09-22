@@ -1,13 +1,15 @@
 services:
   postgres:
-    image: apache/age:PG16_latest
+    # Matches production (PostgreSQL 16 + AGE 1.6.0). Override with AGE_IMAGE_TAG,
+    # for example AGE_IMAGE_TAG=release_PG18_1.8.0 to try PostgreSQL 18.
+    image: apache/age:${AGE_IMAGE_TAG:-release_PG16_1.6.0}
     container_name: quranref_postgres_dev
     environment:
       - POSTGRES_USER=${DB_USERNAME:-quranref}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-compulife}
       - POSTGRES_DB=${DB_NAME:-quranref}
     ports:
-      - "15432:5432"
+      - "${DEV_DB_PORT:-15432}:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     networks:
@@ -91,7 +93,8 @@ services:
       # Cache Bun's global cache
       - bun_cache:/root/.bun
     ports:
-      - "41149:5173"
+      # vite.config.ts pins the dev server to 41149 inside the container too
+      - "41149:41149"
     networks:
       - quranref_dev
     depends_on:
