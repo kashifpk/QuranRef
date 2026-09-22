@@ -8,6 +8,7 @@ Uses Apache AGE graph database via age-orm.
 from typing import Literal
 
 from age_orm import Edge, Graph, Vertex
+from pydantic import Field
 
 from .utils import text_to_digest
 
@@ -116,3 +117,72 @@ class AyaText(Edge):
         edge = cls(language=language, text_type=text_type)
         graph.connect(aya, edge, text_doc)
         return edge
+
+
+# --- Morphology layer (from the Quranic Arabic Corpus) ---
+
+
+class Root(Vertex):
+    "A root shared by a family of lemmas, for example رحم"
+
+    __label__ = "Root"
+
+    id: str  # the root letters
+    root: str
+    letters: int
+
+
+class Lemma(Vertex):
+    "Dictionary form of a word as spelled in the corpus, for example رَحِيم"
+
+    __label__ = "Lemma"
+
+    id: str  # the lemma itself
+    lemma: str
+    root: str | None = None
+    pos: str  # N, V or P
+
+
+class Token(Vertex):
+    "One word occurrence in the Uthmani text with its morphology"
+
+    __label__ = "Token"
+
+    id: str  # "surah:aya:position"
+    surah_number: int
+    aya_number: int
+    position: int
+    text: str  # Uthmani form
+    text_simple: str = ""  # the matching token(s) of the simple-clean text
+    tag: str  # N, V or P of the stem
+    root: str | None = None
+    lemma: str | None = None
+    features: str = ""  # stem features, for example "ROOT:رحم|LEM:رَحِيم|MS|GEN|ADJ"
+    segments: list[dict] = Field(default_factory=list)  # every segment: form, tag, features
+    glosses: dict[str, str] = Field(default_factory=dict)  # language -> meaning in this aya
+
+
+class HasToken(Edge):
+    "Links Aya to its Tokens in reading order"
+
+    __label__ = "HAS_TOKEN"
+
+    position: int
+
+
+class HasLemma(Edge):
+    "Links Token to its Lemma"
+
+    __label__ = "HAS_LEMMA"
+
+
+class HasRoot(Edge):
+    "Links Lemma to its Root"
+
+    __label__ = "HAS_ROOT"
+
+
+class IsForm(Edge):
+    "Links Token to the simple-text Word it is written as"
+
+    __label__ = "IS_FORM"

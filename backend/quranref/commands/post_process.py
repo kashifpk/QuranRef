@@ -6,6 +6,7 @@ from rich import print
 from ..db import graph as get_graph
 from ..db import raw_connection
 from ..models import Aya, HasAya, HasWord, Surah, Text, Word
+from ..morphology import is_pause_mark
 from ..utils import text_to_digest
 
 app = typer.Typer(name="Data post processing after import(s)")
@@ -76,6 +77,8 @@ def make_words():
         aya_word_hashes = []
         seen_in_aya: set[str] = set()
         for word_str in aya_text.split(" "):
+            if not word_str or is_pause_mark(word_str):
+                continue
             word_hash = text_to_digest(word_str)
             aya_word_hashes.append(word_hash)
             # Count each unique word once per aya (matches HAS_WORD edge semantics)

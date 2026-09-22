@@ -8,7 +8,22 @@ from rich import print
 from ..data.surah_info import surah_info
 from ..db import GRAPH_NAME, get_db, raw_connection
 from ..db import graph as get_graph
-from ..models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
+from ..models import (
+    Aya,
+    AyaText,
+    HasAya,
+    HasLemma,
+    HasRoot,
+    HasToken,
+    HasWord,
+    IsForm,
+    Lemma,
+    Root,
+    Surah,
+    Text,
+    Token,
+    Word,
+)
 
 app = typer.Typer(name="Database structure related operations")
 
@@ -32,9 +47,9 @@ def init():
     g = db.graph(GRAPH_NAME, create=True)
 
     # Ensure all vertex and edge labels exist
-    for vertex_cls in [Surah, Aya, Text, Word]:
+    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token]:
         g.ensure_label(vertex_cls)
-    for edge_cls in [HasAya, HasWord, AyaText]:
+    for edge_cls in [HasAya, HasWord, AyaText, HasToken, HasLemma, HasRoot, IsForm]:
         g.ensure_label(edge_cls, kind="e")
 
     # Create indexes on key properties
@@ -45,6 +60,13 @@ def init():
     g.create_index(Word, "id", unique=True)
     g.create_index(Word, "word")
     g.create_index(Word, "count")
+    g.create_index(Root, "id", unique=True)
+    g.create_index(Lemma, "id", unique=True)
+    g.create_index(Lemma, "root")
+    g.create_index(Token, "id", unique=True)
+    g.create_index(Token, "lemma")
+    g.create_index(Token, "root")
+    g.create_index(Token, "text_simple")
 
     # Run SQL migrations (creates/updates users, meta_info, bookmarks, etc.)
     migrate()
@@ -121,6 +143,125 @@ def import_text(
                 AyaText.new(g, aya_doc, content, language, text_name)
 
     print(f"[green]{language}-{text_name} text imported.[/green]")
+
+
+@app.command(name="import-morphology")
+def import_morphology(
+    file_name: Path = typer.Argument(
+        ...,
+        help="Quranic Arabic Corpus morphology file (Arabic or Buckwalter locations).",
+        exists=True,
+        dir_okay=False,
+        readable=True,
+    ),
+):
+    """Import roots, lemmas and per-word morphology, aligned to the simple-clean words.
+
+    Replaces any existing Root, Lemma and Token data. Run make-words first so the
+    IS_FORM edges can link tokens to the existing Word vertices.
+    """
+    from collections import defaultdict
+
+    from ..morphology import align_words, is_pause_mark, parse_morphology
+
+    g = get_graph()
+    words = parse_morphology(file_name)
+    print(f"[blue]{len(words)} words with morphology in {file_name}[/blue]")
+
+    print("[yellow]Clearing existing morphology data...[/yellow]")
+    for label in ("Token", "Lemma", "Root"):
+        g.cypher(f"MATCH (n:{label}) DETACH DELETE n")
+
+    aya_map = {a.id: a for a in g.query(Aya).all()}
+    word_map = {w.word: w for w in g.query(Word).all()}
+    simple_texts = {
+        r["aya_id"]: r["text"]
+        for r in g.cypher(
+            "MATCH (a:Aya)-[e:AYA_TEXT]->(t:Text) "
+            "WHERE e.language = 'arabic' AND e.text_type = 'simple-clean' RETURN a.id, t.text",
+            columns=["aya_id", "text"],
+        )
+    }
+
+    by_aya: dict[str, list] = defaultdict(list)
+    for w in words:
+        by_aya[w.aya_key].append(w)
+
+    roots: dict[str, Root] = {}
+    lemmas: dict[str, Lemma] = {}
+    tokens: list[Token] = []
+    token_forms: list[tuple[Token, list[str]]] = []
+    unaligned = 0
+
+    print("[blue]Aligning with the simple-clean text...[/blue]")
+    for aya_key, aya_words in by_aya.items():
+        simple_tokens = [t for t in simple_texts.get(aya_key, "").split() if not is_pause_mark(t)]
+        if simple_tokens:
+            mapping = align_words([w.text for w in aya_words], simple_tokens)
+        else:
+            mapping = [[] for _ in aya_words]
+        for mw, idxs in zip(aya_words, mapping, strict=True):
+            forms = [simple_tokens[i] for i in idxs]
+            if not forms:
+                unaligned += 1
+            root, lemma = mw.root, mw.lemma
+            if root and root not in roots:
+                roots[root] = Root(id=root, root=root, letters=len(root))
+            if lemma and lemma not in lemmas:
+                lemmas[lemma] = Lemma(id=lemma, lemma=lemma, root=root, pos=mw.tag)
+            token = Token(
+                id=mw.location,
+                surah_number=mw.surah,
+                aya_number=mw.aya,
+                position=mw.position,
+                text=mw.text,
+                text_simple=" ".join(forms),
+                tag=mw.tag,
+                root=root,
+                lemma=lemma,
+                features=mw.stem.features,
+                segments=[seg.as_dict() for seg in mw.segments],
+            )
+            tokens.append(token)
+            token_forms.append((token, forms))
+
+    print(f"[blue]{len(roots)} roots, {len(lemmas)} lemmas, {len(tokens)} tokens[/blue]")
+    print(f"[blue]{unaligned} tokens without a simple-text counterpart[/blue]")
+
+    g.bulk_add(list(roots.values()))
+    g.bulk_add(list(lemmas.values()))
+    batch = 10_000
+    for start in range(0, len(tokens), batch):
+        g.bulk_add(tokens[start : start + batch])
+        print(f"  ... {min(start + batch, len(tokens))} tokens added")
+
+    print("[blue]Creating edges...[/blue]")
+    has_token = []
+    has_lemma = []
+    is_form = []
+    for token, forms in token_forms:
+        aya = aya_map.get(token.id.rsplit(":", 1)[0])
+        if aya is not None:
+            has_token.append((aya, HasToken(position=token.position), token))
+        if token.lemma:
+            has_lemma.append((token, HasLemma(), lemmas[token.lemma]))
+        for form in forms:
+            word = word_map.get(form)
+            if word is not None:
+                is_form.append((token, IsForm(), word))
+    has_root = [(lemma, HasRoot(), roots[lemma.root]) for lemma in lemmas.values() if lemma.root]
+
+    for name, triples in [
+        ("HAS_TOKEN", has_token),
+        ("HAS_LEMMA", has_lemma),
+        ("HAS_ROOT", has_root),
+        ("IS_FORM", is_form),
+    ]:
+        for start in range(0, len(triples), 50_000):
+            g.bulk_add_edges(triples[start : start + 50_000])
+        print(f"  {len(triples)} {name} edges")
+
+    print("[green]Morphology imported.[/green]")
 
 
 @app.command(name="import-json")
