@@ -218,3 +218,6 @@ deploy/group_vars/all/vault.yml
 .claude/*
 !.claude-agents/
 
+
+# TypeScript incremental build output
+frontend/*.tsbuildinfo

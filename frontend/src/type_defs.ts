@@ -1,5 +1,4 @@
 export interface SurahInfo {
-    _key: string;
     surah_number: number;
     arabic_name: string;
     english_name: string;

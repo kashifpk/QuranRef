@@ -1,48 +1,48 @@
-import path from 'path'
 import { resolve } from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { config } from 'dotenv'
-
-config({ path: path.join(__dirname, '.env') })
-
-const STATIC_URL = process.env.STATIC_URL || '/static/'
-// Use VITE_BACKEND_URL for proxy target, defaulting to localhost for host development
-const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:41148'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? `${STATIC_URL}` : '/',
-  css: {
-    devSourcemap: true,
-  },
-  plugins: [vue()],
-  build: {
-    target: 'esnext',
-    outDir: resolve('../static/'),
-    emptyOutDir: true,
-    assetsDir: '',
-    manifest: 'manifest.json',
-    rollupOptions: {
-      input: resolve('./index.html')
+export default defineConfig(({ mode }) => {
+  // Loads .env, .env.local, .env.[mode] from this directory. Existing process
+  // environment variables take priority, so containers can override these.
+  const env = loadEnv(mode, import.meta.dirname, '')
+  const STATIC_URL = env.STATIC_URL || '/static/'
+  // Proxy target for /api during development. Defaults to the host backend.
+  const BACKEND_URL = env.VITE_BACKEND_URL || 'http://localhost:41148'
+
+  return {
+    base: mode === 'production' ? STATIC_URL : '/',
+    css: {
+      devSourcemap: true,
     },
-  },
-  server: {
-    host: '0.0.0.0',
-    port: 41149,
-    proxy: {
-      '/api': BACKEND_URL
+    plugins: [vue()],
+    build: {
+      target: 'esnext',
+      outDir: resolve('../static/'),
+      emptyOutDir: true,
+      assetsDir: '',
+      manifest: 'manifest.json',
+      rollupOptions: {
+        input: resolve('./index.html'),
+      },
     },
-    watch: {
-      // Polling required for containerized development
-      // Native inotify events reach container but chokidar doesn't receive them
-      usePolling: true,
-      interval: 500
-    }
-  },
-  // Configure for SPA routing
-  preview: {
-    port: 41149,
-    host: '0.0.0.0'
+    server: {
+      host: '0.0.0.0',
+      port: 41149,
+      proxy: {
+        '/api': BACKEND_URL,
+      },
+      watch: {
+        // Polling is required for containerized development: native inotify
+        // events reach the container but chokidar does not receive them.
+        usePolling: true,
+        interval: 500,
+      },
+    },
+    preview: {
+      port: 41149,
+      host: '0.0.0.0',
+    },
   }
 })

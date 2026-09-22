@@ -46,7 +46,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import MarkdownIt from 'markdown-it';
-import type Token from 'markdown-it/lib/token.mjs';
+import type { MarkdownIt as MarkdownItInstance, RendererRule, Token } from 'markdown-it';
 
 interface Props {
   modelValue: string;
@@ -76,7 +76,7 @@ const md = new MarkdownIt({
 });
 
 // Plugin: convert @surah:aya references to links
-function ayaRefPlugin(mdi: MarkdownIt) {
+function ayaRefPlugin(mdi: MarkdownItInstance) {
   // Match @1:7, @2:255, @114:6 etc.
   const AYA_REF_RE = /@(\d{1,3}):(\d{1,3})/g;
 
@@ -140,8 +140,8 @@ function ayaRefPlugin(mdi: MarkdownIt) {
 }
 
 // Plugin: add dir="auto" to paragraph and list item tags
-function bidiPlugin(mdi: MarkdownIt) {
-  const proxy = (tokens: Token[], idx: number, options: object, _env: unknown, self: { renderToken: (t: Token[], i: number, o: object) => string }) =>
+function bidiPlugin(mdi: MarkdownItInstance) {
+  const proxy: RendererRule = (tokens, idx, options, _env, self) =>
     self.renderToken(tokens, idx, options);
 
   const defaultParagraphOpen = mdi.renderer.rules.paragraph_open || proxy;
