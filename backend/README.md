@@ -1,230 +1,58 @@
 # QuranRef Backend
 
-FastAPI-based backend service for the QuranRef application, providing REST APIs for Quran text search and retrieval.
+FastAPI service exposing the Quran text, translations, word index and search, plus Google OAuth login and per-user bookmarks.
 
-## Tech Stack
+## Stack
 
-- **Framework**: FastAPI with async/await support
-- **Database**: ArangoDB (graph database)
-- **Package Manager**: uv (ultra-fast Python package manager)
-- **Python**: 3.12+
-- **ORM**: arango-orm for document modeling
-- **CLI**: Typer for management commands
-- **Testing**: pytest with fixtures
+- FastAPI with Pydantic settings
+- Apache AGE (PostgreSQL graph extension) through age-orm. Graph `quran_graph` with vertex labels Surah, Aya, Text, Word and edge labels HAS_AYA, HAS_WORD, AYA_TEXT
+- SQLAlchemy 2 and Alembic for the relational tables (users, meta_info, bookmarks)
+- Typer CLI (`quranref-cli`) for database setup and data import
+- uv for dependencies, ruff for lint and format, pytest for tests
 
-## Project Structure
+## Modules
 
-```
-backend/
-├── quranref/              # Main application package
-│   ├── main.py            # FastAPI application entry point
-│   ├── api.py             # REST API endpoints
-│   ├── models.py          # ArangoDB document models
-│   ├── cli.py             # Management CLI commands
-│   ├── config.py          # Configuration management
-│   └── database.py        # Database connection handling
-├── data/                  # Quran text data files
-│   ├── text/              # Arabic text and translations
-│   └── surah_data.json    # Surah metadata
-├── tests/                 # Test suite
-├── .env                   # Environment variables
-└── pyproject.toml         # Project dependencies (uv-compatible)
-```
+- `main.py`: app setup, CORS, session middleware, SPA static file serving in production
+- `api.py`: Quran text, search and word endpoints
+- `auth.py`, `auth_utils.py`, `dependencies.py`: Google OAuth, JWT cookies, auth dependencies
+- `bookmarks.py`: reading position and note bookmarks
+- `models.py`: age-orm graph models
+- `sql_models.py`: SQLAlchemy models
+- `schemas.py`: Pydantic request and response models
+- `db.py`: age-orm database and SQLAlchemy engine/session helpers
+- `settings.py`: configuration
+- `cli.py`, `commands/`: management commands
 
-## Development Setup
+## Running
 
-### Docker Development (Recommended)
+See the root README for the full local setup. From this directory:
 
 ```bash
-# From project root - start all services
-./dev-docker.sh up
-
-# Access backend container shell
-./dev-docker.sh shell
-
-# Inside container:
-# Run tests
-pytest
-
-# Check code quality
-ruff check
-ruff format
-
-# Run CLI commands
-quranref-cli --help
+uv sync --all-extras              # age-orm is an editable path dependency, see pyproject.toml
+python -m quranref                # http://localhost:41148 with auto-reload
+uv run pytest                     # creates and drops quranref_test on the configured server
+uv run ruff check quranref tests
+uv run ruff format quranref tests
 ```
 
-The backend will be available at http://localhost:41148 with automatic reload on code changes.
+Route handlers that use age-orm or SQLAlchemy are plain `def` functions. Both drivers are synchronous, and FastAPI runs sync handlers in a thread pool. Use `async def` only for handlers that actually await something.
 
-### Direct Host Development
+## Configuration
 
-```bash
-# Navigate to backend directory
-cd backend
+Settings are read from environment variables first, then from `backend/.env` (gitignored). Field names map to variables case-insensitively.
 
-# Install dependencies with uv
-uv sync
+Required: `ENVIRONMENT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`.
+Optional: `DB_HOST` (localhost), `DB_PORT` (5432), `DEBUG`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET_KEY` (at least 32 bytes), `JWT_EXPIRY_HOURS` (720), `FRONTEND_URL`, `BACKEND_URL`, `STATIC_DIR`.
 
-# Run development server with auto-reload (starts on http://localhost:41148)
-python -m quranref
+## API
 
-# Run tests
-uv run pytest
+All endpoints are under `/api/v1`. Interactive docs at `/docs`.
 
-# Run linting
-uv run ruff check
-uv run ruff format
-```
-
-## Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```env
-# Application settings
-ENVIRONMENT=development
-DEBUG=true
-
-# Database configuration
-DB_HOSTS=http://localhost:8529   # Or http://arangodb:8529 for Docker
-DB_USERNAME=quranref
-DB_PASSWORD=your_password
-DB_NAME=quranref
-
-# Logging
-LOGGING_ENABLED_FOR_PACKAGES=["quranref"]
-```
-
-## API Endpoints
-
-The backend provides the following REST endpoints:
-
-- `GET /api/v1/surahs` - List all Surahs with metadata
-- `GET /api/v1/text/{surah_number}/{text_types}` - Get Surah text with translations
-- `GET /api/v1/search/{term}/{search_lang}/{translation_langs}` - Search Quran text
-- `GET /api/v1/words-by-letter/{letter}` - Browse words by starting letter
-- `GET /api/v1/ayas-by-word/{word}/{languages}` - Get verses containing a word
-- `GET /api/v1/info` - Application metadata
-
-Interactive API documentation available at:
-- Swagger UI: http://localhost:41148/docs
-- ReDoc: http://localhost:41148/redoc
-
-## CLI Commands
-
-The backend includes a CLI for database management:
-
-```bash
-# Initialize database structure
-quranref-cli db init
-
-# Populate Surah metadata
-quranref-cli db populate-surahs
-
-# Import Quran text and translations
-quranref-cli db import-text
-
-# Create graph relationships
-quranref-cli post-process link-ayas-to-surahs
-
-# Extract and index words
-quranref-cli post-process make-words
-
-# Drop all collections (use with caution!)
-quranref-cli db drop-all
-```
-
-## Testing
-
-```bash
-# Run all tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=quranref --cov-report=html
-
-# Run specific test file
-uv run pytest tests/test_api.py
-
-# Run with verbose output
-uv run pytest -v
-```
-
-## Code Quality
-
-The project uses `ruff` for linting and formatting:
-
-```bash
-# Check code style
-uv run ruff check
-
-# Fix auto-fixable issues
-uv run ruff check --fix
-
-# Format code
-uv run ruff format
-
-# Type checking (if using mypy)
-uv run mypy quranref
-```
-
-## Database Schema
-
-The application uses ArangoDB with the following collections:
-
-- **surahs**: Surah metadata (number, name, verses count, revelation place)
-- **ayas**: Individual verses (surah_no, aya_no, text references)
-- **texts**: Deduplicated text storage (hash-based)
-- **words**: Extracted words with frequency counts
-- **meta_info**: Application metadata and statistics
-
-Graph relationships:
-- Surahs → Ayas (has)
-- Ayas → Words (contains)
-
-## Dependencies Management
-
-Using `uv` for dependency management:
-
-```bash
-# Add a new dependency
-uv add package_name
-
-# Add development dependency
-uv add --dev package_name
-
-# Update dependencies
-uv sync
-
-# Show dependency tree
-uv tree
-
-# Export requirements (if needed)
-uv export > requirements.txt
-```
-
-## Performance Considerations
-
-- Uses async/await for all database operations
-- Text deduplication via SHA-256 hashing
-- Strategic indexing on frequently queried fields
-- Connection pooling for ArangoDB
-- Response caching for static data (Surahs list)
-
-## Troubleshooting
-
-### Database Connection Issues
-- Verify ArangoDB is running: `docker ps` or check http://localhost:18529
-- Check credentials in `.env` file
-- For Docker: use `http://arangodb:8529` as DB_HOSTS
-- For host: use `http://localhost:8529` as DB_HOSTS
-
-### Import/Migration Issues
-- Ensure database is initialized: `quranref-cli db init`
-- Check data files exist in `data/` directory
-- Verify file permissions for data files
-
-### Development Server Issues
-- Port conflicts: Change port with `--port` flag
-- Module not found: Run `uv sync` to install dependencies
-- Auto-reload not working: Check file watchers limit on Linux
+- `GET /surahs`
+- `GET /text/{ayas_spec}/{languages_spec}` (for example `2:1-5/arabic:simple_english:maududi`)
+- `GET /search/{term}/{search_lang}/{translation_langs}`
+- `GET /words-by-letter/{letter}`, `GET /ayas-by-word/{word}/{languages}`
+- `GET /words-by-count/{count}`, `GET /available-word-counts`, `GET /top-most-frequent-words/{limit}`
+- `GET /text-types`, `GET /letters`
+- `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
+- `GET|PUT|DELETE /bookmarks/reading`, `GET /bookmarks`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`

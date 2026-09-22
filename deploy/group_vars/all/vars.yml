@@ -13,7 +13,7 @@ db_host: localhost
 db_port: 5432
 db_name: quranref
 db_username: quranref
-db_password: compulife
+db_password: "{{ vault_db_password }}"
 
 # Google OAuth (secrets in vault.yml - run: ansible-vault encrypt deploy/group_vars/vault.yml)
 google_client_id: "{{ vault_google_client_id }}"
