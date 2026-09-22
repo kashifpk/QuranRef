@@ -16,6 +16,8 @@ FastAPI service exposing the Quran text, translations, word index and search, pl
 - `api.py`: Quran text, search and word endpoints
 - `auth.py`, `auth_utils.py`, `dependencies.py`: Google OAuth, JWT cookies, auth dependencies
 - `bookmarks.py`: reading position and note bookmarks
+- `words.py`: word morphology endpoints; `morphology.py` parses and aligns the corpus data; `glosses.py` imports per-word meanings
+- `textnorm.py`, `search_index.py`: search normalization and the aya_search table builder
 - `models.py`: age-orm graph models
 - `sql_models.py`: SQLAlchemy models
 - `schemas.py`: Pydantic request and response models
@@ -54,5 +56,6 @@ All endpoints are under `/api/v1`. Interactive docs at `/docs`.
 - `GET /words-by-letter/{letter}`, `GET /ayas-by-word/{word}/{languages}`
 - `GET /words-by-count/{count}`, `GET /available-word-counts`, `GET /top-most-frequent-words/{limit}`
 - `GET /text-types`, `GET /letters`
+- `GET /aya-words/{aya_key}`, `GET /lemma/{lemma}?text_type=simple`, `GET /root/{root}`, `GET /roots-by-letter/{letter}`, `GET /word-morphology/{word}`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET|PUT|DELETE /bookmarks/reading`, `GET /bookmarks`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`

@@ -31,6 +31,11 @@
       args:
         chdir: "{{ backend_dir }}"
 
+    - name: Import word morphology (roots, lemmas, tokens)
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli db import-morphology data/morphology/quran-morphology.txt"
+      args:
+        chdir: "{{ backend_dir }}"
+
     - name: Run post-processing - build search index
       command: "{{ uv_path }} run --no-dev --no-sources quranref-cli post-process build-search-index"
       args:

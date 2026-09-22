@@ -32,6 +32,8 @@ CLI, run as `uv run quranref-cli <group> <command>`:
 - `db import-json <dir>` and `db export-json`: bulk graph import and export (used for migrations)
 - `post-process link-ayas-to-surahs`, `make-words`, `update-meta-info`, `fix-word-counts`, `remove-bismillah`
 - `post-process build-search-index`: rebuild the `aya_search` table (normalized texts, pg_trgm index) that the search endpoint queries; run after any text import
+- `db import-morphology data/morphology/quran-morphology.txt`: roots, lemmas and per-word tokens from the Quranic Arabic Corpus (run after make-words; replaces existing morphology)
+- `db import-word-glosses <language> <file.json>`: per-word meanings onto tokens (QUL word-by-word JSON, `{"s:a:w": "meaning"}`)
 
 ### Frontend (run from frontend/)
 
@@ -62,7 +64,7 @@ Ports are hardcoded: backend 41148 in `__main__.py`, frontend 41149 in `vite.con
 ### Backend (FastAPI + Apache AGE)
 
 - Framework: FastAPI
-- Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`
+- Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word`, `Root`, `Lemma`, `Token` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`, `HAS_TOKEN`, `HAS_LEMMA`, `HAS_ROOT`, `IS_FORM`
 - Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`)
 - API: REST endpoints under `/api/v1`
 - CLI: Typer (`quranref-cli`)
@@ -72,6 +74,10 @@ Key files:
 
 - `backend/quranref/main.py`: application entry point, CORS, session middleware, SPA static serving
 - `backend/quranref/api.py`: Quran text, search and word endpoints
+- `backend/quranref/words.py`: word morphology endpoints (aya words, lemma, root, roots by letter, word morphology)
+- `backend/quranref/morphology.py`: corpus file parser and Uthmani-to-simple alignment
+- `backend/quranref/glosses.py`: per-word meaning importer
+- `backend/quranref/textnorm.py`, `search_index.py`: search normalization and the aya_search builder
 - `backend/quranref/auth.py`: Google OAuth and JWT auth endpoints
 - `backend/quranref/auth_utils.py`: JWT create and verify helpers
 - `backend/quranref/dependencies.py`: auth dependencies for protected endpoints
@@ -93,12 +99,15 @@ Key files:
 
 Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts`, `type_defs.ts`, `components/`, `views/`.
 
+Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `AyaView.vue` when the store's `wordByWord` is on), `views/LemmaView.vue` (`/lemma/:lemma`), `views/RootView.vue` (`/root/:root`), `views/BrowseByRoot.vue` (`/by_root`). The Text Settings dialog has a Word by Word tab (toggle and meaning language).
+
 ### Database Design
 
 - Graph: Surah -[HAS_AYA]-> Aya -[HAS_WORD]-> Word, Aya -[AYA_TEXT]-> Text
 - Text vertices are deduplicated by SHA-256 hash stored as `id`
 - Arabic text variants and translations are AYA_TEXT edges with `language` and `text_type` properties
-- Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`
+- Morphology: Aya -[HAS_TOKEN {position}]-> Token -[HAS_LEMMA]-> Lemma -[HAS_ROOT]-> Root, and Token -[IS_FORM]-> Word. Token ids are `surah:aya:position`; tokens carry the Uthmani form, stem features, all segments and a `glosses` map (language to meaning in that aya)
+- Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`, and on Token `lemma`, `root`, `text_simple` and Lemma `root`
 - `meta_info`, `users`, `bookmarks`, `aya_search` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
 
 ### Authentication
@@ -168,6 +177,7 @@ FRONTEND_URL=http://localhost:41149
 4. Words: `post-process make-words`
 5. Meta: `post-process update-meta-info`
 6. Search: `post-process build-search-index`
+7. Morphology: `db import-morphology data/morphology/quran-morphology.txt`, then optionally `db import-word-glosses`
 
 ## API Usage
 
@@ -179,6 +189,7 @@ Base URL in development: http://localhost:41148/api/v1. Interactive docs at /doc
 - `GET /words-by-letter/{letter}`, `GET /ayas-by-word/{word}/{languages}`
 - `GET /words-by-count/{count}`, `GET /available-word-counts`, `GET /top-most-frequent-words/{limit}`
 - `GET /text-types`, `GET /letters`
+- `GET /aya-words/{aya_key}`, `GET /lemma/{lemma}?text_type=`, `GET /root/{root}`, `GET /roots-by-letter/{letter}`, `GET /word-morphology/{word}`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET /bookmarks`, `GET|PUT|DELETE /bookmarks/reading`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
 

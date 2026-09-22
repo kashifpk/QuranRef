@@ -264,6 +264,25 @@ def import_morphology(
     print("[green]Morphology imported.[/green]")
 
 
+@app.command(name="import-word-glosses")
+def import_word_glosses_cmd(
+    language: str = typer.Argument(..., help="Language of the meanings, for example english"),
+    file_name: Path = typer.Argument(
+        ...,
+        help='Word-by-word translation JSON (QUL export: {"surah:aya:word": "meaning"}).',
+        exists=True,
+        dir_okay=False,
+        readable=True,
+    ),
+):
+    """Attach per-word meanings in one language to the imported morphology tokens."""
+    from ..glosses import import_word_glosses, load_gloss_file
+
+    glosses = load_gloss_file(file_name)
+    updated = import_word_glosses(get_graph(), language, glosses)
+    print(f"[green]{updated} of {len(glosses)} {language} word meanings imported.[/green]")
+
+
 @app.command(name="import-json")
 def import_json(
     data_dir: Path = typer.Argument(

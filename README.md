@@ -67,6 +67,18 @@ post-process build-search-index          # rebuild the normalized search table a
 
 `db import-json <dir>` and `db export-json` move the whole graph in and out as JSON, which is the way to migrate between PostgreSQL or AGE versions. `post-process fix-word-counts` recalculates word counts from edges.
 
+### Word morphology (roots, lemmas, word-by-word)
+
+The word layer comes from the Quranic Arabic Corpus morphology (GPL, see `backend/data/morphology/NOTICE.md`). It adds Root, Lemma and Token vertices to the graph, aligned to the simple-clean words, and powers the word-by-word reading mode, the lemma and root pages and browse by root.
+
+```bash
+db import-morphology data/morphology/quran-morphology.txt   # after make-words
+db import-word-glosses english path/to/english-wbw.json     # optional per-word meanings
+db import-word-glosses urdu path/to/urdu-wbw.json
+```
+
+Word-by-word meaning files are not bundled. QUL (https://qul.tarteel.ai/resources/translation) publishes English (resource 92) and Urdu (resource 93) word-by-word translations as JSON, downloadable with a free account; the importer reads their `{"surah:aya:word": "meaning"}` format. Meanings are stored per occurrence, so a lemma's page shows which meanings it takes across the Quran.
+
 Search runs on the `aya_search` table, a normalized copy of every aya text with a trigram index (`pg_trgm`), so queries are diacritic, case and letter-variant insensitive. Rebuild it with `post-process build-search-index` whenever texts are imported or changed.
 
 ### Tests and quality
