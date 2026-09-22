@@ -6,7 +6,8 @@ import typer
 from rich import print
 
 from ..data.surah_info import surah_info
-from ..db import get_db, graph as get_graph, GRAPH_NAME, raw_connection
+from ..db import GRAPH_NAME, get_db, raw_connection
+from ..db import graph as get_graph
 from ..models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
 
 app = typer.Typer(name="Database structure related operations")
@@ -91,40 +92,33 @@ def import_text(
 ):
     "Import Arabic text or other language translations for Ayas"
 
-    if file_name.suffix == ".bz2":
-        fp = bz2.open(file_name, "rt")
-    else:
-        fp = open(file_name, "r")
-
-    bismillah_text = ''
-    current_surah = ''
+    bismillah_text = ""
+    current_surah = ""
 
     g = get_graph()
 
-    for line in fp:
-        if not line.strip():
-            break
+    with bz2.open(file_name, "rt") if file_name.suffix == ".bz2" else open(file_name) as fp:
+        for line in fp:
+            if not line.strip():
+                break
 
-        surah, aya, content = line.split('|', 2)
-        content = content.strip()
+            surah, aya, content = line.split("|", 2)
+            content = content.strip()
 
-        if not bismillah_text:
-            bismillah_text = content
+            if not bismillah_text:
+                bismillah_text = content
 
-        if current_surah != surah:
-            current_surah = surah
-            if content.startswith(bismillah_text):
-                if content[len(bismillah_text):].strip():
+            if current_surah != surah:
+                current_surah = surah
+                rest = content[len(bismillah_text) :].strip()
+                if content.startswith(bismillah_text) and rest:
                     bismillah_aya_doc = Aya.get_or_new(g, surah_number=int(surah), aya_number=0)
                     AyaText.new(g, bismillah_aya_doc, bismillah_text, language, text_name)
+                    content = rest
 
-                    content = content[len(bismillah_text):].strip()
-
-        if content:
-            aya_doc = Aya.get_or_new(g, surah_number=int(surah), aya_number=int(aya))
-            AyaText.new(g, aya_doc, content, language, text_name)
-
-    fp.close()
+            if content:
+                aya_doc = Aya.get_or_new(g, surah_number=int(surah), aya_number=int(aya))
+                AyaText.new(g, aya_doc, content, language, text_name)
 
     print(f"[green]{language}-{text_name} text imported.[/green]")
 
@@ -190,10 +184,7 @@ def import_json(
         print("[blue]Importing texts...[/blue]")
         with open(texts_file) as f:
             texts_data = json.load(f)
-        texts = [
-            Text(id=t["_key"], text=t["text"])
-            for t in texts_data
-        ]
+        texts = [Text(id=t["_key"], text=t["text"]) for t in texts_data]
         g.bulk_add(texts)
         print(f"[green]  {len(texts)} texts imported.[/green]")
 
@@ -203,10 +194,7 @@ def import_json(
         print("[blue]Importing words...[/blue]")
         with open(words_file) as f:
             words_data = json.load(f)
-        words = [
-            Word(id=w["_key"], word=w["word"], count=w.get("count", 1))
-            for w in words_data
-        ]
+        words = [Word(id=w["_key"], word=w["word"], count=w.get("count", 1)) for w in words_data]
         g.bulk_add(words)
         print(f"[green]  {len(words)} words imported.[/green]")
 
@@ -332,10 +320,7 @@ def export_json(
 
     # 2. Export Ayas
     ayas = g.query(Aya).all()
-    ayas_data = [
-        {"_key": a.id, "surah_key": a.surah_key, "aya_number": a.aya_number}
-        for a in ayas
-    ]
+    ayas_data = [{"_key": a.id, "surah_key": a.surah_key, "aya_number": a.aya_number} for a in ayas]
     _write_json(output_dir / "ayas.json", ayas_data)
     print(f"[green]  {len(ayas_data)} ayas exported.[/green]")
 
@@ -361,12 +346,8 @@ def export_json(
         columns=["aya_id", "word_id"],
     )
     has_edges = [
-        {"_from": f"surahs/{r['surah_id']}", "_to": f"ayas/{r['aya_id']}"}
-        for r in has_aya_rows
-    ] + [
-        {"_from": f"ayas/{r['aya_id']}", "_to": f"words/{r['word_id']}"}
-        for r in has_word_rows
-    ]
+        {"_from": f"surahs/{r['surah_id']}", "_to": f"ayas/{r['aya_id']}"} for r in has_aya_rows
+    ] + [{"_from": f"ayas/{r['aya_id']}", "_to": f"words/{r['word_id']}"} for r in has_word_rows]
     _write_json(output_dir / "has_edges.json", has_edges)
     print(f"[green]  {len(has_edges)} has edges exported.[/green]")
 

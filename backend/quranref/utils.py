@@ -1,5 +1,5 @@
-import hashlib
 import base64
+import hashlib
 
 
 def text_to_digest(text: str) -> str:

@@ -74,12 +74,12 @@ async def callback(request: Request, session: Session = Depends(get_session)):
         .values(google_id=google_id, email=email, name=name, picture_url=picture_url)
         .on_conflict_do_update(
             index_elements=["google_id"],
-            set_=dict(
-                email=email,
-                name=name,
-                picture_url=picture_url,
-                last_login=text("NOW()"),
-            ),
+            set_={
+                "email": email,
+                "name": name,
+                "picture_url": picture_url,
+                "last_login": text("NOW()"),
+            },
         )
         .returning(User.id, User.email)
     )

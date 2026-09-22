@@ -111,9 +111,7 @@ class AyaText(Edge):
     text_type: str
 
     @classmethod
-    def new(
-        cls, graph: Graph, aya: Aya, aya_text: str, language: str, text_type: str
-    ) -> "AyaText":
+    def new(cls, graph: Graph, aya: Aya, aya_text: str, language: str, text_type: str) -> "AyaText":
         text_doc = Text.new(graph, aya_text)
         edge = cls(language=language, text_type=text_type)
         graph.connect(aya, edge, text_doc)

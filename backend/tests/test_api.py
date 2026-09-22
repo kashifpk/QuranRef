@@ -39,9 +39,15 @@ class TestGetSurahs:
         resp = client.get(url("surahs"))
         surah = resp.json()[0]
         expected_fields = [
-            "id", "surah_number", "arabic_name", "english_name",
-            "translated_name", "nuzool_location", "nuzool_order",
-            "rukus", "total_ayas",
+            "id",
+            "surah_number",
+            "arabic_name",
+            "english_name",
+            "translated_name",
+            "nuzool_location",
+            "nuzool_order",
+            "rukus",
+            "total_ayas",
         ]
         for field in expected_fields:
             assert field in surah, f"Missing field: {field}"

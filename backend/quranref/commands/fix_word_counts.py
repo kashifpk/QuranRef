@@ -26,6 +26,7 @@ def fix_word_counts():
 
     # Get all words
     from ..models import Word
+
     all_words = g.query(Word).all()
     print(f"[blue]Total words: {len(all_words)}[/blue]")
 

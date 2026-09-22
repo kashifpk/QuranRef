@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/letters")
-async def get_letters() -> list[str]:
+def get_letters() -> list[str]:
     """
     Get all letters
     """
@@ -55,7 +55,7 @@ async def get_letters() -> list[str]:
 
 
 @router.get("/surahs")
-async def get_surahs(g: Graph = Depends(graph)) -> list[Surah]:
+def get_surahs(g: Graph = Depends(graph)) -> list[Surah]:
     """
     Get all Surahs
     """
@@ -64,7 +64,7 @@ async def get_surahs(g: Graph = Depends(graph)) -> list[Surah]:
 
 
 @router.get("/text-types")
-async def get_text_types() -> dict[str, list[str]]:
+def get_text_types() -> dict[str, list[str]]:
     """
     Get all text types
     """
@@ -74,9 +74,7 @@ async def get_text_types() -> dict[str, list[str]]:
         ).fetchone()
 
     if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Text types not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Text types not found")
 
     value = result[0]
     if isinstance(value, str):
@@ -85,15 +83,12 @@ async def get_text_types() -> dict[str, list[str]]:
 
 
 @router.get("/words-by-letter/{arabic_letter}")
-async def get_words_by_letter(
-    arabic_letter: str, g: Graph = Depends(graph)
-) -> list[tuple[str, int]]:
+def get_words_by_letter(arabic_letter: str, g: Graph = Depends(graph)) -> list[tuple[str, int]]:
     """
     Get all words starting with the given Arabic letter
     """
     results = g.cypher(
-        "MATCH (w:Word) WHERE left(w.word, 1) = $letter "
-        'RETURN w.word, w["count"]',
+        'MATCH (w:Word) WHERE left(w.word, 1) = $letter RETURN w.word, w["count"]',
         columns=["word", "count"],
         letter=arabic_letter,
     )
@@ -147,9 +142,7 @@ def _process_aya_results(results: list[dict]) -> list[AyaResultSchema]:
 
 
 @router.get("/ayas-by-word/{word}/{languages}")
-async def get_ayas_by_word(
-    word: str, languages: str, g: Graph = Depends(graph)
-) -> list[AyaResultSchema]:
+def get_ayas_by_word(word: str, languages: str, g: Graph = Depends(graph)) -> list[AyaResultSchema]:
     """
     Get all ayas containing the given word and return text in the given languages.
     """
@@ -173,7 +166,7 @@ async def get_ayas_by_word(
 
 
 @router.get("/words-by-count/{count}")
-async def get_words_by_count(count: int, g: Graph = Depends(graph)) -> list[tuple[str, int]]:
+def get_words_by_count(count: int, g: Graph = Depends(graph)) -> list[tuple[str, int]]:
     """
     Get all words with the given count
     """
@@ -187,7 +180,7 @@ async def get_words_by_count(count: int, g: Graph = Depends(graph)) -> list[tupl
 
 
 @router.get("/available-word-counts")
-async def get_available_word_counts(g: Graph = Depends(graph)) -> list[dict]:
+def get_available_word_counts(g: Graph = Depends(graph)) -> list[dict]:
     """
     Get all available word counts with the number of words for each count.
     Returns a list of {count, word_count} objects sorted by count descending.
@@ -201,9 +194,7 @@ async def get_available_word_counts(g: Graph = Depends(graph)) -> list[dict]:
 
 
 @router.get("/top-most-frequent-words/{limit}")
-async def get_top_most_frequent_words(
-    limit: int, g: Graph = Depends(graph)
-) -> list[tuple[str, int]]:
+def get_top_most_frequent_words(limit: int, g: Graph = Depends(graph)) -> list[tuple[str, int]]:
     """
     Get top most frequent words
     """
@@ -216,7 +207,7 @@ async def get_top_most_frequent_words(
 
 
 @router.get("/text/{ayas_spec}/{languages_spec}")
-async def get_text(
+def get_text(
     ayas_spec: str, languages_spec: str, g: Graph = Depends(graph)
 ) -> list[AyaResultSchema]:
     """
@@ -232,9 +223,7 @@ async def get_text(
         surah_number, aya_num_or_range = ayas_spec.split(":", 1)
 
     if surah_number is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid surah number"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid surah number")
 
     lang_filter, lang_params = _build_language_filter(languages_spec)
 
@@ -271,7 +260,7 @@ async def get_text(
 
 
 @router.get("/search/{search_term}/{search_language_spec}/{translation_languages_spec}")
-async def search(
+def search(
     search_term: str,
     search_language_spec: str,
     translation_languages_spec: str = "",
@@ -292,9 +281,7 @@ async def search(
     if not search_term:
         return search_results
 
-    log.info(
-        f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}"
-    )
+    log.info(f"Searching for term: '{search_term}' in language: {language}, text_type: {text_type}")
 
     # Find ayas matching the search term via their text
     matched = g.cypher(

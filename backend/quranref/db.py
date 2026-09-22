@@ -37,7 +37,7 @@ def _sa_dsn() -> str:
     # Replace postgresql:// with postgresql+psycopg:// for psycopg v3
     dsn = settings.db_dsn
     if dsn.startswith("postgresql://"):
-        dsn = "postgresql+psycopg://" + dsn[len("postgresql://"):]
+        dsn = "postgresql+psycopg://" + dsn[len("postgresql://") :]
     return dsn
 
 

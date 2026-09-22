@@ -1,13 +1,11 @@
 """Tests for authentication endpoints and JWT utilities."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
-
 from quranref.auth_utils import create_access_token, verify_access_token
 from quranref.settings import get_settings
-
 
 # --- JWT utility tests ---
 
@@ -30,8 +28,8 @@ class TestJWTUtils:
         payload = {
             "sub": 1,
             "email": "expired@example.com",
-            "iat": datetime.now(timezone.utc) - timedelta(hours=100),
-            "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+            "iat": datetime.now(UTC) - timedelta(hours=100),
+            "exp": datetime.now(UTC) - timedelta(hours=1),
         }
         token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
         assert verify_access_token(token) is None
@@ -40,8 +38,8 @@ class TestJWTUtils:
         payload = {
             "sub": 1,
             "email": "wrong@example.com",
-            "iat": datetime.now(timezone.utc),
-            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + timedelta(hours=1),
         }
         token = jwt.encode(payload, "wrong-secret", algorithm="HS256")
         assert verify_access_token(token) is None

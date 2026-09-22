@@ -3,8 +3,9 @@ import json
 import typer
 from rich import print
 
-from ..db import graph as get_graph, raw_connection
-from ..models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
+from ..db import graph as get_graph
+from ..db import raw_connection
+from ..models import Aya, HasAya, HasWord, Surah, Text, Word
 from ..utils import text_to_digest
 
 app = typer.Typer(name="Data post processing after import(s)")
@@ -152,6 +153,7 @@ def update_meta_info():
 def fix_word_counts_cmd():
     """Recalculate word counts from actual aya-word edges."""
     from .fix_word_counts import fix_word_counts as _fix
+
     _fix()
 
 
@@ -214,7 +216,7 @@ def remove_bismillah():
 
             if aya_text.startswith(bismillah_text):
                 print(f"Removing bismillah from surah {surah_number}, aya: 1, {aya_text}")
-                new_text = aya_text[len(bismillah_text):].strip()
+                new_text = aya_text[len(bismillah_text) :].strip()
 
                 # Update the text vertex
                 text_vertex = g.query(Text).by_id(text_gid)

@@ -74,7 +74,7 @@ def upsert_reading_bookmark(
         .on_conflict_do_update(
             index_elements=["user_id"],
             index_where=Bookmark.bookmark_type == "reading",
-            set_=dict(aya_key=body.aya_key, updated_at=text("NOW()")),
+            set_={"aya_key": body.aya_key, "updated_at": text("NOW()")},
         )
         .returning(Bookmark)
     )

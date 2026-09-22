@@ -6,27 +6,33 @@ from pathlib import Path
 
 import psycopg
 import pytest
+import quranref.db as db_module
 from age_orm import Database
 from dotenv import dotenv_values
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-import quranref.db as db_module
 from quranref.db import GRAPH_NAME
 from quranref.main import app
 from quranref.models import Aya, AyaText, HasAya, HasWord, Surah, Text, Word
 from quranref.sql_models import Base
 from quranref.utils import text_to_digest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 TEST_DB_NAME = "quranref_test"
 
 # Read connection params from .env.dev (canonical source for local dev)
 _env_dev = dotenv_values(Path(__file__).parent.parent.parent / ".env.dev")
-DB_HOST = _env_dev.get("DB_HOST", "localhost")
-DB_PORT = _env_dev.get("DB_PORT", "5432")
-DB_USERNAME = _env_dev.get("DB_USERNAME", "kashif")
-DB_PASSWORD = _env_dev.get("DB_PASSWORD", "compulife")
+
+
+def _env(name: str, default: str) -> str:
+    """Environment variable first (CI, other machines), then .env.dev, then default."""
+    return os.environ.get(name) or _env_dev.get(name) or default
+
+
+DB_HOST = _env("DB_HOST", "localhost")
+DB_PORT = _env("DB_PORT", "5432")
+DB_USERNAME = _env("DB_USERNAME", "kashif")
+DB_PASSWORD = _env("DB_PASSWORD", "compulife")
 
 ADMIN_DSN = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/postgres"
 TEST_DSN = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}"
@@ -163,8 +169,8 @@ def test_db():
     # Enable AGE extension
     with db._pool.connection() as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS age")
-        conn.execute('LOAD \'age\'')
-        conn.execute("SET search_path = ag_catalog, \"$user\", public")
+        conn.execute("LOAD 'age'")
+        conn.execute('SET search_path = ag_catalog, "$user", public')
         conn.commit()
 
     yield db

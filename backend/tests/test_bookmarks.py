@@ -1,7 +1,6 @@
 """Tests for bookmarks API endpoints."""
 
 import pytest
-
 from quranref.auth_utils import create_access_token
 
 
@@ -56,9 +55,7 @@ class TestBookmarksAPI:
 
     def test_post_note_unauthenticated(self):
         self._cleanup_cookies()
-        resp = self.client.post(
-            "/api/v1/bookmarks/notes", json={"aya_key": "1:1", "note": "test"}
-        )
+        resp = self.client.post("/api/v1/bookmarks/notes", json={"aya_key": "1:1", "note": "test"})
         assert resp.status_code == 401
 
     # --- Empty state tests ---
@@ -163,12 +160,8 @@ class TestBookmarksAPI:
         self._auth_cookie(user_id, email)
         self._cleanup_bookmarks(user_id)
 
-        self.client.post(
-            "/api/v1/bookmarks/notes", json={"aya_key": "1:1", "note": "Note 1"}
-        )
-        self.client.post(
-            "/api/v1/bookmarks/notes", json={"aya_key": "1:2", "note": "Note 2"}
-        )
+        self.client.post("/api/v1/bookmarks/notes", json={"aya_key": "1:1", "note": "Note 1"})
+        self.client.post("/api/v1/bookmarks/notes", json={"aya_key": "1:2", "note": "Note 2"})
 
         resp = self.client.get("/api/v1/bookmarks")
         data = resp.json()
@@ -186,9 +179,7 @@ class TestBookmarksAPI:
         )
         note_id = resp.json()["id"]
 
-        resp = self.client.put(
-            f"/api/v1/bookmarks/notes/{note_id}", json={"note": "Updated"}
-        )
+        resp = self.client.put(f"/api/v1/bookmarks/notes/{note_id}", json={"note": "Updated"})
         assert resp.status_code == 200
         assert resp.json()["note"] == "Updated"
         self._cleanup_bookmarks(user_id)
@@ -223,9 +214,7 @@ class TestBookmarksAPI:
         user_id, email = self._seed_user()
         self._auth_cookie(user_id, email)
 
-        resp = self.client.put(
-            "/api/v1/bookmarks/notes/999999", json={"note": "Nope"}
-        )
+        resp = self.client.put("/api/v1/bookmarks/notes/999999", json={"note": "Nope"})
         assert resp.status_code == 404
         self._cleanup_cookies()
 
@@ -247,9 +236,7 @@ class TestBookmarksAPI:
         self._cleanup_bookmarks(user_id)
 
         self.client.put("/api/v1/bookmarks/reading", json={"aya_key": "1:1"})
-        self.client.post(
-            "/api/v1/bookmarks/notes", json={"aya_key": "1:2", "note": "Reflection"}
-        )
+        self.client.post("/api/v1/bookmarks/notes", json={"aya_key": "1:2", "note": "Reflection"})
 
         resp = self.client.get("/api/v1/bookmarks")
         data = resp.json()

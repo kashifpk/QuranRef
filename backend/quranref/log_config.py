@@ -12,7 +12,6 @@ log_config = {
             "()": "uvicorn.logging.DefaultFormatter",
             "fmt": "%(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
-
         },
     },
     "handlers": {
@@ -21,12 +20,11 @@ log_config = {
             "show_path": True,
         },
     },
-    "loggers": None
+    "loggers": None,
 }
 
 
 def configure_logging():
-
     loggers_dict = {}
     env_file = PROJECT_ROOT / ".env"
     env_vals = dotenv_values(str(env_file))
