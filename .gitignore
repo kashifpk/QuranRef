@@ -221,3 +221,6 @@ deploy/group_vars/all/vault.yml
 
 # TypeScript incremental build output
 frontend/*.tsbuildinfo
+
+# QUL downloads (word-by-word meanings, topics, metadata); license unstated, not committed
+backend/data/qul/
