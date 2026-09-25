@@ -11,17 +11,26 @@ from ..db import graph as get_graph
 from ..models import (
     Aya,
     AyaText,
+    ChildOf,
     HasAya,
     HasLemma,
+    HasPhrase,
     HasRoot,
+    HasTheme,
     HasToken,
+    HasTopic,
     HasWord,
     IsForm,
     Lemma,
+    Phrase,
+    RelatedTopic,
     Root,
+    SimilarTo,
     Surah,
     Text,
+    Theme,
     Token,
+    Topic,
     Word,
 )
 
@@ -47,9 +56,11 @@ def init():
     g = db.graph(GRAPH_NAME, create=True)
 
     # Ensure all vertex and edge labels exist
-    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token]:
+    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token, Topic, Theme, Phrase]:
         g.ensure_label(vertex_cls)
     for edge_cls in [HasAya, HasWord, AyaText, HasToken, HasLemma, HasRoot, IsForm]:
+        g.ensure_label(edge_cls, kind="e")
+    for edge_cls in [HasTopic, ChildOf, RelatedTopic, HasTheme, SimilarTo, HasPhrase]:
         g.ensure_label(edge_cls, kind="e")
 
     # Create indexes on key properties
@@ -67,13 +78,17 @@ def init():
     g.create_index(Token, "lemma")
     g.create_index(Token, "root")
     g.create_index(Token, "text_simple")
+    g.create_index(Topic, "id", unique=True)
+    g.create_index(Theme, "id", unique=True)
+    g.create_index(Theme, "surah_number")
+    g.create_index(Phrase, "id", unique=True)
 
     # Cypher property matches such as MATCH (t:Token {id: $id}) compile to an agtype
     # containment test (properties @> {...}), which only a GIN index on the whole
     # properties column can serve; the btree expression indexes above are for the
     # age-orm query builder. Text is left out: its properties hold the aya texts.
     with raw_connection() as conn:
-        for label in ("Surah", "Aya", "Word", "Root", "Lemma", "Token"):
+        for label in ("Surah", "Aya", "Word", "Root", "Lemma", "Token", "Topic", "Theme", "Phrase"):
             conn.execute(
                 f"CREATE INDEX IF NOT EXISTS idx_{GRAPH_NAME}_{label.lower()}_props_gin "
                 f'ON {GRAPH_NAME}."{label}" USING gin (properties)'

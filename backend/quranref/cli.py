@@ -3,12 +3,14 @@ import typer
 from .app_init import app_init
 from .commands import db as cmd_db
 from .commands import post_process as cmd_post_process
+from .commands import qul as cmd_qul
 
 app = typer.Typer(name="QuranRef CLI")
 app.add_typer(cmd_db.app, name="db", help="Manage database structure")
 app.add_typer(
     cmd_post_process.app, name="post-process", help="Data post processing after import(s)"
 )
+app.add_typer(cmd_qul.app, name="qul", help="Import QUL datasets (topics, themes, related verses)")
 
 
 def cli_init(ctx: typer.Context):

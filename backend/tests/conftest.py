@@ -15,17 +15,26 @@ from quranref.main import app
 from quranref.models import (
     Aya,
     AyaText,
+    ChildOf,
     HasAya,
     HasLemma,
+    HasPhrase,
     HasRoot,
+    HasTheme,
     HasToken,
+    HasTopic,
     HasWord,
     IsForm,
     Lemma,
+    Phrase,
+    RelatedTopic,
     Root,
+    SimilarTo,
     Surah,
     Text,
+    Theme,
     Token,
+    Topic,
     Word,
 )
 from quranref.search_index import rebuild_search_index
@@ -217,6 +226,64 @@ def _seed_test_data(g, db):
     for triples in (has_token, has_lemma, is_form, has_root):
         g.bulk_add_edges(triples)
 
+    # Topics, themes, similar ayas and a recurring phrase
+    doctrine = Topic(id="3", name="Doctrine", thematic=True)
+    mercy = Topic(id="2", name="Mercy", arabic_name="رحمة", thematic=True, aya_count=1)
+    allah = Topic(
+        id="1",
+        name="Allah",
+        arabic_name="الله",
+        ontology=True,
+        aya_count=2,
+        description='<b>Allah</b>, see <topic data-id="2">Mercy</topic>.',
+        wiki_link="https://en.wikipedia.org/wiki/Allah",
+    )
+    g.bulk_add([doctrine, mercy, allah])
+    g.bulk_add_edges(
+        [(mercy, ChildOf(kind="thematic"), doctrine), (allah, ChildOf(kind="ontology"), doctrine)]
+    )
+    g.bulk_add_edges([(allah, RelatedTopic(), mercy)])
+    g.bulk_add_edges(
+        [
+            (aya_map["1:1"], HasTopic(), allah),
+            (aya_map["1:3"], HasTopic(), allah),
+            (aya_map["1:1"], HasTopic(), mercy),
+        ]
+    )
+    theme1 = Theme(id="theme:1", theme="Opening praise", surah_number=1, aya_from=1, aya_to=3)
+    theme2 = Theme(
+        id="theme:2", theme="The Book", surah_number=2, aya_from=1, aya_to=2, keywords="book"
+    )
+    g.bulk_add([theme1, theme2])
+    g.bulk_add_edges(
+        [(aya_map[k], HasTheme(), theme1) for k in ("1:1", "1:2", "1:3")]
+        + [(aya_map[k], HasTheme(), theme2) for k in ("2:1", "2:2")]
+    )
+    g.bulk_add_edges(
+        [
+            (
+                aya_map["1:1"],
+                SimilarTo(score=80, coverage=50, matched_words=2, match_words=[[3, 4]]),
+                aya_map["1:3"],
+            )
+        ]
+    )
+    phrase = Phrase(
+        id="phrase:1",
+        text="ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+        source_aya="1:1",
+        source_from=3,
+        source_to=4,
+        aya_count=2,
+    )
+    g.bulk_add([phrase])
+    g.bulk_add_edges(
+        [
+            (aya_map["1:1"], HasPhrase(ranges=[[3, 4]]), phrase),
+            (aya_map["1:3"], HasPhrase(ranges=[[1, 2]]), phrase),
+        ]
+    )
+
     # meta_info table data
     text_types = {"arabic": ["simple-clean"], "english": ["maududi"]}
     with db._pool.connection() as conn:
@@ -272,9 +339,11 @@ def test_graph(test_db, test_engine):
     g = test_db.graph(GRAPH_NAME, create=True)
 
     # Ensure vertex and edge labels
-    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token]:
+    for vertex_cls in [Surah, Aya, Text, Word, Root, Lemma, Token, Topic, Theme, Phrase]:
         g.ensure_label(vertex_cls)
     for edge_cls in [HasAya, HasWord, AyaText, HasToken, HasLemma, HasRoot, IsForm]:
+        g.ensure_label(edge_cls, kind="e")
+    for edge_cls in [HasTopic, ChildOf, RelatedTopic, HasTheme, SimilarTo, HasPhrase]:
         g.ensure_label(edge_cls, kind="e")
 
     # Create indexes

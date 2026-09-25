@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
+from .ayatext import _build_language_filter, _process_aya_results, aya_sort_key
 from .db import get_session, graph, raw_connection
 from .models import Surah, Word
 from .schemas import AyaResultSchema
@@ -99,50 +100,6 @@ def get_words_by_letter(arabic_letter: str, g: Graph = Depends(graph)) -> list[t
 
     results.sort(key=lambda r: r["word"])
     return [(r["word"], r["count"]) for r in results]
-
-
-def _build_language_filter(languages_spec: str, edge_alias: str = "e") -> tuple[str, dict]:
-    """Build a Cypher WHERE clause for language/text_type filtering.
-
-    Returns (clause_string, params_dict).
-    """
-    parts = []
-    params = {}
-    for idx, lang in enumerate(languages_spec.split("_")):
-        language, text_type = lang.split(":")
-        lang_param = f"lang_{idx}"
-        tt_param = f"tt_{idx}"
-        parts.append(
-            f"({edge_alias}.language = ${lang_param} AND {edge_alias}.text_type = ${tt_param})"
-        )
-        params[lang_param] = language
-        params[tt_param] = text_type
-
-    return " OR ".join(parts), params
-
-
-def _process_aya_results(results: list[dict]) -> list[AyaResultSchema]:
-    """Process raw Cypher results into AyaResultSchema list.
-
-    Each result row has: aya_id, language, text_type, text
-    """
-    ayas_dict: dict[str, AyaResultSchema] = {}
-
-    for r in results:
-        aya_key = r["aya_id"]
-        if aya_key not in ayas_dict:
-            ayas_dict[aya_key] = AyaResultSchema(aya_key=aya_key, texts={})
-
-        lang = r["language"]
-        text_type = r["text_type"]
-        text = r["text"]
-
-        if lang not in ayas_dict[aya_key].texts:
-            ayas_dict[aya_key].texts[lang] = {}
-
-        ayas_dict[aya_key].texts[lang][text_type] = text
-
-    return list(ayas_dict.values())
 
 
 @router.get("/ayas-by-word/{word}/{languages}")
@@ -263,11 +220,6 @@ def get_text(
     return _process_aya_results(results)
 
 
-def _aya_sort_key(aya_key: str) -> tuple[int, int]:
-    surah, aya = aya_key.split(":", 1)
-    return int(surah), int(aya)
-
-
 def _like_pattern(term: str) -> str:
     """Substring LIKE pattern for a normalized term, with LIKE wildcards escaped."""
     escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
@@ -329,4 +281,4 @@ def search(
         for aya_key, lang, tt, text in translations:
             results[aya_key].texts.setdefault(lang, {})[tt] = text
 
-    return sorted(results.values(), key=lambda a: _aya_sort_key(a.aya_key))
+    return sorted(results.values(), key=lambda a: aya_sort_key(a.aya_key))

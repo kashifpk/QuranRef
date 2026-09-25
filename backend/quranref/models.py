@@ -186,3 +186,92 @@ class IsForm(Edge):
     "Links Token to the simple-text Word it is written as"
 
     __label__ = "IS_FORM"
+
+
+# --- Topics, themes and related verses (from QUL) ---
+
+
+class Topic(Vertex):
+    "A concept or subject in the Quran, with thematic and ontology hierarchies"
+
+    __label__ = "Topic"
+
+    id: str  # QUL topic id as a string
+    name: str
+    arabic_name: str = ""
+    description: str = ""  # HTML; <topic data-id> links are rewritten by the API
+    wiki_link: str = ""
+    thematic: bool = False
+    ontology: bool = False
+    aya_count: int = 0
+
+
+class Theme(Vertex):
+    "A theme covering a range of ayas in one surah"
+
+    __label__ = "Theme"
+
+    id: str  # "theme:<n>"
+    theme: str
+    surah_number: int
+    aya_from: int
+    aya_to: int
+    keywords: str = ""
+
+
+class Phrase(Vertex):
+    "A phrase that recurs across ayas (mutashabihat)"
+
+    __label__ = "Phrase"
+
+    id: str  # "phrase:<n>"
+    text: str  # Uthmani words of the source occurrence
+    source_aya: str
+    source_from: int
+    source_to: int
+    aya_count: int = 0
+
+
+class HasTopic(Edge):
+    "Links Aya to a Topic it is about"
+
+    __label__ = "HAS_TOPIC"
+
+
+class ChildOf(Edge):
+    "Links a Topic to its parent in one of the hierarchies"
+
+    __label__ = "CHILD_OF"
+
+    kind: str  # parent, thematic or ontology
+
+
+class RelatedTopic(Edge):
+    "Links related Topics"
+
+    __label__ = "RELATED_TOPIC"
+
+
+class HasTheme(Edge):
+    "Links Aya to a Theme covering it"
+
+    __label__ = "HAS_THEME"
+
+
+class SimilarTo(Edge):
+    "Links an Aya to a similar Aya"
+
+    __label__ = "SIMILAR_TO"
+
+    score: int = 0
+    coverage: int = 0
+    matched_words: int = 0
+    match_words: list = Field(default_factory=list)  # [[from, to], ...] word positions
+
+
+class HasPhrase(Edge):
+    "Links Aya to a Phrase it contains, with the word positions"
+
+    __label__ = "HAS_PHRASE"
+
+    ranges: list = Field(default_factory=list)  # [[from, to], ...]

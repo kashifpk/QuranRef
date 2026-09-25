@@ -125,3 +125,75 @@ class WordMorphologySchema(BaseModel):
     root: str | None = None
     pos: str | None = None
     count: int
+
+
+# --- Topics, themes, related verses ---
+
+
+class TopicSummarySchema(BaseModel):
+    id: str
+    name: str
+    arabic_name: str = ""
+    aya_count: int = 0
+    thematic: bool = False
+    ontology: bool = False
+    parent_id: str | None = None
+    thematic_parent_id: str | None = None
+    ontology_parent_id: str | None = None
+
+
+class TopicSchema(BaseModel):
+    id: str
+    name: str
+    arabic_name: str = ""
+    description: str = ""
+    wiki_link: str = ""
+    thematic: bool = False
+    ontology: bool = False
+    aya_count: int = 0
+    parents: list[TopicSummarySchema] = []
+    children: list[TopicSummarySchema] = []
+    related: list[TopicSummarySchema] = []
+
+
+class ThemeSchema(BaseModel):
+    id: str
+    theme: str
+    surah_number: int
+    aya_from: int
+    aya_to: int
+    keywords: str = ""
+
+
+class AyaTopicsSchema(BaseModel):
+    topics: list[TopicSummarySchema] = []
+    themes: list[ThemeSchema] = []
+
+
+class AyaPageSchema(BaseModel):
+    total: int
+    offset: int
+    ayas: list[AyaResultSchema]
+
+
+class SimilarAyaSchema(BaseModel):
+    aya_key: str
+    score: int = 0
+    coverage: int = 0
+    matched_words: int = 0
+    match_words: list = []
+    texts: dict[str, dict[str, str]] = {}
+
+
+class PhraseSchema(BaseModel):
+    id: str
+    text: str
+    source_aya: str
+    aya_count: int = 0
+    ranges: list = []  # positions in the aya being asked about, when applicable
+    aya_keys: list[str] = []
+
+
+class RelatedSchema(BaseModel):
+    similar: list[SimilarAyaSchema] = []
+    phrases: list[PhraseSchema] = []
