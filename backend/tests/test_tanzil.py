@@ -82,7 +82,7 @@ def test_source_ids_and_names():
     assert all_source_ids()[0] == "quran:simple"
 
 
-def test_apply_diff_replaces_texts_in_the_graph(test_graph):
+def test_apply_diff_replaces_texts_in_the_graph(test_graph, test_db):
     g = test_graph
     before = graph_texts(g, "english", "maududi")
     assert before["1:2"] == "All praise is due to Allah Lord of the worlds"
@@ -96,10 +96,10 @@ def test_apply_diff_replaces_texts_in_the_graph(test_graph):
     after = graph_texts(g, "english", "maududi")
     assert after["1:2"] == fresh["1:2"] and after["2:0"] == "In the name of Allah"
     assert len(after) == len(before) + 1
-    assert prune_orphan_texts(g) == 1  # the old 1:2 text is no longer referenced
+    assert prune_orphan_texts(test_db) == 1  # the old 1:2 text is no longer referenced
 
     # put the fixture back for the other tests
     restore = diff_texts(after, before)
     apply_diff(g, "english", "maududi", before, restore)
     assert graph_texts(g, "english", "maududi") == before
-    prune_orphan_texts(g)
+    prune_orphan_texts(test_db)

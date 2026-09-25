@@ -166,7 +166,7 @@ def refresh(
                     f"{len(diff.removed)} removed in the graph"
                 )
     if graph_changes:
-        pruned = prune_orphan_texts(g)
+        pruned = prune_orphan_texts(db)
         rebuild_search_index(g, db)
         print(
             f"[green]{graph_changes} ayas updated, {pruned} orphaned texts removed, "

@@ -13,10 +13,11 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from age_orm import Graph
+from age_orm import Database, Graph
 
 from . import PROJECT_ROOT
 from .data.tanzil import QURAN_TEXTS, TRANSLATIONS
+from .db import GRAPH_NAME
 from .models import Aya, AyaText
 
 TRANSLATION_URL = "https://tanzil.net/trans/?transID={tid}&type=txt-2"
@@ -189,10 +190,17 @@ def apply_diff(g: Graph, language: str, text_type: str, fresh: dict[str, str], d
         AyaText.new(g, aya_doc, fresh[key], language, text_type)
 
 
-def prune_orphan_texts(g: Graph) -> int:
-    """Delete Text vertices no aya points at any more (left behind by replaced texts)."""
-    rows = g.cypher(
-        "MATCH (t:Text) WHERE NOT EXISTS((:Aya)-[:AYA_TEXT]->(t)) DELETE t RETURN count(*)",
-        columns=["deleted"],
-    )
-    return int(rows[0]["deleted"]) if rows else 0
+def prune_orphan_texts(db: Database) -> int:
+    """Delete Text vertices no aya points at any more (left behind by replaced texts).
+
+    Plain SQL on the label tables: PostgreSQL runs it as a hash anti-join in seconds,
+    while the Cypher NOT EXISTS form is a nested loop over every Text vertex on AGE 1.6.
+    """
+    with db._pool.connection() as conn:
+        cur = conn.execute(
+            f'DELETE FROM {GRAPH_NAME}."Text" AS t WHERE NOT EXISTS '
+            f'(SELECT 1 FROM {GRAPH_NAME}."AYA_TEXT" AS e WHERE e.end_id = t.id)'
+        )
+        deleted = cur.rowcount
+        conn.commit()
+    return deleted
