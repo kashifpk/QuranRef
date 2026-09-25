@@ -84,3 +84,14 @@ class AyaSearch(Base):
             postgresql_ops={"text_norm": "gin_trgm_ops"},
         ),
     )
+
+
+class SurahInfo(Base):
+    """Descriptive text about a surah in one language (from QUL)."""
+
+    __tablename__ = "surah_info"
+
+    surah_number: Mapped[int] = mapped_column(primary_key=True)
+    language: Mapped[str] = mapped_column(String, primary_key=True)
+    text: Mapped[str] = mapped_column(Text, default="")
+    short_text: Mapped[str] = mapped_column(Text, default="")

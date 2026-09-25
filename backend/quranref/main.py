@@ -13,6 +13,7 @@ from .auth import router as auth_router
 from .bookmarks import router as bookmarks_router
 from .related import router as related_router
 from .settings import get_settings
+from .structure import router as structure_router
 from .topics import router as topics_router
 from .words import router as words_router
 
@@ -44,6 +45,7 @@ app.include_router(bookmarks_router, prefix=API_BASE)
 app.include_router(words_router, prefix=API_BASE)
 app.include_router(topics_router, prefix=API_BASE)
 app.include_router(related_router, prefix=API_BASE)
+app.include_router(structure_router, prefix=API_BASE)
 
 # Determine static files directory
 # In Docker: /code/static, locally: ../static relative to backend

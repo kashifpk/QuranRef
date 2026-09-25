@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 from rich import print
 
+from ..db import get_db
 from ..db import graph as get_graph
 from ..models import (
     Aya,
@@ -217,3 +218,102 @@ def import_all(directory: Path = typer.Argument(..., exists=True, file_okay=Fals
     import_themes(directory / "ayah-themes.db")
     import_similar(directory / "matching-ayah.json")
     import_phrases(directory / "phrases.json")
+    import_metadata(directory)
+
+
+_UNITS = ("juz", "hizb", "rub", "manzil", "ruku")
+
+
+def _expand(verse_mapping: dict) -> list[str]:
+    """Aya keys covered by a QUL verse_mapping such as {"2": "1-141"}."""
+    keys = []
+    for surah, span in verse_mapping.items():
+        first, _, last = span.partition("-")
+        for n in range(int(first), int(last or first) + 1):
+            keys.append(f"{surah}:{n}")
+    return keys
+
+
+@app.command(name="import-metadata")
+def import_metadata(
+    directory: Path = typer.Argument(
+        ...,
+        exists=True,
+        file_okay=False,
+        help="Folder with quran-metadata-*.json and surah-info-*.json",
+    ),
+):
+    """Juz, hizb, rub, manzil, ruku and sajda onto the ayas; the unit tables into
+    meta_info; surah descriptions into surah_info."""
+    from ..graph_bulk import set_vertex_properties
+
+    g = get_graph()
+    db = get_db()
+    aya_map = _aya_map(g)
+
+    updates: dict[str, dict] = {k: {} for k in aya_map}
+    structure: dict[str, list] = {}
+    for unit in _UNITS:
+        with open(directory / f"quran-metadata-{unit}.json", encoding="utf-8") as fp:
+            data = json.load(fp)
+        entries = []
+        for rec in data.values():
+            number = int(rec[f"{unit}_number"])
+            entries.append(
+                {
+                    "number": number,
+                    "verses_count": rec.get("verses_count"),
+                    "first_verse_key": rec.get("first_verse_key"),
+                    "last_verse_key": rec.get("last_verse_key"),
+                    "verse_mapping": rec.get("verse_mapping", {}),
+                    **(
+                        {"surah_ruku_number": rec.get("surah_ruku_number")}
+                        if unit == "ruku"
+                        else {}
+                    ),
+                }
+            )
+            for key in _expand(rec.get("verse_mapping", {})):
+                if key in updates:
+                    updates[key][unit] = number
+                    if unit == "ruku":
+                        updates[key]["surah_ruku"] = int(rec.get("surah_ruku_number") or 0)
+        entries.sort(key=lambda e: e["number"])
+        structure[unit] = entries
+
+    with open(directory / "quran-metadata-sajda.json", encoding="utf-8") as fp:
+        for rec in json.load(fp).values():
+            if rec.get("verse_key") in updates:
+                updates[rec["verse_key"]]["sajda"] = rec.get("sajdah_type")
+
+    updates = {k: v for k, v in updates.items() if v}
+    updated = set_vertex_properties(g, db, "Aya", updates)
+    print(f"[green]{updated} ayas updated with mushaf structure.[/green]")
+
+    with db._pool.connection() as conn:
+        conn.execute(
+            "INSERT INTO meta_info (key, value) VALUES (%s, %s) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            ("structure", json.dumps(structure)),
+        )
+        rows = 0
+        for language, suffix in (("english", "en"), ("urdu", "ur")):
+            path = directory / f"surah-info-{suffix}.json"
+            if not path.exists():
+                continue
+            with open(path, encoding="utf-8") as fp:
+                for rec in json.load(fp).values():
+                    conn.execute(
+                        "INSERT INTO surah_info (surah_number, language, text, short_text) "
+                        "VALUES (%s, %s, %s, %s) ON CONFLICT (surah_number, language) "
+                        "DO UPDATE SET text = EXCLUDED.text, short_text = EXCLUDED.short_text",
+                        (
+                            int(rec["surah_number"]),
+                            language,
+                            rec.get("text") or "",
+                            rec.get("short_text") or "",
+                        ),
+                    )
+                    rows += 1
+        conn.commit()
+    print(f"[green]Structure stored; {rows} surah descriptions imported.[/green]")

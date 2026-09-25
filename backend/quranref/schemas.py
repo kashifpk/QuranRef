@@ -197,3 +197,35 @@ class PhraseSchema(BaseModel):
 class RelatedSchema(BaseModel):
     similar: list[SimilarAyaSchema] = []
     phrases: list[PhraseSchema] = []
+
+
+# --- Mushaf structure ---
+
+
+class AyaStructureSchema(BaseModel):
+    aya_key: str
+    juz: int | None = None
+    hizb: int | None = None
+    rub: int | None = None
+    manzil: int | None = None
+    ruku: int | None = None
+    surah_ruku: int | None = None
+    sajda: str | None = None
+
+
+class SurahMarkerSchema(BaseModel):
+    aya_number: int
+    juz_start: int | None = None
+    hizb_start: int | None = None
+    rub_start: int | None = None
+    manzil_start: int | None = None
+    ruku_start: int | None = None
+    sajda: str | None = None
+
+
+class SurahInfoSchema(BaseModel):
+    surah_number: int
+    language: str
+    available: list[str]
+    text: str
+    short_text: str = ""

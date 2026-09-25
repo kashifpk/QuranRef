@@ -284,6 +284,71 @@ def _seed_test_data(g, db):
         ]
     )
 
+    # Mushaf structure on the ayas, the unit table and surah descriptions
+    for aya in ayas:
+        aya.juz, aya.hizb, aya.rub, aya.manzil = 1, 1, 1, 1
+        aya.ruku = 1 if aya.surah_key == "1" else 2
+        aya.surah_ruku = 1
+    aya_map["2:2"].sajda = "optional"
+    from quranref.graph_bulk import set_vertex_properties
+
+    set_vertex_properties(
+        g,
+        db,
+        "Aya",
+        {
+            a.id: {
+                "juz": a.juz,
+                "hizb": a.hizb,
+                "rub": a.rub,
+                "manzil": a.manzil,
+                "ruku": a.ruku,
+                "surah_ruku": a.surah_ruku,
+                "sajda": a.sajda,
+            }
+            for a in ayas
+        },
+    )
+    structure = {
+        "juz": [
+            {
+                "number": 1,
+                "verses_count": 5,
+                "first_verse_key": "1:1",
+                "last_verse_key": "2:2",
+                "verse_mapping": {"1": "1-3", "2": "1-2"},
+            }
+        ],
+        "hizb": [],
+        "rub": [],
+        "manzil": [],
+        "ruku": [
+            {
+                "number": 1,
+                "surah_ruku_number": 1,
+                "verses_count": 3,
+                "first_verse_key": "1:1",
+                "last_verse_key": "1:3",
+                "verse_mapping": {"1": "1-3"},
+            }
+        ],
+    }
+    with db._pool.connection() as conn:
+        conn.execute(
+            "INSERT INTO meta_info (key, value) VALUES (%s, %s) "
+            "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+            ("structure", json.dumps(structure)),
+        )
+        for language, text in (
+            ("english", "<h2>Name</h2><p>The Opening.</p>"),
+            ("urdu", "<p>الفاتحہ</p>"),
+        ):
+            conn.execute(
+                "INSERT INTO surah_info (surah_number, language, text, short_text) VALUES (1, %s, %s, '')",
+                (language, text),
+            )
+        conn.commit()
+
     # meta_info table data
     text_types = {"arabic": ["simple-clean"], "english": ["maududi"]}
     with db._pool.connection() as conn:

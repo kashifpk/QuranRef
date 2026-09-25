@@ -37,6 +37,14 @@ class Aya(Vertex):
     id: str  # format: "{surah_number}:{aya_number}"
     surah_key: str
     aya_number: int
+    # Mushaf structure (set by `qul import-metadata`)
+    juz: int | None = None
+    hizb: int | None = None
+    rub: int | None = None
+    manzil: int | None = None
+    ruku: int | None = None
+    surah_ruku: int | None = None
+    sajda: str | None = None  # "required" or "optional"
 
     @classmethod
     def new(cls, graph: Graph, surah_number: int, aya_number: int) -> "Aya":
