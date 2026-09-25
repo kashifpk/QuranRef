@@ -27,28 +27,29 @@ def load_gloss_file(path: Path) -> dict[str, str]:
     return result
 
 
-def import_word_glosses(
-    g: Graph, language: str, glosses: dict[str, str], batch_size: int = 500
-) -> int:
+def import_word_glosses(g: Graph, language: str, glosses: dict[str, str]) -> int:
     """Set ``glosses[language]`` on every Token named in ``glosses``.
 
     Existing glosses in other languages are kept. Returns the number of tokens updated.
+
+    One update per token, with the id as a literal so AGE uses the Token id index.
+    A batched UNWIND looks tidier, but AGE cannot use the index for a match on an
+    UNWIND variable, which turns every batch into a full scan.
     """
     existing = {
         r["id"]: (r["glosses"] or {})
         for r in g.cypher("MATCH (t:Token) RETURN t.id, t.glosses", columns=["id", "glosses"])
     }
-    rows = []
+    updated = 0
     for token_id, gloss in glosses.items():
         if token_id not in existing:
             continue
         merged = dict(existing[token_id])
         merged[language] = gloss.strip()
-        rows.append({"id": token_id, "glosses": merged})
-
-    for start in range(0, len(rows), batch_size):
         g.cypher(
-            "UNWIND $rows AS r MATCH (t:Token {id: r.id}) SET t.glosses = r.glosses",
-            rows=rows[start : start + batch_size],
+            "MATCH (t:Token {id: $id}) SET t.glosses = $glosses",
+            id=token_id,
+            glosses=merged,
         )
-    return len(rows)
+        updated += 1
+    return updated

@@ -68,6 +68,18 @@ def init():
     g.create_index(Token, "root")
     g.create_index(Token, "text_simple")
 
+    # Cypher property matches such as MATCH (t:Token {id: $id}) compile to an agtype
+    # containment test (properties @> {...}), which only a GIN index on the whole
+    # properties column can serve; the btree expression indexes above are for the
+    # age-orm query builder. Text is left out: its properties hold the aya texts.
+    with raw_connection() as conn:
+        for label in ("Surah", "Aya", "Word", "Root", "Lemma", "Token"):
+            conn.execute(
+                f"CREATE INDEX IF NOT EXISTS idx_{GRAPH_NAME}_{label.lower()}_props_gin "
+                f'ON {GRAPH_NAME}."{label}" USING gin (properties)'
+            )
+        conn.commit()
+
     # Run SQL migrations (creates/updates users, meta_info, bookmarks, etc.)
     migrate()
 
