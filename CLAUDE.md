@@ -33,7 +33,7 @@ CLI, run as `uv run quranref-cli <group> <command>`:
 - `post-process link-ayas-to-surahs`, `make-words`, `update-meta-info`, `fix-word-counts`, `remove-bismillah`
 - `post-process build-search-index`: rebuild the `aya_search` table (normalized texts, pg_trgm index) that the search endpoint queries; run after any text import
 - `db import-morphology data/morphology/quran-morphology.txt`: roots, lemmas and per-word tokens from the Quranic Arabic Corpus (run after make-words; replaces existing morphology)
-- `qul import-all <folder>` (or `qul import-topics|import-themes|import-similar|import-phrases <file>`): topics, ayah themes, similar ayas and Mutashabihat phrases from QUL downloads in `backend/data/qul/`; each replaces its own data
+- `qul import-all <folder>` (or `qul import-topics|import-themes|import-similar|import-phrases <file>`, `qul import-metadata <folder>`): topics, ayah themes, similar ayas, Mutashabihat phrases and mushaf structure (juz, hizb, rub, manzil, ruku, sajda on Aya vertices; unit tables under meta_info key `structure`; surah descriptions in the `surah_info` table) from QUL downloads in `backend/data/qul/`; each replaces its own data
 - `db import-word-glosses <language> <file.json>`: per-word meanings onto tokens (QUL word-by-word JSON, `{"s:a:w": "meaning"}`); languages in use: english, urdu, transliteration. Files live in the gitignored `backend/data/qul/`
 
 ### Frontend (run from frontend/)
@@ -77,6 +77,7 @@ Key files:
 - `backend/quranref/api.py`: Quran text, search and word endpoints
 - `backend/quranref/words.py`: word morphology endpoints (aya words, lemma, root, roots by letter, word morphology)
 - `backend/quranref/topics.py`, `related.py`: topics, themes, similar ayas and phrases endpoints; `ayatext.py` holds the shared aya text helpers; `commands/qul.py` the QUL importers
+- `backend/quranref/structure.py`: mushaf structure endpoints; `graph_bulk.py` merges properties into existing vertices (SQL fast path on AGE 1.8, Cypher fallback)
 - `backend/quranref/morphology.py`: corpus file parser and Uthmani-to-simple alignment
 - `backend/quranref/glosses.py`: per-word meaning importer
 - `backend/quranref/textnorm.py`, `search_index.py`: search normalization and the aya_search builder
@@ -101,6 +102,8 @@ Key files:
 
 Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts`, `type_defs.ts`, `components/`, `views/`.
 
+Structure UI: `views/StructureView.vue` (`/structure`), `views/ReadUnitView.vue` (`/read/:unit/:n`, reads a juz, hizb, rub or manzil through the existing text endpoint per surah segment), `structure.ts` (segments, marker labels), markers and `components/SurahAbout.vue` on the surah page.
+
 Topic layer UI: `views/TopicsView.vue` (`/topics`, trees built by `topic_tree.ts`), `views/TopicView.vue` (`/topic/:id`), `views/PhraseView.vue` (`/phrase/:id`), `components/AyaPagedList.vue` (paged aya lists), `components/AyaStudyPanel.vue` (topics, theme, phrases and similar ayas inside `AyaView.vue`), `components/SurahThemes.vue` (outline on the surah page).
 
 Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `AyaView.vue` when the store's `wordByWord` is on), `views/LemmaView.vue` (`/lemma/:lemma`), `views/RootView.vue` (`/root/:root`), `views/BrowseByRoot.vue` (`/by_root`). The Text Settings dialog has a Word by Word tab (toggle and meaning language).
@@ -112,7 +115,7 @@ Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `Ay
 - Arabic text variants and translations are AYA_TEXT edges with `language` and `text_type` properties
 - Morphology: Aya -[HAS_TOKEN {position}]-> Token -[HAS_LEMMA]-> Lemma -[HAS_ROOT]-> Root, and Token -[IS_FORM]-> Word. Token ids are `surah:aya:position`; tokens carry the Uthmani form, stem features, all segments and a `glosses` map (language to meaning in that aya)
 - Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`, and on Token `lemma`, `root`, `text_simple` and Lemma `root`
-- `meta_info`, `users`, `bookmarks`, `aya_search` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
+- `meta_info`, `users`, `bookmarks`, `aya_search`, `surah_info` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
 
 ### Authentication
 
@@ -197,6 +200,7 @@ Base URL in development: http://localhost:41148/api/v1. Interactive docs at /doc
 - `GET /aya-words/{aya_key}`, `GET /lemma/{lemma}?text_type=`, `GET /root/{root}`, `GET /roots-by-letter/{letter}`, `GET /word-morphology/{word}`
 - `GET /topics`, `GET /topic/{id}`, `GET /topic/{id}/ayas?languages=&offset=&limit=`, `GET /aya-topics/{aya_key}`, `GET /themes/{surah_number}`, `GET /topics/for-ayas?keys=`
 - `GET /related/{aya_key}?languages=`, `GET /phrase/{id}`, `GET /phrase/{id}/ayas`
+- `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET /bookmarks`, `GET|PUT|DELETE /bookmarks/reading`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
 

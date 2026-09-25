@@ -175,3 +175,34 @@ export interface RelatedInfo {
     similar: SimilarAya[];
     phrases: PhraseInfo[];
 }
+
+export type UnitKind = 'juz' | 'hizb' | 'rub' | 'manzil' | 'ruku';
+
+export interface StructureUnit {
+    number: number;
+    verses_count: number;
+    first_verse_key: string;
+    last_verse_key: string;
+    verse_mapping: Record<string, string>;
+    surah_ruku_number?: number;
+}
+
+export type Structure = Record<UnitKind, StructureUnit[]>;
+
+export interface SurahMarker {
+    aya_number: number;
+    juz_start: number | null;
+    hizb_start: number | null;
+    rub_start: number | null;
+    manzil_start: number | null;
+    ruku_start: number | null;
+    sajda: string | null;
+}
+
+export interface SurahInfoText {
+    surah_number: number;
+    language: string;
+    available: string[];
+    text: string;
+    short_text: string;
+}

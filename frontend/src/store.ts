@@ -2,7 +2,7 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary, Structure } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -53,6 +53,21 @@ export const useStore = defineStore('quranref_store', () => {
       topicsLoading.value = false;
     }
     return topics.value;
+  }
+
+  // Mushaf structure tables (juz, hizb, rub, manzil, ruku), fetched once
+  const structure = ref<Structure | null>(null);
+
+  async function loadStructure(): Promise<Structure | null> {
+    if (structure.value) return structure.value;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const resp = await fetch(baseUrl + '/structure');
+      if (resp.ok) structure.value = await resp.json();
+    } catch (error) {
+      console.error('Failed to load structure:', error);
+    }
+    return structure.value;
   }
 
   // Language spec for aya texts: the Arabic style plus the selected translations
@@ -321,6 +336,8 @@ export const useStore = defineStore('quranref_store', () => {
     topics,
     topicsLoading,
     loadTopics,
+    structure,
+    loadStructure,
     textLanguagesSpec,
 
     // Loading states

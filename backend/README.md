@@ -60,5 +60,6 @@ All endpoints are under `/api/v1`. Interactive docs at `/docs`.
 - `GET /aya-words/{aya_key}`, `GET /lemma/{lemma}?text_type=simple`, `GET /root/{root}`, `GET /roots-by-letter/{letter}`, `GET /word-morphology/{word}`
 - `GET /topics`, `GET /topic/{id}`, `GET /topic/{id}/ayas`, `GET /aya-topics/{aya_key}`, `GET /themes/{surah_number}`, `GET /topics/for-ayas?keys=`
 - `GET /related/{aya_key}`, `GET /phrase/{id}`, `GET /phrase/{id}/ayas`
+- `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET|PUT|DELETE /bookmarks/reading`, `GET /bookmarks`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`

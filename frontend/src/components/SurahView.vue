@@ -12,16 +12,21 @@
       </template>
     </Card>
 
+    <surah-about v-if="props.surah_number" :surah-number="props.surah_number" />
     <surah-themes v-if="props.surah_number" :surah-number="props.surah_number" @goto="gotoAya" />
 
     <div v-if="surahAyas && surahAyas.length > 0" class="ayas-list">
-      <aya-view
-        v-for="aya in surahAyas"
-        :key="aya.aya_key"
-        :id="'aya-' + aya.aya_key"
-        :aya="aya"
-        :display-surah-name="false"
-      />
+      <template v-for="aya in surahAyas" :key="aya.aya_key">
+        <div v-if="markerFor(aya.aya_key)" class="structure-marker">
+          <span v-if="markerLabel(markerFor(aya.aya_key)!)" class="marker-units">{{ markerLabel(markerFor(aya.aya_key)!) }}</span>
+          <span v-if="markerFor(aya.aya_key)!.sajda" class="marker-sajda" v-tooltip.top="'Sajda (' + markerFor(aya.aya_key)!.sajda + ')'">۩ Sajda</span>
+        </div>
+        <aya-view
+          :id="'aya-' + aya.aya_key"
+          :aya="aya"
+          :display-surah-name="false"
+        />
+      </template>
     </div>
 
     <div v-else class="loading-state">
@@ -41,6 +46,9 @@ import ProgressSpinner from 'primevue/progressspinner';
 import type { SurahInfo, AyaInfo } from '../type_defs';
 import AyaView from './AyaView.vue';
 import SurahThemes from './SurahThemes.vue';
+import SurahAbout from './SurahAbout.vue';
+import { markerLabel } from '../structure';
+import type { SurahMarker } from '../type_defs';
 
 const props = defineProps({
   surah_number: Number,
@@ -50,6 +58,25 @@ const store = useStore();
 const route = useRoute();
 
 const surahAyas = ref<AyaInfo[]>();
+const markers = ref<Record<number, SurahMarker>>({});
+
+function markerFor(ayaKey: string): SurahMarker | undefined {
+  return markers.value[Number(ayaKey.split(':')[1])];
+}
+
+async function loadMarkers() {
+  markers.value = {};
+  try {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const resp = await fetch(`${baseUrl}/structure/surah/${props.surah_number}`);
+    if (resp.ok) {
+      const list: SurahMarker[] = await resp.json();
+      markers.value = Object.fromEntries(list.map((m) => [m.aya_number, m]));
+    }
+  } catch (error) {
+    console.error('Failed to load structure markers:', error);
+  }
+}
 const surahInfo = ref<SurahInfo>();
 
 function gotoAya(ayaNumber: number) {
@@ -119,6 +146,7 @@ const getSurahText = async () => {
   const surahsApi = mande(url);
   const response = await surahsApi.get();
   surahAyas.value = response as AyaInfo[];
+  loadMarkers();
 };
 </script>
 

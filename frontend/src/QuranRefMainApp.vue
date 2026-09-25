@@ -105,6 +105,11 @@
             <span>Topics</span>
           </router-link>
 
+          <router-link to="/structure" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-list"></i>
+            <span>Juz, Hizb and Manzil</span>
+          </router-link>
+
           <router-link
             v-if="store.currentUser"
             to="/bookmarks"
