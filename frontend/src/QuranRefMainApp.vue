@@ -144,9 +144,12 @@
     <TextSettingsDialog v-model:visible="settingsDialogVisible" />
 
     <!-- Main Content -->
-    <main class="app-main">
+    <main class="app-main" :class="{ 'with-player': store.audioCurrent }">
       <router-view />
     </main>
+
+    <!-- Recitation player, shown while an aya is playing -->
+    <AudioPlayer />
 
     <!-- Footer -->
     <footer class="app-footer">
@@ -158,6 +161,9 @@
       <span class="footer-separator">|</span>
       <span>Topics, themes and related ayas from the</span>
       <a href="https://qul.tarteel.ai" target="_blank" rel="noopener">Quranic Universal Library</a>
+      <span class="footer-separator">|</span>
+      <span>Recitations from</span>
+      <a href="https://everyayah.com" target="_blank" rel="noopener">everyayah.com</a>
     </footer>
   </div>
 </template>
@@ -174,6 +180,7 @@ import Drawer from 'primevue/drawer';
 import Divider from 'primevue/divider';
 import TextSettingsDialog from './components/TextSettingsDialog.vue';
 import UserMenu from './components/UserMenu.vue';
+import AudioPlayer from './components/AudioPlayer.vue';
 
 const router = useRouter();
 const store = useStore();
@@ -352,6 +359,10 @@ const openSettings = () => {
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+}
+
+.app-main.with-player {
+  padding-bottom: 6rem;
 }
 
 /* Footer Styles */

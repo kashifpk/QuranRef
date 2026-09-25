@@ -1,9 +1,10 @@
 import { mande } from "mande"
 import { defineStore } from "pinia"
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary, Structure, CollectionSummary } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary, Structure, CollectionSummary, TafsirResource } from "./type_defs"
 import { extractAyaRefs } from "./note_refs"
+import { ayaAudioUrl, DEFAULT_RECITER } from "./audio"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -341,6 +342,121 @@ export const useStore = defineStore('quranref_store', () => {
     return collections.value.filter(c => c.aya_keys.includes(ayaKey));
   }
 
+  // --- Tafsir selection (passages shown under an aya on request) ---
+  const tafsirs = ref<TafsirResource[]>([]);
+  const tafsirsLoading = ref(false);
+  const selectedTafsirs = useStorage<string[]>('quranref-tafsirs', []);
+
+  async function loadTafsirs(): Promise<TafsirResource[]> {
+    if (tafsirs.value.length > 0) return tafsirs.value;
+    tafsirsLoading.value = true;
+    try {
+      const resp = await fetch(apiBase() + '/tafsirs');
+      if (resp.ok) tafsirs.value = await resp.json();
+    } catch (error) {
+      console.error('Failed to load tafsirs:', error);
+    } finally {
+      tafsirsLoading.value = false;
+    }
+    return tafsirs.value;
+  }
+
+  function toggleTafsir(slug: string, selected: boolean) {
+    const others = selectedTafsirs.value.filter(s => s !== slug);
+    selectedTafsirs.value = selected ? [...others, slug] : others;
+  }
+
+  // --- Recitation audio (one file per aya from everyayah.com) ---
+  const reciter = useStorage('quranref-reciter', DEFAULT_RECITER);
+  const audioContinuous = useStorage('quranref-audio-continuous', true);
+  const audioCurrent = ref<string | null>(null);
+  const audioPlaying = ref(false);
+  const audioPlaylist = ref<string[]>([]);
+  let audioEl: HTMLAudioElement | null = null;
+
+  function audioElement(): HTMLAudioElement | null {
+    if (audioEl) return audioEl;
+    if (typeof Audio === 'undefined') return null;
+    audioEl = new Audio();
+    audioEl.preload = 'auto';
+    audioEl.addEventListener('play', () => { audioPlaying.value = true; });
+    audioEl.addEventListener('pause', () => { audioPlaying.value = false; });
+    audioEl.addEventListener('error', () => { audioPlaying.value = false; });
+    audioEl.addEventListener('ended', () => {
+      if (audioContinuous.value && !nextAya()) stopAudio();
+    });
+    return audioEl;
+  }
+
+  function startPlayback(el: HTMLAudioElement) {
+    const started = el.play();
+    if (started && typeof started.catch === 'function') {
+      started.catch((error: unknown) => {
+        console.error('Playback failed:', error);
+        audioPlaying.value = false;
+      });
+    }
+  }
+
+  // Play one aya. A playlist (the surah, a collection...) enables continuous play.
+  function playAya(ayaKey: string, playlist?: string[]): boolean {
+    const url = ayaAudioUrl(reciter.value, ayaKey);
+    const el = audioElement();
+    if (!url || !el) return false;
+    if (playlist) audioPlaylist.value = playlist;
+    else if (!audioPlaylist.value.includes(ayaKey)) audioPlaylist.value = [ayaKey];
+    audioCurrent.value = ayaKey;
+    el.src = url;
+    startPlayback(el);
+    return true;
+  }
+
+  function pauseAudio() {
+    audioEl?.pause();
+  }
+
+  function resumeAudio() {
+    if (!audioEl || !audioCurrent.value) return;
+    if (audioEl.ended) audioEl.currentTime = 0;
+    startPlayback(audioEl);
+  }
+
+  function stopAudio() {
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.removeAttribute('src');
+      audioEl.load();
+    }
+    audioCurrent.value = null;
+    audioPlaying.value = false;
+  }
+
+  function toggleAya(ayaKey: string, playlist?: string[]) {
+    if (audioCurrent.value === ayaKey) {
+      if (audioPlaying.value) pauseAudio();
+      else resumeAudio();
+    } else {
+      playAya(ayaKey, playlist);
+    }
+  }
+
+  function nextAya(): boolean {
+    const index = audioPlaylist.value.indexOf(audioCurrent.value ?? '');
+    const next = index === -1 ? undefined : audioPlaylist.value[index + 1];
+    return next ? playAya(next) : false;
+  }
+
+  function prevAya(): boolean {
+    const index = audioPlaylist.value.indexOf(audioCurrent.value ?? '');
+    const prev = index > 0 ? audioPlaylist.value[index - 1] : undefined;
+    return prev ? playAya(prev) : false;
+  }
+
+  // Switching reciter mid-aya restarts the aya with the new voice
+  watch(reciter, () => {
+    if (audioCurrent.value && audioPlaying.value) playAya(audioCurrent.value);
+  });
+
   // Loading state for surah info
   const surahInfoLoading = ref(false);
 
@@ -470,6 +586,27 @@ export const useStore = defineStore('quranref_store', () => {
     addToCollection,
     removeAyaFromCollection,
     collectionsForAya,
+
+    // Tafsir
+    tafsirs,
+    tafsirsLoading,
+    selectedTafsirs,
+    loadTafsirs,
+    toggleTafsir,
+
+    // Recitation audio
+    reciter,
+    audioContinuous,
+    audioCurrent,
+    audioPlaying,
+    audioPlaylist,
+    playAya,
+    pauseAudio,
+    resumeAudio,
+    stopAudio,
+    toggleAya,
+    nextAya,
+    prevAya,
 
     // Actions
     loadSurahInfo,

@@ -15,6 +15,7 @@ from .collections import router as collections_router
 from .related import router as related_router
 from .settings import get_settings
 from .structure import router as structure_router
+from .tafsir import router as tafsir_router
 from .topics import router as topics_router
 from .words import router as words_router
 
@@ -48,6 +49,7 @@ app.include_router(words_router, prefix=API_BASE)
 app.include_router(topics_router, prefix=API_BASE)
 app.include_router(related_router, prefix=API_BASE)
 app.include_router(structure_router, prefix=API_BASE)
+app.include_router(tafsir_router, prefix=API_BASE)
 
 # Determine static files directory
 # In Docker: /code/static, locally: ../static relative to backend

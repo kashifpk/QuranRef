@@ -299,3 +299,28 @@ class SurahInfoSchema(BaseModel):
     available: list[str]
     text: str
     short_text: str = ""
+
+
+# --- Tafsir ---
+
+
+class TafsirResourceSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    slug: str
+    name: str
+    language: str
+    author: str = ""
+    source: str = ""
+    license: str = ""
+
+
+class TafsirPassageSchema(BaseModel):
+    slug: str
+    name: str
+    language: str
+    aya_key: str
+    from_key: str
+    to_key: str
+    aya_keys: list[str]
+    text: str

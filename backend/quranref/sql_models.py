@@ -141,3 +141,44 @@ class CollectionItem(Base):
         UniqueConstraint("collection_id", "aya_key", name="uq_collection_items_aya"),
         Index("idx_collection_items_collection_id", "collection_id"),
     )
+
+
+class TafsirResource(Base):
+    """One tafsir (commentary) as imported from a QUL export."""
+
+    __tablename__ = "tafsir_resources"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String, unique=True)
+    name: Mapped[str] = mapped_column(String)
+    language: Mapped[str] = mapped_column(String)
+    author: Mapped[str] = mapped_column(String, default="")
+    source: Mapped[str] = mapped_column(String, default="")
+    license: Mapped[str] = mapped_column(String, default="")
+
+
+class TafsirText(Base):
+    """A passage of commentary and the range of ayas it covers."""
+
+    __tablename__ = "tafsir_texts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    resource_id: Mapped[int] = mapped_column(ForeignKey("tafsir_resources.id", ondelete="CASCADE"))
+    from_key: Mapped[str] = mapped_column(String)
+    to_key: Mapped[str] = mapped_column(String)
+    aya_keys: Mapped[list] = mapped_column(JSONB)
+    text: Mapped[str] = mapped_column(Text)
+
+    __table_args__ = (Index("idx_tafsir_texts_resource", "resource_id"),)
+
+
+class TafsirEntry(Base):
+    """Which passage explains which aya (one row per aya per tafsir)."""
+
+    __tablename__ = "tafsir_entries"
+
+    resource_id: Mapped[int] = mapped_column(
+        ForeignKey("tafsir_resources.id", ondelete="CASCADE"), primary_key=True
+    )
+    aya_key: Mapped[str] = mapped_column(String, primary_key=True)
+    text_id: Mapped[int] = mapped_column(ForeignKey("tafsir_texts.id", ondelete="CASCADE"))

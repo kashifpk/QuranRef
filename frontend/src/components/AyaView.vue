@@ -1,5 +1,5 @@
 <template>
-  <Card class="aya-container">
+  <Card ref="cardRef" class="aya-container" :class="{ 'aya-playing': isCurrentAudio }">
     <template #content>
       <!-- Bookmark indicators -->
       <div class="bookmark-indicators" v-if="store.currentUser">
@@ -187,6 +187,17 @@
               <span class="ar mx-2">{{ surahInfo?.arabic_name }}</span>
             </span>
           </Tag>
+          <Button
+            v-if="audioUrl"
+            :icon="isCurrentAudio && store.audioPlaying ? 'pi pi-pause' : 'pi pi-play'"
+            text
+            rounded
+            size="small"
+            class="aya-play-btn"
+            :class="{ active: isCurrentAudio }"
+            v-tooltip.top="isCurrentAudio && store.audioPlaying ? 'Pause' : 'Recite this aya'"
+            @click="store.toggleAya(props.aya.aya_key, props.playlist)"
+          />
           <template v-if="store.wordByWord && tokens.length > 0">
             <WordByWordAya
               :tokens="tokens"
@@ -212,8 +223,21 @@
           size="small"
           @click="showStudy = !showStudy"
         />
+        <Button
+          v-if="store.selectedTafsirs.length > 0"
+          :icon="showTafsir ? 'pi pi-chevron-up' : 'pi pi-book'"
+          :label="showTafsir ? 'Hide tafsir' : 'Tafsir'"
+          text
+          size="small"
+          @click="showTafsir = !showTafsir"
+        />
       </div>
       <AyaStudyPanel v-if="showStudy" :aya-key="props.aya.aya_key" />
+      <TafsirPanel
+        v-if="showTafsir && store.selectedTafsirs.length > 0"
+        :aya-key="props.aya.aya_key"
+        :slugs="store.selectedTafsirs"
+      />
 
       <!-- Translations Section below -->
       <div class="translations-section" v-if="translationTexts.length > 0">
@@ -252,6 +276,8 @@ import MarkdownNote from './MarkdownNote.vue';
 import WordByWordAya from './WordByWordAya.vue';
 import WordDetails from './WordDetails.vue';
 import AyaStudyPanel from './AyaStudyPanel.vue';
+import TafsirPanel from './TafsirPanel.vue';
+import { ayaAudioUrl } from '../audio';
 import type { SurahInfo, AyaInfo, Bookmark, TokenInfo, CollectionSummary } from '../type_defs';
 import { useStore } from '../store';
 
@@ -259,6 +285,8 @@ interface AyaViewProps {
   aya: AyaInfo;
   displaySurahName: boolean;
   highlightWord?: string;
+  // Aya keys to continue playing through after this one (the surah, a collection...)
+  playlist?: string[];
 }
 
 const store = useStore();
@@ -274,6 +302,18 @@ const editNoteText = ref('');
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
 const ayaBacklinks = computed(() => store.getBacklinksForAya(props.aya.aya_key));
 const showStudy = ref(false);
+const showTafsir = ref(false);
+
+// Recitation: the play button on this card and following the player through a playlist
+const cardRef = ref();
+const audioUrl = computed(() => ayaAudioUrl(store.reciter, props.aya.aya_key));
+const isCurrentAudio = computed(() => store.audioCurrent === props.aya.aya_key);
+watch(isCurrentAudio, (current) => {
+  if (current && (props.playlist?.length ?? 0) > 1) {
+    const el = cardRef.value?.$el as HTMLElement | undefined;
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  }
+});
 
 // Collections this aya belongs to, and the dialog that toggles membership
 const showCollectionDialog = ref(false);
@@ -743,6 +783,20 @@ const highlightedArabicText = computed(() => {
   display: inline-block;
   margin-left: 15px;
   vertical-align: middle;
+}
+
+.aya-play-btn {
+  vertical-align: middle;
+  margin-left: 4px;
+  color: var(--p-text-muted-color) !important;
+}
+
+.aya-play-btn.active {
+  color: var(--p-primary-color) !important;
+}
+
+.aya-container.aya-playing {
+  box-shadow: inset 0 0 0 2px var(--p-primary-color, #4caf50);
 }
 
 .study-toggle-row {

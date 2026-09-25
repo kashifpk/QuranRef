@@ -25,6 +25,7 @@
           :id="'aya-' + aya.aya_key"
           :aya="aya"
           :display-surah-name="false"
+          :playlist="playlist"
         />
       </template>
     </div>
@@ -38,7 +39,7 @@
 
 <script setup lang="ts">
 import { mande } from 'mande';
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from '../store';
 import Card from 'primevue/card';
@@ -59,6 +60,13 @@ const route = useRoute();
 
 const surahAyas = ref<AyaInfo[]>();
 const markers = ref<Record<number, SurahMarker>>({});
+
+// Recitation order for the surah (the bismillah line, aya 0, has no file of its own)
+const playlist = computed(() =>
+  (surahAyas.value ?? [])
+    .map((a) => a.aya_key)
+    .filter((key) => Number(key.split(':')[1]) > 0)
+);
 
 function markerFor(ayaKey: string): SurahMarker | undefined {
   return markers.value[Number(ayaKey.split(':')[1])];

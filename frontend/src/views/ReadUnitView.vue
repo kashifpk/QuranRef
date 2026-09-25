@@ -18,7 +18,7 @@
         <span class="ar segment-arabic">{{ surahName(seg.surah)?.arabic_name }}</span>
         <span class="segment-english">{{ surahName(seg.surah)?.english_name }} {{ seg.from }}<template v-if="seg.to !== seg.from">-{{ seg.to }}</template></span>
       </router-link>
-      <aya-view v-for="aya in texts[seg.surah] || []" :key="aya.aya_key" :aya="aya" :display-surah-name="false" />
+      <aya-view v-for="aya in texts[seg.surah] || []" :key="aya.aya_key" :aya="aya" :display-surah-name="false" :playlist="playlist" />
     </div>
 
     <div v-if="loading" class="loading-state"><ProgressSpinner strokeWidth="4" /></div>
@@ -48,6 +48,12 @@ const loading = ref(false);
 const notFound = ref(false);
 
 const label = computed(() => UNIT_LABELS[props.unit] || props.unit);
+// Recitation order across the segments (aya 0, the bismillah line, has no file of its own)
+const playlist = computed(() =>
+  segments.value
+    .flatMap((seg) => (texts.value[seg.surah] || []).map((a) => a.aya_key))
+    .filter((key) => Number(key.split(':')[1]) > 0)
+);
 const total = computed(() => store.structure?.[props.unit]?.length ?? 0);
 const hasPrev = computed(() => Number(props.n) > 1);
 const hasNext = computed(() => Number(props.n) < total.value);

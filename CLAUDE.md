@@ -34,6 +34,8 @@ CLI, run as `uv run quranref-cli <group> <command>`. The CLI reads the database 
 - `post-process build-search-index`: rebuild the `aya_search` table (normalized texts, pg_trgm index) that the search endpoint queries; run after any text import
 - `db import-morphology data/morphology/quran-morphology.txt`: roots, lemmas and per-word tokens from the Quranic Arabic Corpus (run after make-words; replaces existing morphology)
 - `qul import-all <folder>` (or `qul import-topics|import-themes|import-similar|import-phrases <file>`, `qul import-metadata <folder>`): topics, ayah themes, similar ayas, Mutashabihat phrases and mushaf structure (juz, hizb, rub, manzil, ruku, sajda on Aya vertices; unit tables under meta_info key `structure`; surah descriptions in the `surah_info` table) from QUL downloads in `backend/data/qul/`; each replaces its own data
+- `qul import-tafsir <file.json> --slug <id> --name <name> --language <language> [--author --license]`: one tafsir from a QUL JSON export into the `tafsir_*` tables (passages may cover several ayas); rerun with the same slug to replace it
+- `tanzil list|check|refresh [ids... | --all] [--source-dir <dir>]`: compare the bundled Tanzil texts and translations (and the graph) with tanzil.net and apply changed ayas; `refresh` also rewrites the bundled `.txt.bz2` copies, prunes orphaned Text vertices and rebuilds the search index. `data/tanzil.py` maps Tanzil ids to language and text_type
 - `db import-word-glosses <language> <file.json>`: per-word meanings onto tokens (QUL word-by-word JSON, `{"s:a:w": "meaning"}`); languages in use: english, urdu, transliteration. Files live in the gitignored `backend/data/qul/`
 
 ### Frontend (run from frontend/)
@@ -66,7 +68,7 @@ Ports are hardcoded: backend 41148 in `__main__.py`, frontend 41149 in `vite.con
 
 - Framework: FastAPI
 - Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word`, `Root`, `Lemma`, `Token`, `Topic`, `Theme`, `Phrase` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`, `HAS_TOKEN`, `HAS_LEMMA`, `HAS_ROOT`, `IS_FORM`, `HAS_TOPIC`, `CHILD_OF` (kind: parent, thematic, ontology), `RELATED_TOPIC`, `HAS_THEME`, `SIMILAR_TO` (score, coverage, match_words), `HAS_PHRASE` (ranges)
-- Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`, `collections`, `collection_items`)
+- Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`, `collections`, `collection_items`, `tafsir_resources`, `tafsir_texts`, `tafsir_entries`)
 - API: REST endpoints under `/api/v1`
 - CLI: Typer (`quranref-cli`)
 - Configuration: pydantic-settings, environment variables first, then `backend/.env`
@@ -78,6 +80,8 @@ Key files:
 - `backend/quranref/words.py`: word morphology endpoints (aya words, lemma, root, roots by letter, word morphology)
 - `backend/quranref/topics.py`, `related.py`: topics, themes, similar ayas and phrases endpoints; `ayatext.py` holds the shared aya text helpers; `commands/qul.py` the QUL importers
 - `backend/quranref/structure.py`: mushaf structure endpoints; `graph_bulk.py` merges properties into existing vertices (SQL fast path on AGE 1.8, Cypher fallback)
+- `backend/quranref/tafsir.py`: QUL tafsir JSON parser, importer and the `/tafsirs` and `/tafsir/{slug}/{aya_key}` endpoints
+- `backend/quranref/tanzil.py` and `commands/tanzil.py`: download, diff and apply Tanzil texts; `data/tanzil.py` holds the id mapping
 - `backend/quranref/morphology.py`: corpus file parser and Uthmani-to-simple alignment
 - `backend/quranref/glosses.py`: per-word meaning importer
 - `backend/quranref/textnorm.py`, `search_index.py`: search normalization and the aya_search builder
@@ -92,7 +96,7 @@ Key files:
 - `backend/quranref/db.py`: age-orm database, graph factory, SQLAlchemy engine and session
 - `backend/quranref/settings.py`: settings
 - `backend/quranref/cli.py` and `commands/`: management CLI
-- `backend/alembic/`: migrations (0001 users and meta_info, 0002 bookmarks, 0003 aya_search, 0004 surah_info, 0005 collections)
+- `backend/alembic/`: migrations (0001 users and meta_info, 0002 bookmarks, 0003 aya_search, 0004 surah_info, 0005 collections, 0006 tafsir)
 
 ### Frontend (Vue.js 3 + TypeScript)
 
@@ -104,6 +108,8 @@ Key files:
 Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts`, `type_defs.ts`, `components/`, `views/`.
 
 User data UI: `views/BookmarksView.vue` (`/bookmarks`), `views/CollectionsView.vue` (`/collections`) and `views/CollectionView.vue` (`/collection/:id`). The aya menu in `AyaView.vue` toggles collection membership; `note_refs.ts` extracts `@surah:aya` references from notes so an aya can show the notes on other ayas that mention it (backlinks).
+
+Tafsir and audio UI: `components/TafsirPanel.vue` (passages of the tafsirs chosen in the Text Settings Tafsir tab, opened per aya from `AyaView.vue`), `audio.ts` (everyayah.com reciter list and per-aya URLs), `components/AudioPlayer.vue` (fixed player bar driven by the store's `playAya`, `toggleAya`, `nextAya`; lists pass a `playlist` prop to `AyaView` for continuous play).
 
 Structure UI: `views/StructureView.vue` (`/structure`), `views/ReadUnitView.vue` (`/read/:unit/:n`, reads a juz, hizb, rub or manzil through the existing text endpoint per surah segment), `structure.ts` (segments, marker labels), markers and `components/SurahAbout.vue` on the surah page.
 
@@ -118,7 +124,7 @@ Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `Ay
 - Arabic text variants and translations are AYA_TEXT edges with `language` and `text_type` properties
 - Morphology: Aya -[HAS_TOKEN {position}]-> Token -[HAS_LEMMA]-> Lemma -[HAS_ROOT]-> Root, and Token -[IS_FORM]-> Word. Token ids are `surah:aya:position`; tokens carry the Uthmani form, stem features, all segments and a `glosses` map (language to meaning in that aya)
 - Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`, and on Token `lemma`, `root`, `text_simple` and Lemma `root`
-- `meta_info`, `users`, `bookmarks`, `collections`, `collection_items`, `aya_search`, `surah_info` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
+- `meta_info`, `users`, `bookmarks`, `collections`, `collection_items`, `aya_search`, `surah_info`, `tafsir_resources`, `tafsir_texts`, `tafsir_entries` are ordinary PostgreSQL tables managed by Alembic. A tafsir passage (`tafsir_texts`) may cover several ayas; `tafsir_entries` maps every aya to its passage. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
 
 ### Authentication
 
@@ -189,6 +195,8 @@ FRONTEND_URL=http://localhost:41149
 6. Search: `post-process build-search-index`
 7. Morphology: `db import-morphology data/morphology/quran-morphology.txt`, then optionally `db import-word-glosses`
 8. Topics and related verses: `qul import-all data/qul`
+9. Tafsir (optional, one command per tafsir): `qul import-tafsir data/qul/tafsir/<file>.json --slug ... --name ... --language ...`
+10. Later: `tanzil check --all` shows which Tanzil texts changed; `tanzil refresh --all` applies them (then commit the rewritten bundled files)
 
 ## API Usage
 
@@ -204,6 +212,7 @@ Base URL in development: http://localhost:41148/api/v1. Interactive docs at /doc
 - `GET /topics`, `GET /topic/{id}`, `GET /topic/{id}/ayas?languages=&offset=&limit=`, `GET /aya-topics/{aya_key}`, `GET /themes/{surah_number}`, `GET /topics/for-ayas?keys=`
 - `GET /related/{aya_key}?languages=`, `GET /phrase/{id}`, `GET /phrase/{id}/ayas`
 - `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
+- `GET /tafsirs`, `GET /tafsir/{slug}/{aya_key}`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET /bookmarks`, `GET|PUT|DELETE /bookmarks/reading`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
 - `GET|POST /collections`, `GET|PUT|DELETE /collections/{id}`, `POST /collections/{id}/items`, `PUT|DELETE /collections/{id}/items/{item_id}`, `DELETE /collections/{id}/items/by-aya/{aya_key}`, `PUT /collections/{id}/order`, `GET /collections/{id}/ayas?languages=&offset=&limit=`
@@ -229,5 +238,7 @@ Key files:
 Production URLs: https://quranref.info and https://quranref.info/api/v1.
 
 ## Third-party licensing
+
+Tanzil texts may be redistributed unchanged with attribution; the translations are for non-commercial use and the site asks for a link back, which the footer gives. everyayah.com recitations are streamed, not stored, and are for non-commercial use with credit and a link back (also in the footer). QUL data stays in the gitignored `backend/data/qul/`.
 
 PrimeVue 5 and PrimeIcons 8 moved to the PrimeUI license, which is not open source. Keep PrimeVue, @primevue/themes and PrimeIcons on their MIT majors (4.x, 4.x, 7.x) unless there is an explicit licensing decision.

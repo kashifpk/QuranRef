@@ -92,6 +92,12 @@ In the app: Topics (drawer or the tag icon) browses the thematic and ontology tr
 
 Word-by-word meaning files are not bundled (`backend/data/qul/` is gitignored). QUL (https://qul.tarteel.ai/resources) publishes English (translation resource 92) and Urdu (93) word-by-word translations and an English word-by-word transliteration (transliteration resource 71) as JSON, downloadable with a free account; the importer reads their `{"surah:aya:word": "text"}` format. Meanings are stored per occurrence, so a lemma's page shows which meanings it takes across the Quran. On AGE 1.8 the import is a single SQL update (about 35 seconds for the whole Quran); on AGE 1.6 it falls back to one Cypher update per word.
 
+Tafsir: `qul import-tafsir <file.json> --slug ibn-kathir-en --name "Tafsir Ibn Kathir" --language english` loads one QUL tafsir export (JSON) into the `tafsir_*` tables; a passage may cover several ayas and is shown for each of them. Readers pick the tafsirs they want in Text Settings and open a Tafsir panel under any aya.
+
+Recitation audio is streamed per aya from everyayah.com (no files are stored here): every aya has a play button, the player at the bottom continues through the surah, collection or juz being read, and the reciter is chosen in Text Settings.
+
+Texts and translations came from tanzil.net, whose files are bundled under `backend/data`. `quranref-cli tanzil check --all` downloads the current versions and lists the ayas that differ from the graph; `tanzil refresh --all` rewrites the changed bundled files, replaces the changed ayas in the graph and rebuilds the search index. Tanzil's first aya of a surah carries the bismillah as a prefix; the importer and the refresh both move it to aya 0.
+
 Search runs on the `aya_search` table, a normalized copy of every aya text with a trigram index (`pg_trgm`), so queries are diacritic, case and letter-variant insensitive. Rebuild it with `post-process build-search-index` whenever texts are imported or changed.
 
 ### Tests and quality

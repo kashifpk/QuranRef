@@ -17,6 +17,8 @@ FastAPI service exposing the Quran text, translations, word index and search, pl
 - `auth.py`, `auth_utils.py`, `dependencies.py`: Google OAuth, JWT cookies, auth dependencies
 - `bookmarks.py`: reading position and note bookmarks
 - `collections.py`: named collections of ayas with per-item notes and ordering
+- `tafsir.py`: tafsir importer (QUL JSON) and endpoints
+- `tanzil.py`, `commands/tanzil.py`, `data/tanzil.py`: refresh texts from tanzil.net
 - `words.py`: word morphology endpoints; `morphology.py` parses and aligns the corpus data; `glosses.py` imports per-word meanings
 - `topics.py`, `related.py`: topics, themes, similar ayas and recurring phrases; `commands/qul.py` imports them from QUL files
 - `textnorm.py`, `search_index.py`: search normalization and the aya_search table builder
@@ -64,4 +66,5 @@ All endpoints are under `/api/v1`. Interactive docs at `/docs`.
 - `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET|PUT|DELETE /bookmarks/reading`, `GET /bookmarks`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
+- `GET /tafsirs`, `GET /tafsir/{slug}/{aya_key}`
 - `GET|POST /collections`, `GET|PUT|DELETE /collections/{id}`, `POST /collections/{id}/items`, `PUT|DELETE /collections/{id}/items/{item_id}`, `DELETE /collections/{id}/items/by-aya/{aya_key}`, `PUT /collections/{id}/order`, `GET /collections/{id}/ayas`

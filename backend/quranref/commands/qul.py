@@ -1,4 +1,4 @@
-"""Import QUL datasets: topics, ayah themes, similar ayahs, mutashabihat phrases."""
+"""Import QUL datasets: topics, ayah themes, similar ayahs, mutashabihat phrases, tafsirs."""
 
 import json
 import sqlite3
@@ -317,3 +317,25 @@ def import_metadata(
                     rows += 1
         conn.commit()
     print(f"[green]Structure stored; {rows} surah descriptions imported.[/green]")
+
+
+@app.command(name="import-tafsir")
+def import_tafsir_cmd(
+    json_file: Path = typer.Argument(..., exists=True, help="QUL tafsir export in JSON format"),
+    slug: str = typer.Option(..., help="Short id used in URLs, e.g. ibn-kathir-en"),
+    name: str = typer.Option(..., help="Display name, e.g. 'Tafsir Ibn Kathir'"),
+    language: str = typer.Option(..., help="Language name as used for texts, e.g. english"),
+    author: str = typer.Option("", help="Author or translator"),
+    source: str = typer.Option("Quranic Universal Library", help="Where the file came from"),
+    license: str = typer.Option("", help="License or terms noted on the QUL resource page"),
+):
+    """Load one tafsir (commentary) into the tafsir tables. Replaces an earlier import
+    with the same slug."""
+    from ..db import get_session_factory
+    from ..tafsir import import_tafsir
+
+    with get_session_factory()() as session:
+        passages, ayas = import_tafsir(
+            session, json_file, slug, name, language, author, source, license
+        )
+    print(f"[green]{name}: {passages} passages covering {ayas} ayas imported as '{slug}'.[/green]")

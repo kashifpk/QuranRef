@@ -40,7 +40,7 @@
           <Button icon="pi pi-comment" text rounded size="small" v-tooltip.top="item.note ? 'Edit note' : 'Add note'" @click="startNote(item)" />
           <Button icon="pi pi-times" severity="danger" text rounded size="small" v-tooltip.top="'Remove from collection'" @click="remove(item)" />
         </div>
-        <aya-view v-if="texts[item.aya_key]" :aya="texts[item.aya_key]!" :display-surah-name="true" />
+        <aya-view v-if="texts[item.aya_key]" :aya="texts[item.aya_key]!" :display-surah-name="true" :playlist="playlist" />
         <div v-else class="item-placeholder">Loading {{ item.aya_key }}...</div>
         <div v-if="noteEditingId === item.id" class="item-note item-note-edit">
           <MarkdownNote v-model="noteText" mode="edit" :rows="3" placeholder="Why is this aya here?" />
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';
@@ -87,6 +87,11 @@ const noteEditingId = ref<number | null>(null);
 const noteText = ref('');
 
 const apiBase = () => import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+// Recitation order: the collection's ayas in collection order
+const playlist = computed(() =>
+  (detail.value?.items ?? []).map((i) => i.aya_key).filter((key) => Number(key.split(':')[1]) > 0)
+);
 
 async function load() {
   detail.value = null;

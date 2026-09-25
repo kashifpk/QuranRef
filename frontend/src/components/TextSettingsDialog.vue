@@ -12,6 +12,8 @@
         <Tab value="0">Arabic Style</Tab>
         <Tab value="1">Translations</Tab>
         <Tab value="2">Word by Word</Tab>
+        <Tab value="3">Tafsir</Tab>
+        <Tab value="4">Audio</Tab>
       </TabList>
       <TabPanels>
         <!-- Arabic Text Style Tab -->
@@ -165,6 +167,65 @@
             </p>
           </div>
         </TabPanel>
+
+        <!-- Tafsir Tab -->
+        <TabPanel value="3">
+          <div class="wbw-section">
+            <p class="section-description">
+              Choose the commentaries to show when you open the Tafsir panel under an aya.
+            </p>
+            <p v-if="store.tafsirsLoading && store.tafsirs.length === 0" class="section-description">
+              Loading...
+            </p>
+            <p v-else-if="store.tafsirs.length === 0" class="section-description">
+              No tafsir has been imported yet.
+            </p>
+            <div v-for="t in store.tafsirs" :key="t.slug" class="wbw-option">
+              <Checkbox
+                :modelValue="store.selectedTafsirs.includes(t.slug)"
+                :binary="true"
+                :inputId="'tafsir-' + t.slug"
+                @update:modelValue="store.toggleTafsir(t.slug, $event)"
+              />
+              <label :for="'tafsir-' + t.slug">
+                {{ t.name }}
+                <span class="option-meta">
+                  ({{ formatLanguageName(t.language) }}<template v-if="t.author">, {{ t.author }}</template>)
+                </span>
+              </label>
+            </div>
+          </div>
+        </TabPanel>
+
+        <!-- Audio Tab -->
+        <TabPanel value="4">
+          <div class="wbw-section">
+            <p class="section-description">
+              Every aya has a play button. Pick the reciter here; the player at the bottom of
+              the page continues to the next aya unless you turn that off.
+            </p>
+            <div class="wbw-option">
+              <label for="reciter-select">Reciter</label>
+              <Select
+                v-model="store.reciter"
+                :options="RECITERS"
+                optionLabel="name"
+                optionValue="id"
+                inputId="reciter-select"
+                class="reciter-select"
+              />
+            </div>
+            <div class="wbw-option">
+              <ToggleSwitch v-model="store.audioContinuous" inputId="audio-continuous-setting" />
+              <label for="audio-continuous-setting">Continue to the next aya automatically</label>
+            </div>
+            <p class="section-description">
+              Recitations are streamed from
+              <a href="https://everyayah.com/" target="_blank" rel="noopener">everyayah.com</a>,
+              which offers them for non-commercial use.
+            </p>
+          </div>
+        </TabPanel>
       </TabPanels>
     </Tabs>
 
@@ -192,6 +253,7 @@ import Badge from 'primevue/badge';
 import Chip from 'primevue/chip';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
+import { RECITERS } from '../audio';
 
 const store = useStore();
 
@@ -378,6 +440,7 @@ async function loadTextTypes() {
 watch(visible, async (newValue) => {
   if (newValue) {
     selectedStyle.value = store.arabicTextType;
+    store.loadTafsirs();
 
     if (Object.keys(textTypesData.value).length === 0) {
       await loadTextTypes();
@@ -637,6 +700,15 @@ onMounted(async () => {
 
 .gloss-select {
   min-width: 12rem;
+}
+
+.reciter-select {
+  min-width: 18rem;
+}
+
+.option-meta {
+  color: var(--p-text-muted-color, #999);
+  font-size: 0.85em;
 }
 
 </style>

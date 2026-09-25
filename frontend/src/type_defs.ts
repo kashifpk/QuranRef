@@ -233,3 +233,23 @@ export interface SurahInfoText {
     text: string;
     short_text: string;
 }
+
+export interface TafsirResource {
+    slug: string;
+    name: string;
+    language: string;
+    author: string;
+    source: string;
+    license: string;
+}
+
+export interface TafsirPassage {
+    slug: string;
+    name: string;
+    language: string;
+    aya_key: string;
+    from_key: string;
+    to_key: string;
+    aya_keys: string[];
+    text: string;
+}
