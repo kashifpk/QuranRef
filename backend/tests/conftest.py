@@ -173,6 +173,18 @@ def _seed_test_data(g, db):
         ("1:3", 1, "ٱلرَّحْمَٰنِ", "الرحمن", "رَحْمٰن", "The Most Gracious"),
         ("1:3", 2, "ٱلرَّحِيمِ", "الرحيم", "رَحِيم", "the Especially Merciful"),
     ]
+    # 2:1 (الم) is tagged as initials in the corpus: no root, no lemma
+    initials = Token(
+        id="2:1:1",
+        surah_number=2,
+        aya_number=1,
+        position=1,
+        text="الٓمٓ",
+        text_simple="الم",
+        tag="P",
+        features="INL",
+        segments=[{"form": "الٓمٓ", "tag": "P", "features": "INL"}],
+    )
     tokens = []
     for aya_key, position, text, simple, lemma, gloss in token_specs:
         surah, aya_num = aya_key.split(":")
@@ -192,8 +204,10 @@ def _seed_test_data(g, db):
                 glosses={"english": gloss},
             )
         )
-    g.bulk_add(tokens)
+    g.bulk_add(tokens + [initials])
     has_token, has_lemma, is_form = [], [], []
+    has_token.append((aya_map["2:1"], HasToken(position=1), initials))
+    is_form.append((initials, IsForm(), word_objects["الم"]))
     for token, (aya_key, position, _t, simple, lemma, _g) in zip(tokens, token_specs, strict=True):
         has_token.append((aya_map[aya_key], HasToken(position=position), token))
         has_lemma.append((token, HasLemma(), lemmas[lemma]))

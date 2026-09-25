@@ -21,6 +21,15 @@ class TestAyaWords:
         assert first["glosses"] == {"english": "In (the) name"}
         assert first["segments"][0]["tag"] == "N"
 
+    def test_token_without_root_or_lemma(self, client):
+        resp = client.get(url("aya-words/2:1"))
+        assert resp.status_code == 200
+        [token] = resp.json()
+        assert token["text"] == "الٓمٓ"
+        assert token["root"] is None
+        assert token["lemma"] is None
+        assert token["glosses"] == {}
+
     def test_unknown_aya_is_empty(self, client):
         resp = client.get(url("aya-words/9:9"))
         assert resp.status_code == 200
@@ -75,6 +84,11 @@ class TestWordMorphology:
         resp = client.get(url("word-morphology/الرحيم"))
         assert resp.status_code == 200
         assert resp.json() == [{"lemma": "رَحِيم", "root": "رحم", "pos": "N", "count": 2}]
+
+    def test_word_form_without_lemma(self, client):
+        resp = client.get(url("word-morphology/الم"))
+        assert resp.status_code == 200
+        assert resp.json() == [{"lemma": None, "root": None, "pos": None, "count": 1}]
 
     def test_word_without_morphology(self, client):
         resp = client.get(url("word-morphology/nothing"))

@@ -31,6 +31,18 @@ _TOKEN_COLUMNS = [
 ]
 
 
+def _scalar(value):
+    """age-orm returns {} for a null agtype scalar; map that to None."""
+    return None if value == {} else value
+
+
+def _clean(row: dict, fields: tuple[str, ...]) -> dict:
+    return {k: (_scalar(v) if k in fields else v) for k, v in row.items()}
+
+
+_TOKEN_SCALARS = ("text_simple", "tag", "root", "lemma", "features")
+
+
 def _token_key(aya_key: str, position: int) -> tuple[int, int, int]:
     surah, aya = aya_key.split(":", 1)
     return int(surah), int(aya), position
@@ -47,7 +59,7 @@ def get_aya_words(aya_key: str, g: Graph = Depends(graph)) -> list[TokenSchema]:
         aya=aya_key,
     )
     rows.sort(key=lambda r: r["position"])
-    return [TokenSchema(**r) for r in rows]
+    return [TokenSchema(**_clean(r, _TOKEN_SCALARS)) for r in rows]
 
 
 @router.get("/lemma/{lemma}")
@@ -75,6 +87,7 @@ def get_lemma(lemma: str, text_type: str = "simple", g: Graph = Depends(graph)) 
     if not rows:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lemma not found")
 
+    rows = [_clean(r, ("pos", "root", "text_simple", "aya_text")) for r in rows]
     occurrences = []
     gloss_counts: dict[str, Counter] = defaultdict(Counter)
     for r in rows:
@@ -122,6 +135,7 @@ def get_root(root: str, g: Graph = Depends(graph)) -> RootSchema:
     )
     if not rows:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Root not found")
+    rows = [_clean(r, ("lemma", "pos")) for r in rows]
     lemmas = [RootLemmaSchema(lemma=r["lemma"], pos=r["pos"], count=r["count"]) for r in rows]
     lemmas.sort(key=lambda x: (-x.count, x.lemma))
     return RootSchema(
@@ -156,6 +170,7 @@ def get_word_morphology(word: str, g: Graph = Depends(graph)) -> list[WordMorpho
         columns=["lemma", "root", "pos", "count"],
         word=word,
     )
+    rows = [_clean(r, ("lemma", "root", "pos")) for r in rows]
     result = [
         WordMorphologySchema(lemma=r["lemma"], root=r["root"], pos=r["pos"], count=r["count"])
         for r in rows
