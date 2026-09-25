@@ -26,6 +26,14 @@ def graph() -> Graph:
     return db.graph(GRAPH_NAME)
 
 
+def close_db() -> None:
+    """Close the connection pool (the CLI calls this so worker threads do not linger)."""
+    global _db
+    if _db is not None:
+        _db._pool.close()
+        _db = None
+
+
 def raw_connection():
     db = get_db()
     return db._pool.connection()
