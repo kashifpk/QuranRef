@@ -207,4 +207,22 @@ const getSurahText = async () => {
   direction: rtl;
   text-align: right;
 }
+.structure-marker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.25rem 0 -0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-left: 3px solid var(--p-primary-color, #4caf50);
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color, #666);
+  letter-spacing: 0.03em;
+}
+
+.marker-sajda {
+  color: var(--p-primary-color, #4caf50);
+  font-weight: bold;
+}
+
 </style>
