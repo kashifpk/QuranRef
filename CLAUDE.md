@@ -23,7 +23,7 @@ uv run ruff format quranref tests
 uv run bandit -q -r quranref
 ```
 
-CLI, run as `uv run quranref-cli <group> <command>`:
+CLI, run as `uv run quranref-cli <group> <command>`. The CLI reads the database settings from the environment, so in a shell without direnv load them first (`set -a; source ../.env.dev; set +a`), otherwise it connects to port 5432:
 
 - `db init`: create graph, labels, indexes, then run Alembic migrations
 - `db migrate`: Alembic upgrade head only
@@ -66,7 +66,7 @@ Ports are hardcoded: backend 41148 in `__main__.py`, frontend 41149 in `vite.con
 
 - Framework: FastAPI
 - Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word`, `Root`, `Lemma`, `Token`, `Topic`, `Theme`, `Phrase` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`, `HAS_TOKEN`, `HAS_LEMMA`, `HAS_ROOT`, `IS_FORM`, `HAS_TOPIC`, `CHILD_OF` (kind: parent, thematic, ontology), `RELATED_TOPIC`, `HAS_THEME`, `SIMILAR_TO` (score, coverage, match_words), `HAS_PHRASE` (ranges)
-- Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`)
+- Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`, `collections`, `collection_items`)
 - API: REST endpoints under `/api/v1`
 - CLI: Typer (`quranref-cli`)
 - Configuration: pydantic-settings, environment variables first, then `backend/.env`
@@ -85,13 +85,14 @@ Key files:
 - `backend/quranref/auth_utils.py`: JWT create and verify helpers
 - `backend/quranref/dependencies.py`: auth dependencies for protected endpoints
 - `backend/quranref/bookmarks.py`: bookmarks endpoints
+- `backend/quranref/collections.py`: user collections (curated lists of ayas with per-item notes)
 - `backend/quranref/models.py`: age-orm graph models
 - `backend/quranref/sql_models.py`: SQLAlchemy models
 - `backend/quranref/schemas.py`: Pydantic request and response models
 - `backend/quranref/db.py`: age-orm database, graph factory, SQLAlchemy engine and session
 - `backend/quranref/settings.py`: settings
 - `backend/quranref/cli.py` and `commands/`: management CLI
-- `backend/alembic/`: migrations (0001 users and meta_info, 0002 bookmarks)
+- `backend/alembic/`: migrations (0001 users and meta_info, 0002 bookmarks, 0003 aya_search, 0004 surah_info, 0005 collections)
 
 ### Frontend (Vue.js 3 + TypeScript)
 
@@ -101,6 +102,8 @@ Key files:
 - Dark and light mode, responsive layout
 
 Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts`, `type_defs.ts`, `components/`, `views/`.
+
+User data UI: `views/BookmarksView.vue` (`/bookmarks`), `views/CollectionsView.vue` (`/collections`) and `views/CollectionView.vue` (`/collection/:id`). The aya menu in `AyaView.vue` toggles collection membership; `note_refs.ts` extracts `@surah:aya` references from notes so an aya can show the notes on other ayas that mention it (backlinks).
 
 Structure UI: `views/StructureView.vue` (`/structure`), `views/ReadUnitView.vue` (`/read/:unit/:n`, reads a juz, hizb, rub or manzil through the existing text endpoint per surah segment), `structure.ts` (segments, marker labels), markers and `components/SurahAbout.vue` on the surah page.
 
@@ -115,13 +118,13 @@ Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `Ay
 - Arabic text variants and translations are AYA_TEXT edges with `language` and `text_type` properties
 - Morphology: Aya -[HAS_TOKEN {position}]-> Token -[HAS_LEMMA]-> Lemma -[HAS_ROOT]-> Root, and Token -[IS_FORM]-> Word. Token ids are `surah:aya:position`; tokens carry the Uthmani form, stem features, all segments and a `glosses` map (language to meaning in that aya)
 - Unique indexes on vertex `id` fields; indexes on `word`, `count`, `surah_key`, and on Token `lemma`, `root`, `text_simple` and Lemma `root`
-- `meta_info`, `users`, `bookmarks`, `aya_search`, `surah_info` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
+- `meta_info`, `users`, `bookmarks`, `collections`, `collection_items`, `aya_search`, `surah_info` are ordinary PostgreSQL tables managed by Alembic. `aya_search` holds every aya text plus a normalized copy (`textnorm.py`) with a `pg_trgm` GIN index; the search endpoint queries it instead of the graph
 
 ### Authentication
 
 - Google OAuth 2.0 authorization code flow via authlib
 - JWT in an httpOnly cookie (`access_token`), 30 day expiry by default
-- All Quran endpoints are public. `get_current_user` (optional) and `require_current_user` (401) in `dependencies.py` protect user-specific endpoints such as bookmarks
+- All Quran endpoints are public. `get_current_user` (optional) and `require_current_user` (401) in `dependencies.py` protect user-specific endpoints such as bookmarks and collections
 - Endpoints: `/api/v1/auth/login`, `callback`, `me`, `logout`
 - Production credentials are deployed by the Ansible template `env.production.j2` from the vault
 
@@ -203,6 +206,7 @@ Base URL in development: http://localhost:41148/api/v1. Interactive docs at /doc
 - `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET /bookmarks`, `GET|PUT|DELETE /bookmarks/reading`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
+- `GET|POST /collections`, `GET|PUT|DELETE /collections/{id}`, `POST /collections/{id}/items`, `PUT|DELETE /collections/{id}/items/{item_id}`, `DELETE /collections/{id}/items/by-aya/{aya_key}`, `PUT /collections/{id}/order`, `GET /collections/{id}/ayas?languages=&offset=&limit=`
 
 ## Deployment
 

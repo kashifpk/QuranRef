@@ -40,6 +40,33 @@ export interface BookmarksData {
     notes: Bookmark[];
 }
 
+export interface CollectionSummary {
+    id: number;
+    name: string;
+    description: string;
+    item_count: number;
+    aya_keys: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CollectionItem {
+    id: number;
+    aya_key: string;
+    note: string;
+    position: number;
+    created_at: string;
+}
+
+export interface CollectionDetail {
+    id: number;
+    name: string;
+    description: string;
+    created_at: string;
+    updated_at: string;
+    items: CollectionItem[];
+}
+
 export interface TokenSegment {
     form: string;
     tag: string;

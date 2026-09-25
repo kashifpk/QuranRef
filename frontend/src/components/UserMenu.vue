@@ -52,6 +52,11 @@ const menuItems = computed(() => [
         command: () => router.push('/bookmarks'),
       },
       {
+        label: 'My Collections',
+        icon: 'pi pi-folder',
+        command: () => router.push('/collections'),
+      },
+      {
         label: 'Sign Out',
         icon: 'pi pi-sign-out',
         command: () => store.logout(),

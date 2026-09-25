@@ -14,6 +14,18 @@
           v-tooltip.top="ayaNotes.length + ' note' + (ayaNotes.length > 1 ? 's' : '')"
           @click="showViewNotesDialog = true"
         ></i>
+        <i
+          v-if="ayaBacklinks.length > 0"
+          class="pi pi-link backlink-indicator note-indicator-clickable"
+          v-tooltip.top="'Mentioned in ' + ayaBacklinks.length + ' note' + (ayaBacklinks.length > 1 ? 's' : '')"
+          @click="showViewNotesDialog = true"
+        ></i>
+        <i
+          v-if="ayaCollections.length > 0"
+          class="pi pi-folder collection-indicator note-indicator-clickable"
+          v-tooltip.top="'In: ' + ayaCollections.map((c) => c.name).join(', ')"
+          @click="showCollectionDialog = true"
+        ></i>
       </div>
 
       <!-- Actions button (top-right, hover only) -->
@@ -42,8 +54,48 @@
               <i class="pi pi-file-edit"></i>
               <span>Add note bookmark</span>
             </button>
+            <button
+              class="popover-item"
+              @click="showCollectionDialog = true; popoverRef?.hide()"
+            >
+              <i class="pi pi-folder"></i>
+              <span>Add to collection</span>
+            </button>
           </div>
         </Popover>
+
+        <!-- Collections Dialog -->
+        <Dialog
+          v-model:visible="showCollectionDialog"
+          header="Collections"
+          :modal="true"
+          :style="{ width: '440px', maxWidth: '95vw' }"
+        >
+          <div class="note-dialog-content">
+            <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
+            <div v-if="store.collections.length > 0" class="collection-options">
+              <label v-for="c in store.collections" :key="c.id" class="collection-option">
+                <Checkbox
+                  :modelValue="c.aya_keys.includes(props.aya.aya_key)"
+                  :binary="true"
+                  @update:modelValue="toggleCollection(c, $event)"
+                />
+                <span class="collection-option-name">{{ c.name }}</span>
+                <span class="collection-option-count en">{{ c.item_count }}</span>
+              </label>
+            </div>
+            <p v-else class="note-aya-ref">No collections yet. Create one below.</p>
+            <div class="new-collection">
+              <InputText
+                v-model="newCollectionName"
+                placeholder="New collection name"
+                class="new-collection-input"
+                @keyup.enter="createAndAdd"
+              />
+              <Button label="Create and add" size="small" :disabled="!newCollectionName.trim()" @click="createAndAdd" />
+            </div>
+          </div>
+        </Dialog>
       </div>
 
       <!-- Add Note Dialog -->
@@ -78,6 +130,7 @@
         <div class="note-dialog-content">
           <p class="note-aya-ref">{{ props.aya.aya_key }} — {{ surahInfo?.english_name }}</p>
           <div class="view-notes-list">
+            <p v-if="ayaNotes.length === 0" class="note-aya-ref">No notes on this aya.</p>
             <div
               v-for="note in ayaNotes"
               :key="note.id"
@@ -106,6 +159,19 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          <div v-if="ayaBacklinks.length > 0" class="backlinks">
+            <h4 class="backlinks-title"><i class="pi pi-link"></i> Mentioned in notes on other ayas</h4>
+            <div v-for="note in ayaBacklinks" :key="'back-' + note.id" class="view-note-item">
+              <router-link
+                :to="{ name: 'surah_view', params: { surah_number: note.aya_key.split(':')[0] }, query: { aya: note.aya_key.split(':')[1] } }"
+                class="backlink-origin en"
+                @click="showViewNotesDialog = false"
+              >
+                Note on {{ note.aya_key }}
+              </router-link>
+              <MarkdownNote :modelValue="note.note" mode="display" />
             </div>
           </div>
         </div>
@@ -180,11 +246,13 @@ import Tag from 'primevue/tag';
 import Button from 'primevue/button';
 import Popover from 'primevue/popover';
 import Dialog from 'primevue/dialog';
+import Checkbox from 'primevue/checkbox';
+import InputText from 'primevue/inputtext';
 import MarkdownNote from './MarkdownNote.vue';
 import WordByWordAya from './WordByWordAya.vue';
 import WordDetails from './WordDetails.vue';
 import AyaStudyPanel from './AyaStudyPanel.vue';
-import type { SurahInfo, AyaInfo, Bookmark, TokenInfo } from '../type_defs';
+import type { SurahInfo, AyaInfo, Bookmark, TokenInfo, CollectionSummary } from '../type_defs';
 import { useStore } from '../store';
 
 interface AyaViewProps {
@@ -204,7 +272,29 @@ const editingNoteId = ref<number | null>(null);
 const editNoteText = ref('');
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
+const ayaBacklinks = computed(() => store.getBacklinksForAya(props.aya.aya_key));
 const showStudy = ref(false);
+
+// Collections this aya belongs to, and the dialog that toggles membership
+const showCollectionDialog = ref(false);
+const newCollectionName = ref('');
+const ayaCollections = computed(() => store.collectionsForAya(props.aya.aya_key));
+
+async function toggleCollection(collection: CollectionSummary, selected: boolean) {
+  if (selected) {
+    await store.addToCollection(collection.id, props.aya.aya_key);
+  } else {
+    await store.removeAyaFromCollection(collection.id, props.aya.aya_key);
+  }
+}
+
+async function createAndAdd() {
+  const name = newCollectionName.value.trim();
+  if (!name) return;
+  const created = await store.createCollection(name);
+  if (created) await store.addToCollection(created.id, props.aya.aya_key);
+  newCollectionName.value = '';
+}
 
 // Word-by-word mode: tokens are fetched when the mode is on (and cached in the store)
 const tokens = ref<TokenInfo[]>([]);
@@ -265,7 +355,7 @@ async function saveNoteEdit(noteId: number) {
 
 async function handleDeleteNote(noteId: number) {
   await store.deleteNoteBookmark(noteId);
-  if (ayaNotes.value.length === 0) {
+  if (ayaNotes.value.length === 0 && ayaBacklinks.value.length === 0) {
     showViewNotesDialog.value = false;
   }
 }
@@ -437,6 +527,84 @@ const highlightedArabicText = computed(() => {
 
 .note-indicator-clickable {
   cursor: pointer;
+}
+
+.backlink-indicator {
+  color: #2196F3;
+  font-size: 1rem;
+}
+
+.collection-indicator {
+  color: #9C27B0;
+  font-size: 1rem;
+}
+
+/* Collections dialog */
+.collection-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.collection-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--p-content-border-radius);
+  cursor: pointer;
+}
+
+.collection-option:hover {
+  background: var(--p-content-hover-background);
+}
+
+.collection-option-name {
+  flex: 1;
+}
+
+.collection-option-count {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.new-collection {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--p-content-border-color, #eee);
+}
+
+.new-collection-input {
+  flex: 1;
+}
+
+/* Backlinks inside the notes dialog */
+.backlinks {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--p-content-border-color, #eee);
+}
+
+.backlinks-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
+.backlink-origin {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--p-primary-color);
+  text-decoration: none;
 }
 
 .note-indicator-clickable:hover {

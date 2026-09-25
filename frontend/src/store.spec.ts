@@ -131,3 +131,61 @@ describe('word by word', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('note backlinks and collections', () => {
+  const note = (id: number, aya_key: string, text: string) => ({
+    id,
+    bookmark_type: 'note' as const,
+    aya_key,
+    note: text,
+    created_at: '2026-09-25T00:00:00Z',
+    updated_at: '2026-09-25T00:00:00Z',
+  })
+
+  it('finds notes on other ayas that mention this aya', () => {
+    const store = useStore()
+    store.noteBookmarks = [
+      note(1, '1:1', 'Compare with @2:255 and @1:3'),
+      note(2, '2:255', 'The throne verse itself mentions @2:255'),
+      note(3, '3:3', 'Nothing here'),
+    ]
+    expect(store.getBacklinksForAya('2:255').map((n) => n.id)).toEqual([1])
+    expect(store.getBacklinksForAya('1:3').map((n) => n.id)).toEqual([1])
+    expect(store.getBacklinksForAya('3:3')).toEqual([])
+  })
+
+  it('tracks collection membership after adding and removing an aya', async () => {
+    const store = useStore()
+    store.currentUser = { id: 1, email: 'a@b.c', name: 'A', picture_url: '' }
+    const calls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        calls.push(`${init?.method ?? 'GET'} ${url}`)
+        if (url.endsWith('/collections') && !init?.method) {
+          return jsonResponse([
+            { id: 7, name: 'Mercy', description: '', item_count: 1, aya_keys: ['1:1'], created_at: '', updated_at: '' },
+          ])
+        }
+        if (url.endsWith('/collections/7/items')) {
+          return jsonResponse({ id: 99, aya_key: '1:3', note: '', position: 1, created_at: '' }, 201)
+        }
+        return new Response(null, { status: 204 })
+      })
+    )
+    await store.loadCollections()
+    expect(store.collectionsForAya('1:1').map((c) => c.name)).toEqual(['Mercy'])
+    expect(store.collectionsForAya('1:3')).toEqual([])
+
+    await store.addToCollection(7, '1:3')
+    expect(store.collectionsForAya('1:3').map((c) => c.id)).toEqual([7])
+    expect(store.collections[0]!.item_count).toBe(2)
+
+    await store.removeAyaFromCollection(7, '1:1')
+    expect(store.collectionsForAya('1:1')).toEqual([])
+    expect(store.collections[0]!.aya_keys).toEqual(['1:3'])
+    expect(calls).toContain('DELETE /api/v1/collections/7/items/by-aya/1:1')
+    vi.unstubAllGlobals()
+  })
+})

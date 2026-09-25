@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AyaResultSchema(BaseModel):
@@ -65,6 +65,76 @@ class NoteBookmarkRequest(BaseModel):
 
 class NoteBookmarkUpdateRequest(BaseModel):
     note: str
+
+
+# --- Collections (user curated lists of ayas) ---
+
+
+class CollectionRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str = ""
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be blank")
+        return v
+
+
+class CollectionUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+
+
+class CollectionItemRequest(BaseModel):
+    aya_key: str
+    note: str = ""
+
+    @field_validator("aya_key")
+    @classmethod
+    def check_aya_key(cls, v: str) -> str:
+        return _validate_aya_key(v)
+
+
+class CollectionItemUpdateRequest(BaseModel):
+    note: str
+
+
+class CollectionOrderRequest(BaseModel):
+    item_ids: list[int]
+
+
+class CollectionItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    aya_key: str
+    note: str
+    position: int
+    created_at: datetime
+
+
+class CollectionSummary(BaseModel):
+    id: int
+    name: str
+    description: str
+    item_count: int
+    aya_keys: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class CollectionDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: str
+    created_at: datetime
+    updated_at: datetime
+    items: list[CollectionItemResponse]
 
 
 # --- Word morphology schemas ---

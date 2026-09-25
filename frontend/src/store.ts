@@ -2,7 +2,8 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary, Structure } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary, Structure, CollectionSummary } from "./type_defs"
+import { extractAyaRefs } from "./note_refs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -142,6 +143,7 @@ export const useStore = defineStore('quranref_store', () => {
       currentUser.value = null;
       readingBookmark.value = null;
       noteBookmarks.value = [];
+      collections.value = [];
     } catch (error) {
       console.error('Failed to logout:', error);
     }
@@ -240,6 +242,103 @@ export const useStore = defineStore('quranref_store', () => {
 
   function getNotesForAya(ayaKey: string): Bookmark[] {
     return noteBookmarks.value.filter(b => b.aya_key === ayaKey);
+  }
+
+  // Notes on other ayas whose text mentions this aya as @surah:aya
+  function getBacklinksForAya(ayaKey: string): Bookmark[] {
+    return noteBookmarks.value.filter(
+      b => b.aya_key !== ayaKey && extractAyaRefs(b.note).includes(ayaKey)
+    );
+  }
+
+  // --- Collections (curated lists of ayas) ---
+  const collections = ref<CollectionSummary[]>([]);
+  const collectionsLoading = ref(false);
+  const apiBase = () => import.meta.env.VITE_API_BASE_URL || '/api/v1';
+  const jsonHeaders = { 'Content-Type': 'application/json' };
+
+  async function loadCollections() {
+    if (!currentUser.value) return;
+    collectionsLoading.value = true;
+    try {
+      const resp = await fetch(apiBase() + '/collections', { credentials: 'include' });
+      if (resp.ok) collections.value = await resp.json();
+    } catch (error) {
+      console.error('Failed to load collections:', error);
+    } finally {
+      collectionsLoading.value = false;
+    }
+  }
+
+  async function createCollection(name: string, description = ''): Promise<CollectionSummary | null> {
+    const resp = await fetch(apiBase() + '/collections', {
+      method: 'POST',
+      headers: jsonHeaders,
+      credentials: 'include',
+      body: JSON.stringify({ name, description }),
+    });
+    if (!resp.ok) return null;
+    const created: CollectionSummary = await resp.json();
+    collections.value.unshift(created);
+    return created;
+  }
+
+  async function updateCollection(
+    id: number,
+    patch: { name?: string; description?: string }
+  ): Promise<CollectionSummary | null> {
+    const resp = await fetch(apiBase() + `/collections/${id}`, {
+      method: 'PUT',
+      headers: jsonHeaders,
+      credentials: 'include',
+      body: JSON.stringify(patch),
+    });
+    if (!resp.ok) return null;
+    const updated: CollectionSummary = await resp.json();
+    const idx = collections.value.findIndex(c => c.id === id);
+    if (idx !== -1) collections.value[idx] = updated;
+    return updated;
+  }
+
+  async function deleteCollection(id: number): Promise<boolean> {
+    const resp = await fetch(apiBase() + `/collections/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (resp.ok) collections.value = collections.value.filter(c => c.id !== id);
+    return resp.ok;
+  }
+
+  async function addToCollection(id: number, ayaKey: string, note = ''): Promise<boolean> {
+    const resp = await fetch(apiBase() + `/collections/${id}/items`, {
+      method: 'POST',
+      headers: jsonHeaders,
+      credentials: 'include',
+      body: JSON.stringify({ aya_key: ayaKey, note }),
+    });
+    const summary = collections.value.find(c => c.id === id);
+    if (resp.ok && summary && !summary.aya_keys.includes(ayaKey)) {
+      summary.aya_keys.push(ayaKey);
+      summary.item_count += 1;
+    }
+    return resp.ok;
+  }
+
+  async function removeAyaFromCollection(id: number, ayaKey: string): Promise<boolean> {
+    const resp = await fetch(apiBase() + `/collections/${id}/items/by-aya/${ayaKey}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const summary = collections.value.find(c => c.id === id);
+    if (resp.ok && summary) {
+      summary.aya_keys = summary.aya_keys.filter(k => k !== ayaKey);
+      summary.item_count = summary.aya_keys.length;
+    }
+    return resp.ok;
+  }
+
+  function collectionsForAya(ayaKey: string): CollectionSummary[] {
+    return collections.value.filter(c => c.aya_keys.includes(ayaKey));
   }
 
   // Loading state for surah info
@@ -359,6 +458,18 @@ export const useStore = defineStore('quranref_store', () => {
     deleteNoteBookmark,
     isReadingBookmark,
     getNotesForAya,
+    getBacklinksForAya,
+
+    // Collections
+    collections,
+    collectionsLoading,
+    loadCollections,
+    createCollection,
+    updateCollection,
+    deleteCollection,
+    addToCollection,
+    removeAyaFromCollection,
+    collectionsForAya,
 
     // Actions
     loadSurahInfo,

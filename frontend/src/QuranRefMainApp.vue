@@ -120,6 +120,16 @@
             <span>My Bookmarks</span>
           </router-link>
 
+          <router-link
+            v-if="store.currentUser"
+            to="/collections"
+            class="nav-link"
+            @click="drawerVisible = false"
+          >
+            <i class="pi pi-folder"></i>
+            <span>My Collections</span>
+          </router-link>
+
           <Divider />
 
           <a class="nav-link" @click="openSettings">
@@ -176,6 +186,7 @@ onMounted(async () => {
   store.initializeTheme();
   await store.checkAuth();
   store.loadBookmarks();
+  store.loadCollections();
 });
 
 const doSearch = () => {

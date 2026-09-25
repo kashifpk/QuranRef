@@ -20,7 +20,8 @@ Always use bun for this project, not npm, npx or node.
 - `src/main.ts`: creates the app, installs PrimeVue, the tooltip directive, the router and Pinia
 - `src/QuranRefMainApp.vue`: application shell
 - `src/router.ts`: routes
-- `src/store.ts`: Pinia store (surah info, text types, selected translations, dark mode, auth, bookmarks)
+- `src/store.ts`: Pinia store (surah info, text types, selected translations, dark mode, auth, bookmarks, collections)
+- `src/note_refs.ts`: `@surah:aya` references in notes, used for backlinks (notes on other ayas that mention an aya)
 - `src/type_defs.ts`: shared TypeScript interfaces
 - `src/plugins/primevue.ts`: PrimeVue theme preset
 - `src/components/`, `src/views/`: components and routed views

@@ -11,6 +11,7 @@ from . import API_BASE
 from .api import router as api_router
 from .auth import router as auth_router
 from .bookmarks import router as bookmarks_router
+from .collections import router as collections_router
 from .related import router as related_router
 from .settings import get_settings
 from .structure import router as structure_router
@@ -42,6 +43,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret_key)
 app.include_router(api_router, prefix=API_BASE)
 app.include_router(auth_router, prefix=API_BASE)
 app.include_router(bookmarks_router, prefix=API_BASE)
+app.include_router(collections_router, prefix=API_BASE)
 app.include_router(words_router, prefix=API_BASE)
 app.include_router(topics_router, prefix=API_BASE)
 app.include_router(related_router, prefix=API_BASE)

@@ -1,12 +1,12 @@
 # QuranRef Backend
 
-FastAPI service exposing the Quran text, translations, word index and search, plus Google OAuth login and per-user bookmarks.
+FastAPI service exposing the Quran text, translations, word index and search, plus Google OAuth login, per-user bookmarks and collections.
 
 ## Stack
 
 - FastAPI with Pydantic settings
 - Apache AGE (PostgreSQL graph extension) through age-orm. Graph `quran_graph` with vertex labels Surah, Aya, Text, Word and edge labels HAS_AYA, HAS_WORD, AYA_TEXT
-- SQLAlchemy 2 and Alembic for the relational tables (users, meta_info, bookmarks)
+- SQLAlchemy 2 and Alembic for the relational tables (users, meta_info, bookmarks, collections)
 - Typer CLI (`quranref-cli`) for database setup and data import
 - uv for dependencies, ruff for lint and format, pytest for tests
 
@@ -16,6 +16,7 @@ FastAPI service exposing the Quran text, translations, word index and search, pl
 - `api.py`: Quran text, search and word endpoints
 - `auth.py`, `auth_utils.py`, `dependencies.py`: Google OAuth, JWT cookies, auth dependencies
 - `bookmarks.py`: reading position and note bookmarks
+- `collections.py`: named collections of ayas with per-item notes and ordering
 - `words.py`: word morphology endpoints; `morphology.py` parses and aligns the corpus data; `glosses.py` imports per-word meanings
 - `topics.py`, `related.py`: topics, themes, similar ayas and recurring phrases; `commands/qul.py` imports them from QUL files
 - `textnorm.py`, `search_index.py`: search normalization and the aya_search table builder
@@ -63,3 +64,4 @@ All endpoints are under `/api/v1`. Interactive docs at `/docs`.
 - `GET /structure`, `GET /structure/aya/{aya_key}`, `GET /structure/surah/{n}`, `GET /surah-info/{n}?language=`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET|PUT|DELETE /bookmarks/reading`, `GET /bookmarks`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
+- `GET|POST /collections`, `GET|PUT|DELETE /collections/{id}`, `POST /collections/{id}/items`, `PUT|DELETE /collections/{id}/items/{item_id}`, `DELETE /collections/{id}/items/by-aya/{aya_key}`, `PUT /collections/{id}/order`, `GET /collections/{id}/ayas`

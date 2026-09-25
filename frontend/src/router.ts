@@ -15,6 +15,8 @@ import TopicView from "./views/TopicView.vue"
 import PhraseView from "./views/PhraseView.vue"
 import StructureView from "./views/StructureView.vue"
 import ReadUnitView from "./views/ReadUnitView.vue"
+import CollectionsView from "./views/CollectionsView.vue"
+import CollectionView from "./views/CollectionView.vue"
 
 const routes = [
   { name: 'home', path: "/", component: HomeView },
@@ -38,6 +40,8 @@ const routes = [
   { name: 'phrase_view', path: '/phrase/:id', component: PhraseView, props: true },
   { name: 'structure', path: '/structure', component: StructureView },
   { name: 'read_unit', path: '/read/:unit/:n', component: ReadUnitView, props: true },
+  { name: 'collections', path: '/collections', component: CollectionsView },
+  { name: 'collection_view', path: '/collection/:id', component: CollectionView, props: (route: { params: { id: string } }) => ({ id: Number(route.params.id) }) },
   { path: '/:pathMatch(.*)', component: NotFoundView },
 ]
 
