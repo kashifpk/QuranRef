@@ -106,3 +106,72 @@ export const POS_LABELS: Record<string, string> = {
     V: 'Verb',
     P: 'Particle',
 };
+
+export interface TopicSummary {
+    id: string;
+    name: string;
+    arabic_name: string;
+    aya_count: number;
+    thematic: boolean;
+    ontology: boolean;
+    parent_id: string | null;
+    thematic_parent_id: string | null;
+    ontology_parent_id: string | null;
+}
+
+export interface TopicInfo {
+    id: string;
+    name: string;
+    arabic_name: string;
+    description: string;
+    wiki_link: string;
+    thematic: boolean;
+    ontology: boolean;
+    aya_count: number;
+    parents: TopicSummary[];
+    children: TopicSummary[];
+    related: TopicSummary[];
+}
+
+export interface ThemeInfo {
+    id: string;
+    theme: string;
+    surah_number: number;
+    aya_from: number;
+    aya_to: number;
+    keywords: string;
+}
+
+export interface AyaTopics {
+    topics: TopicSummary[];
+    themes: ThemeInfo[];
+}
+
+export interface AyaPage {
+    total: number;
+    offset: number;
+    ayas: AyaInfo[];
+}
+
+export interface SimilarAya {
+    aya_key: string;
+    score: number;
+    coverage: number;
+    matched_words: number;
+    match_words: number[][];
+    texts: AyaTexts;
+}
+
+export interface PhraseInfo {
+    id: string;
+    text: string;
+    source_aya: string;
+    aya_count: number;
+    ranges: number[][];
+    aya_keys: string[];
+}
+
+export interface RelatedInfo {
+    similar: SimilarAya[];
+    phrases: PhraseInfo[];
+}

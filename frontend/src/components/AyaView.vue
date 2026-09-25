@@ -137,6 +137,18 @@
         </div>
       </div>
 
+      <!-- Study: topics, themes, similar ayas -->
+      <div class="study-toggle-row">
+        <Button
+          :icon="showStudy ? 'pi pi-chevron-up' : 'pi pi-sitemap'"
+          :label="showStudy ? 'Hide study' : 'Topics & related'"
+          text
+          size="small"
+          @click="showStudy = !showStudy"
+        />
+      </div>
+      <AyaStudyPanel v-if="showStudy" :aya-key="props.aya.aya_key" />
+
       <!-- Translations Section below -->
       <div class="translations-section" v-if="translationTexts.length > 0">
         <div class="translations-grid" :class="translationGridClass">
@@ -171,6 +183,7 @@ import Dialog from 'primevue/dialog';
 import MarkdownNote from './MarkdownNote.vue';
 import WordByWordAya from './WordByWordAya.vue';
 import WordDetails from './WordDetails.vue';
+import AyaStudyPanel from './AyaStudyPanel.vue';
 import type { SurahInfo, AyaInfo, Bookmark, TokenInfo } from '../type_defs';
 import { useStore } from '../store';
 
@@ -191,6 +204,7 @@ const editingNoteId = ref<number | null>(null);
 const editNoteText = ref('');
 
 const ayaNotes = computed(() => store.getNotesForAya(props.aya.aya_key));
+const showStudy = ref(false);
 
 // Word-by-word mode: tokens are fetched when the mode is on (and cached in the store)
 const tokens = ref<TokenInfo[]>([]);
@@ -561,6 +575,12 @@ const highlightedArabicText = computed(() => {
   display: inline-block;
   margin-left: 15px;
   vertical-align: middle;
+}
+
+.study-toggle-row {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0.25rem 0;
 }
 
 .translations-section {

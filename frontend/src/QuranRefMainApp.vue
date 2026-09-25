@@ -63,6 +63,13 @@
             rounded
             v-tooltip.bottom="'Browse by Word'"
           />
+          <Button
+            icon="pi pi-tags"
+            @click="$router.push('/topics')"
+            text
+            rounded
+            v-tooltip.bottom="'Topics'"
+          />
         </div>
       </div>
     </header>
@@ -91,6 +98,11 @@
           <router-link to="/by_root" class="nav-link" @click="drawerVisible = false">
             <i class="pi pi-sitemap"></i>
             <span>Browse by Root</span>
+          </router-link>
+
+          <router-link to="/topics" class="nav-link" @click="drawerVisible = false">
+            <i class="pi pi-tags"></i>
+            <span>Topics</span>
           </router-link>
 
           <router-link
@@ -128,6 +140,9 @@
       <span class="footer-separator">|</span>
       <span>Word morphology from the</span>
       <a href="https://corpus.quran.com" target="_blank" rel="noopener">Quranic Arabic Corpus</a>
+      <span class="footer-separator">|</span>
+      <span>Topics, themes and related ayas from the</span>
+      <a href="https://qul.tarteel.ai" target="_blank" rel="noopener">Quranic Universal Library</a>
     </footer>
   </div>
 </template>

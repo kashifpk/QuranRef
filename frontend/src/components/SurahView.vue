@@ -12,6 +12,8 @@
       </template>
     </Card>
 
+    <surah-themes v-if="props.surah_number" :surah-number="props.surah_number" @goto="gotoAya" />
+
     <div v-if="surahAyas && surahAyas.length > 0" class="ayas-list">
       <aya-view
         v-for="aya in surahAyas"
@@ -38,6 +40,7 @@ import Card from 'primevue/card';
 import ProgressSpinner from 'primevue/progressspinner';
 import type { SurahInfo, AyaInfo } from '../type_defs';
 import AyaView from './AyaView.vue';
+import SurahThemes from './SurahThemes.vue';
 
 const props = defineProps({
   surah_number: Number,
@@ -48,6 +51,11 @@ const route = useRoute();
 
 const surahAyas = ref<AyaInfo[]>();
 const surahInfo = ref<SurahInfo>();
+
+function gotoAya(ayaNumber: number) {
+  const el = document.getElementById(`aya-${props.surah_number}:${ayaNumber}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function scrollToAya() {
   const ayaNum = route.query.aya as string | undefined;

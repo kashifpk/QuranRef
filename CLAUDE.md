@@ -33,6 +33,7 @@ CLI, run as `uv run quranref-cli <group> <command>`:
 - `post-process link-ayas-to-surahs`, `make-words`, `update-meta-info`, `fix-word-counts`, `remove-bismillah`
 - `post-process build-search-index`: rebuild the `aya_search` table (normalized texts, pg_trgm index) that the search endpoint queries; run after any text import
 - `db import-morphology data/morphology/quran-morphology.txt`: roots, lemmas and per-word tokens from the Quranic Arabic Corpus (run after make-words; replaces existing morphology)
+- `qul import-all <folder>` (or `qul import-topics|import-themes|import-similar|import-phrases <file>`): topics, ayah themes, similar ayas and Mutashabihat phrases from QUL downloads in `backend/data/qul/`; each replaces its own data
 - `db import-word-glosses <language> <file.json>`: per-word meanings onto tokens (QUL word-by-word JSON, `{"s:a:w": "meaning"}`); languages in use: english, urdu, transliteration. Files live in the gitignored `backend/data/qul/`
 
 ### Frontend (run from frontend/)
@@ -64,7 +65,7 @@ Ports are hardcoded: backend 41148 in `__main__.py`, frontend 41149 in `vite.con
 ### Backend (FastAPI + Apache AGE)
 
 - Framework: FastAPI
-- Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word`, `Root`, `Lemma`, `Token` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`, `HAS_TOKEN`, `HAS_LEMMA`, `HAS_ROOT`, `IS_FORM`
+- Graph database: Apache AGE via age-orm. Graph `quran_graph` with vertex labels `Surah`, `Aya`, `Text`, `Word`, `Root`, `Lemma`, `Token`, `Topic`, `Theme`, `Phrase` and edge labels `HAS_AYA`, `HAS_WORD`, `AYA_TEXT`, `HAS_TOKEN`, `HAS_LEMMA`, `HAS_ROOT`, `IS_FORM`, `HAS_TOPIC`, `CHILD_OF` (kind: parent, thematic, ontology), `RELATED_TOPIC`, `HAS_THEME`, `SIMILAR_TO` (score, coverage, match_words), `HAS_PHRASE` (ranges)
 - Relational tables: SQLAlchemy 2 models with Alembic migrations (`users`, `meta_info`, `bookmarks`)
 - API: REST endpoints under `/api/v1`
 - CLI: Typer (`quranref-cli`)
@@ -75,6 +76,7 @@ Key files:
 - `backend/quranref/main.py`: application entry point, CORS, session middleware, SPA static serving
 - `backend/quranref/api.py`: Quran text, search and word endpoints
 - `backend/quranref/words.py`: word morphology endpoints (aya words, lemma, root, roots by letter, word morphology)
+- `backend/quranref/topics.py`, `related.py`: topics, themes, similar ayas and phrases endpoints; `ayatext.py` holds the shared aya text helpers; `commands/qul.py` the QUL importers
 - `backend/quranref/morphology.py`: corpus file parser and Uthmani-to-simple alignment
 - `backend/quranref/glosses.py`: per-word meaning importer
 - `backend/quranref/textnorm.py`, `search_index.py`: search normalization and the aya_search builder
@@ -98,6 +100,8 @@ Key files:
 - Dark and light mode, responsive layout
 
 Key files: `frontend/src/main.ts`, `QuranRefMainApp.vue`, `store.ts`, `router.ts`, `type_defs.ts`, `components/`, `views/`.
+
+Topic layer UI: `views/TopicsView.vue` (`/topics`, trees built by `topic_tree.ts`), `views/TopicView.vue` (`/topic/:id`), `views/PhraseView.vue` (`/phrase/:id`), `components/AyaPagedList.vue` (paged aya lists), `components/AyaStudyPanel.vue` (topics, theme, phrases and similar ayas inside `AyaView.vue`), `components/SurahThemes.vue` (outline on the surah page).
 
 Word layer UI: `components/WordByWordAya.vue` and `WordDetails.vue` (used by `AyaView.vue` when the store's `wordByWord` is on), `views/LemmaView.vue` (`/lemma/:lemma`), `views/RootView.vue` (`/root/:root`), `views/BrowseByRoot.vue` (`/by_root`). The Text Settings dialog has a Word by Word tab (toggle and meaning language).
 
@@ -178,6 +182,7 @@ FRONTEND_URL=http://localhost:41149
 5. Meta: `post-process update-meta-info`
 6. Search: `post-process build-search-index`
 7. Morphology: `db import-morphology data/morphology/quran-morphology.txt`, then optionally `db import-word-glosses`
+8. Topics and related verses: `qul import-all data/qul`
 
 ## API Usage
 
@@ -190,6 +195,8 @@ Base URL in development: http://localhost:41148/api/v1. Interactive docs at /doc
 - `GET /words-by-count/{count}`, `GET /available-word-counts`, `GET /top-most-frequent-words/{limit}`
 - `GET /text-types`, `GET /letters`
 - `GET /aya-words/{aya_key}`, `GET /lemma/{lemma}?text_type=`, `GET /root/{root}`, `GET /roots-by-letter/{letter}`, `GET /word-morphology/{word}`
+- `GET /topics`, `GET /topic/{id}`, `GET /topic/{id}/ayas?languages=&offset=&limit=`, `GET /aya-topics/{aya_key}`, `GET /themes/{surah_number}`, `GET /topics/for-ayas?keys=`
+- `GET /related/{aya_key}?languages=`, `GET /phrase/{id}`, `GET /phrase/{id}/ayas`
 - `GET /auth/login`, `GET /auth/callback`, `GET /auth/me`, `POST /auth/logout`
 - `GET /bookmarks`, `GET|PUT|DELETE /bookmarks/reading`, `POST /bookmarks/notes`, `PUT|DELETE /bookmarks/notes/{id}`
 

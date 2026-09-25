@@ -10,6 +10,9 @@ import BookmarksView from "./views/BookmarksView.vue"
 import BrowseByRoot from "./views/BrowseByRoot.vue"
 import LemmaView from "./views/LemmaView.vue"
 import RootView from "./views/RootView.vue"
+import TopicsView from "./views/TopicsView.vue"
+import TopicView from "./views/TopicView.vue"
+import PhraseView from "./views/PhraseView.vue"
 
 const routes = [
   { name: 'home', path: "/", component: HomeView },
@@ -28,6 +31,9 @@ const routes = [
   { name: 'browse_by_root', path: '/by_root', component: BrowseByRoot },
   { name: 'root_view', path: '/root/:root', component: RootView, props: true },
   { name: 'lemma_view', path: '/lemma/:lemma', component: LemmaView, props: true },
+  { name: 'topics', path: '/topics', component: TopicsView },
+  { name: 'topic_view', path: '/topic/:id', component: TopicView, props: true },
+  { name: 'phrase_view', path: '/phrase/:id', component: PhraseView, props: true },
   { path: '/:pathMatch(.*)', component: NotFoundView },
 ]
 

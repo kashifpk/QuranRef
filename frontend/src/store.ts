@@ -2,7 +2,7 @@ import { mande } from "mande"
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { useStorage } from '@vueuse/core'
-import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo } from "./type_defs"
+import type { SurahInfo, UserInfo, Bookmark, BookmarksData, TokenInfo, TopicSummary } from "./type_defs"
 
 
 export const useStore = defineStore('quranref_store', () => {
@@ -35,6 +35,31 @@ export const useStore = defineStore('quranref_store', () => {
       return [];
     }
   }
+
+  // The full topic list, fetched once per session
+  const topics = ref<TopicSummary[]>([]);
+  const topicsLoading = ref(false);
+
+  async function loadTopics(): Promise<TopicSummary[]> {
+    if (topics.value.length > 0) return topics.value;
+    topicsLoading.value = true;
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const resp = await fetch(baseUrl + '/topics');
+      if (resp.ok) topics.value = await resp.json();
+    } catch (error) {
+      console.error('Failed to load topics:', error);
+    } finally {
+      topicsLoading.value = false;
+    }
+    return topics.value;
+  }
+
+  // Language spec for aya texts: the Arabic style plus the selected translations
+  const textLanguagesSpec = computed(() => {
+    const spec = 'arabic:' + arabicTextType.value;
+    return selectedTranslationsString.value ? spec + '_' + selectedTranslationsString.value : spec;
+  });
 
   // Dark mode state (persisted to localStorage)
   // On first visit, follow system preference; thereafter use the stored value
@@ -293,6 +318,10 @@ export const useStore = defineStore('quranref_store', () => {
     glossLanguage,
     showTransliteration,
     loadAyaWords,
+    topics,
+    topicsLoading,
+    loadTopics,
+    textLanguagesSpec,
 
     // Loading states
     surahInfoLoading,

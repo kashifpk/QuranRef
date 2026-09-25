@@ -36,6 +36,12 @@
       args:
         chdir: "{{ backend_dir }}"
 
+    - name: Import QUL topics, themes, similar ayas and phrases (if the files are present)
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli qul import-all data/qul"
+      args:
+        chdir: "{{ backend_dir }}"
+      ignore_errors: true
+
     - name: Run post-processing - build search index
       command: "{{ uv_path }} run --no-dev --no-sources quranref-cli post-process build-search-index"
       args:

@@ -78,6 +78,16 @@ db import-word-glosses urdu data/qul/urud-wbw.json
 db import-word-glosses transliteration data/qul/english-wbw-transliteration.json
 ```
 
+### Topics, themes and related verses
+
+From QUL downloads (see `backend/data/qul-README.md`): topics with two hierarchies and the ayas they cover, ayah themes, similar ayas with scores, and the Mutashabihat recurring phrases.
+
+```bash
+qul import-all data/qul          # or import-topics, import-themes, import-similar, import-phrases
+```
+
+In the app: Topics (drawer or the tag icon) browses the thematic and ontology trees or searches by name; a topic page shows its description, hierarchy, related topics and every aya about it; each aya card has a "Topics & related" panel with its topics, theme, recurring phrases and similar ayas; a surah page opens with an outline of its themes.
+
 Word-by-word meaning files are not bundled (`backend/data/qul/` is gitignored). QUL (https://qul.tarteel.ai/resources) publishes English (translation resource 92) and Urdu (93) word-by-word translations and an English word-by-word transliteration (transliteration resource 71) as JSON, downloadable with a free account; the importer reads their `{"surah:aya:word": "text"}` format. Meanings are stored per occurrence, so a lemma's page shows which meanings it takes across the Quran. On AGE 1.8 the import is a single SQL update (about 35 seconds for the whole Quran); on AGE 1.6 it falls back to one Cypher update per word.
 
 Search runs on the `aya_search` table, a normalized copy of every aya text with a trigram index (`pg_trgm`), so queries are diacritic, case and letter-variant insensitive. Rebuild it with `post-process build-search-index` whenever texts are imported or changed.
