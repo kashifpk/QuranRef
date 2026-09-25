@@ -19,6 +19,7 @@
       - "--exclude=.coverage"
       - "--exclude=tests"
       - "--exclude=data/age-export"
+      - "--exclude=data/backups"
     delete: yes
   notify: restart quranref
 

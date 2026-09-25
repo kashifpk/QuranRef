@@ -36,7 +36,17 @@
       args:
         chdir: "{{ backend_dir }}"
 
-    - name: Import QUL topics, themes, similar ayas and phrases (if the files are present)
+    - name: Import word-by-word meanings (if the QUL files are present)
+      command: "{{ uv_path }} run --no-dev --no-sources quranref-cli db import-word-glosses {{ item.language }} data/qul/{{ item.file }}"
+      args:
+        chdir: "{{ backend_dir }}"
+      loop:
+        - { language: english, file: english-wbw-translation.json }
+        - { language: urdu, file: urud-wbw.json }
+        - { language: transliteration, file: english-wbw-transliteration.json }
+      ignore_errors: true
+
+    - name: Import QUL topics, themes, similar ayas, phrases and mushaf structure (if the files are present)
       command: "{{ uv_path }} run --no-dev --no-sources quranref-cli qul import-all data/qul"
       args:
         chdir: "{{ backend_dir }}"

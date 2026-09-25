@@ -1,0 +1,51 @@
+---
+# Bring an existing production database up to the current data layers.
+# Run after deploy.yml. Every step replaces its own data, so the playbook can be rerun.
+# Needs backend/data/qul/ (gitignored QUL downloads) synced by deploy.yml.
+
+- name: Upgrade QuranRef data layers in place
+  hosts: hosting_vps
+  remote_user: kashif
+  vars:
+    cli: "{{ uv_path }} run --no-dev --no-sources quranref-cli"
+
+  tasks:
+    - name: Create new labels and indexes, run SQL migrations
+      command: "{{ cli }} db init"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Import word morphology (roots, lemmas, tokens)
+      command: "{{ cli }} db import-morphology data/morphology/quran-morphology.txt"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Import word-by-word meanings
+      command: "{{ cli }} db import-word-glosses {{ item.language }} data/qul/{{ item.file }}"
+      args:
+        chdir: "{{ backend_dir }}"
+      loop:
+        - { language: english, file: english-wbw-translation.json }
+        - { language: urdu, file: urud-wbw.json }
+        - { language: transliteration, file: english-wbw-transliteration.json }
+
+    - name: Import QUL topics, themes, similar ayas, phrases and mushaf structure
+      command: "{{ cli }} qul import-all data/qul"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Bring the texts in line with the bundled Tanzil files (no download)
+      command: "{{ cli }} tanzil refresh --all --from-bundled"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Build the search index
+      command: "{{ cli }} post-process build-search-index"
+      args:
+        chdir: "{{ backend_dir }}"
+
+    - name: Restart quranref service
+      systemd:
+        name: quranref
+        state: restarted
+        scope: user

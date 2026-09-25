@@ -35,7 +35,7 @@ CLI, run as `uv run quranref-cli <group> <command>`. The CLI reads the database 
 - `db import-morphology data/morphology/quran-morphology.txt`: roots, lemmas and per-word tokens from the Quranic Arabic Corpus (run after make-words; replaces existing morphology)
 - `qul import-all <folder>` (or `qul import-topics|import-themes|import-similar|import-phrases <file>`, `qul import-metadata <folder>`): topics, ayah themes, similar ayas, Mutashabihat phrases and mushaf structure (juz, hizb, rub, manzil, ruku, sajda on Aya vertices; unit tables under meta_info key `structure`; surah descriptions in the `surah_info` table) from QUL downloads in `backend/data/qul/`; each replaces its own data
 - `qul import-tafsir <file.json> --slug <id> --name <name> --language <language> [--author --license]`: one tafsir from a QUL JSON export into the `tafsir_*` tables (passages may cover several ayas); rerun with the same slug to replace it
-- `tanzil list|check|refresh [ids... | --all] [--source-dir <dir>]`: compare the bundled Tanzil texts and translations (and the graph) with tanzil.net and apply changed ayas; `refresh` also rewrites the bundled `.txt.bz2` copies, prunes orphaned Text vertices and rebuilds the search index. `data/tanzil.py` maps Tanzil ids to language and text_type
+- `tanzil list|check|refresh [ids... | --all] [--source-dir <dir> | --from-bundled]`: compare the bundled Tanzil texts and translations (and the graph) with tanzil.net and apply changed ayas; `refresh` also rewrites the bundled `.txt.bz2` copies, prunes orphaned Text vertices and rebuilds the search index. `data/tanzil.py` maps Tanzil ids to language and text_type
 - `db import-word-glosses <language> <file.json>`: per-word meanings onto tokens (QUL word-by-word JSON, `{"s:a:w": "meaning"}`); languages in use: english, urdu, transliteration. Files live in the gitignored `backend/data/qul/`
 
 ### Frontend (run from frontend/)
@@ -230,6 +230,7 @@ ssh kashif@hosting_vps "cd /home/kashif/QuranRef/backend && .venv/bin/quranref-c
 Key files:
 
 - `deploy/playbooks/deploy.yml`: routine deployment (sync code, deploy .env, install deps, restart)
+- `deploy/playbooks/data-upgrade.yml`: after deploy.yml on an existing database: `db init`, morphology, glosses, QUL bundle, `tanzil refresh --from-bundled`, search index, restart. Rehearsed on PostgreSQL 16 + AGE 1.6.0 (about 35 minutes, most of it the three gloss imports on the Cypher fallback)
 - `deploy/playbooks/setup.yml`: first-time setup (AGE build, database, app)
 - `deploy/roles/app_deploy/templates/env.production.j2`: production environment template
 - `deploy/group_vars/all/vars.yml`: variables; secrets reference the vault

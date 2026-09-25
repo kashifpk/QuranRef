@@ -38,7 +38,14 @@ def _resolve(ids: list[str], all_sources: bool) -> list[str]:
     return ids
 
 
-def _fresh_content(source_id: str, source_dir: Path | None, delay: float) -> str:
+def _fresh_content(
+    source_id: str, source_dir: Path | None, delay: float, from_bundled: bool = False
+) -> str:
+    if from_bundled:
+        content = read_bundled(source_id)
+        if content is None:
+            raise FileNotFoundError(f"no bundled copy of {source_id}")
+        return content
     if source_dir is not None:
         name = source_id.replace("quran:", "quran-")
         for candidate in (source_dir / f"{name}.txt", source_dir / name):
@@ -72,12 +79,15 @@ def check(
         None, help="Read <id>.txt files from this folder instead of downloading"
     ),
     delay: float = typer.Option(1.0, help="Seconds to wait between downloads"),
+    from_bundled: bool = typer.Option(
+        False, "--from-bundled", help="Use the bundled copies under data/ instead of downloading"
+    ),
 ):
     """Download the current files and report which ayas differ from the graph. No writes."""
     g = get_graph()
     for source_id in _resolve(ids or [], all_sources):
         language, text_type = source_name(source_id)
-        fresh = parse_tanzil(_fresh_content(source_id, source_dir, delay))
+        fresh = parse_tanzil(_fresh_content(source_id, source_dir, delay, from_bundled))
         bundled_raw = read_bundled(source_id)
         bundled = parse_tanzil(bundled_raw) if bundled_raw else None
         diff = diff_texts(graph_texts(g, language, text_type), split_bismillah(fresh.ayas))
@@ -120,6 +130,9 @@ def refresh(
         None, help="Read <id>.txt files from this folder instead of downloading"
     ),
     delay: float = typer.Option(1.0, help="Seconds to wait between downloads"),
+    from_bundled: bool = typer.Option(
+        False, "--from-bundled", help="Use the bundled copies under data/ instead of downloading"
+    ),
     update_files: bool = typer.Option(True, help="Rewrite the bundled .txt.bz2 copies"),
     update_graph: bool = typer.Option(True, help="Apply changed ayas to the graph"),
 ):
@@ -134,7 +147,7 @@ def refresh(
     files_written = 0
     for source_id in _resolve(ids or [], all_sources):
         language, text_type = source_name(source_id)
-        content = _fresh_content(source_id, source_dir, delay)
+        content = _fresh_content(source_id, source_dir, delay, from_bundled)
         fresh = parse_tanzil(content)
         bundled_raw = read_bundled(source_id)
         bundled = parse_tanzil(bundled_raw) if bundled_raw else None
