@@ -73,11 +73,12 @@ The word layer comes from the Quranic Arabic Corpus morphology (GPL, see `backen
 
 ```bash
 db import-morphology data/morphology/quran-morphology.txt   # after make-words
-db import-word-glosses english path/to/english-wbw.json     # optional per-word meanings
-db import-word-glosses urdu path/to/urdu-wbw.json
+db import-word-glosses english data/qul/english-wbw-translation.json     # per-word meanings
+db import-word-glosses urdu data/qul/urud-wbw.json
+db import-word-glosses transliteration data/qul/english-wbw-transliteration.json
 ```
 
-Word-by-word meaning files are not bundled. QUL (https://qul.tarteel.ai/resources/translation) publishes English (resource 92) and Urdu (resource 93) word-by-word translations as JSON, downloadable with a free account; the importer reads their `{"surah:aya:word": "meaning"}` format. Meanings are stored per occurrence, so a lemma's page shows which meanings it takes across the Quran.
+Word-by-word meaning files are not bundled (`backend/data/qul/` is gitignored). QUL (https://qul.tarteel.ai/resources) publishes English (translation resource 92) and Urdu (93) word-by-word translations and an English word-by-word transliteration (transliteration resource 71) as JSON, downloadable with a free account; the importer reads their `{"surah:aya:word": "text"}` format. Meanings are stored per occurrence, so a lemma's page shows which meanings it takes across the Quran. On AGE 1.8 the import is a single SQL update (about 35 seconds for the whole Quran); on AGE 1.6 it falls back to one Cypher update per word.
 
 Search runs on the `aya_search` table, a normalized copy of every aya text with a trigram index (`pg_trgm`), so queries are diacritic, case and letter-variant insensitive. Rebuild it with `post-process build-search-index` whenever texts are imported or changed.
 

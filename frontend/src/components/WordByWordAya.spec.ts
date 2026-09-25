@@ -6,7 +6,7 @@ import type { TokenInfo } from '../type_defs'
 const tokens: TokenInfo[] = [
   {
     position: 1, text: 'بِسْمِ', text_simple: 'بسم', tag: 'N', root: 'سمو', lemma: 'اسْم',
-    features: 'ROOT:سمو|LEM:اسْم', segments: [], glosses: { english: 'In (the) name', urdu: 'نام سے' },
+    features: 'ROOT:سمو|LEM:اسْم', segments: [], glosses: { english: 'In (the) name', urdu: 'نام سے', transliteration: "bis'mi" },
   },
   {
     position: 2, text: 'ٱللَّهِ', text_simple: 'الله', tag: 'N', root: 'أله', lemma: 'اللَّه',
@@ -27,6 +27,17 @@ describe('WordByWordAya', () => {
     const words = wrapper.findAll('.wbw-word')
     expect(words[0].find('.wbw-gloss').text()).toBe('نام سے')
     expect(words[1].find('.wbw-gloss').exists()).toBe(false)
+  })
+
+  it('shows the transliteration only when asked', () => {
+    const off = mount(WordByWordAya, { props: { tokens, glossLanguage: 'english' } })
+    expect(off.find('.wbw-translit').exists()).toBe(false)
+    const on = mount(WordByWordAya, {
+      props: { tokens, glossLanguage: 'english', showTransliteration: true },
+    })
+    const lines = on.findAll('.wbw-word').map((w) => w.find('.wbw-translit'))
+    expect(lines[0].text()).toBe("bis'mi")
+    expect(lines[1].exists()).toBe(false)
   })
 
   it('emits the clicked token and marks the selected one', async () => {

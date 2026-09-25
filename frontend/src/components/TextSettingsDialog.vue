@@ -145,6 +145,10 @@
               <label for="wbw-toggle">Word by word mode</label>
             </div>
             <div class="wbw-option">
+              <ToggleSwitch v-model="store.showTransliteration" inputId="wbw-translit" />
+              <label for="wbw-translit">Show transliteration under each word</label>
+            </div>
+            <div class="wbw-option">
               <label for="gloss-language">Meaning language</label>
               <Select
                 v-model="store.glossLanguage"

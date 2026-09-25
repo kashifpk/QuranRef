@@ -15,6 +15,7 @@ export const useStore = defineStore('quranref_store', () => {
   // Word-by-word reading mode and the language of the per-word meanings shown under each word
   const wordByWord = useStorage('quranref-word-by-word', false);
   const glossLanguage = useStorage('quranref-gloss-language', 'english');
+  const showTransliteration = useStorage('quranref-show-transliteration', false);
 
   // Per-aya word morphology, fetched on demand and kept for the session
   const ayaWordsCache = new Map<string, TokenInfo[]>();
@@ -290,6 +291,7 @@ export const useStore = defineStore('quranref_store', () => {
     darkMode,
     wordByWord,
     glossLanguage,
+    showTransliteration,
     loadAyaWords,
 
     // Loading states

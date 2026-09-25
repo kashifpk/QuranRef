@@ -125,6 +125,7 @@
             <WordByWordAya
               :tokens="tokens"
               :gloss-language="store.glossLanguage"
+              :show-transliteration="store.showTransliteration"
               :selected-position="selectedToken?.position ?? null"
               @select="onWordSelect"
             />

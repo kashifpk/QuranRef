@@ -291,7 +291,7 @@ def import_word_glosses_cmd(
     from ..glosses import import_word_glosses, load_gloss_file
 
     glosses = load_gloss_file(file_name)
-    updated = import_word_glosses(get_graph(), language, glosses)
+    updated = import_word_glosses(get_graph(), get_db(), language, glosses)
     print(f"[green]{updated} of {len(glosses)} {language} word meanings imported.[/green]")
 
 

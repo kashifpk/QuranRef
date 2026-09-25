@@ -9,6 +9,7 @@
       @click="$emit('select', token, $event)"
     >
       <span class="wbw-arabic">{{ token.text }}</span>
+      <span class="wbw-translit" v-if="showTransliteration && token.glosses.transliteration">{{ token.glosses.transliteration }}</span>
       <span class="wbw-gloss" v-if="token.glosses[glossLanguage]">{{ token.glosses[glossLanguage] }}</span>
     </button>
   </div>
@@ -20,6 +21,7 @@ import type { TokenInfo } from '../type_defs';
 defineProps<{
   tokens: TokenInfo[];
   glossLanguage: string;
+  showTransliteration?: boolean;
   selectedPosition?: number | null;
 }>();
 
@@ -62,6 +64,13 @@ defineEmits<{
   line-height: 1.6;
   font-family: 'AlQalam', 'Amiri', 'Traditional Arabic', serif;
   direction: rtl;
+}
+
+.wbw-translit {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--p-text-muted-color, #666);
+  direction: ltr;
 }
 
 .wbw-gloss {

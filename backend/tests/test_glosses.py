@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from quranref.glosses import import_word_glosses, load_gloss_file
+from quranref.glosses import _import_with_cypher, import_word_glosses, load_gloss_file
 from quranref.models import Token
 
 
@@ -54,14 +54,22 @@ def _glosses(g, token_id: str) -> dict:
     return rows[0]["glosses"] or {}
 
 
-def test_import_glosses_merges_languages_and_skips_unknown_tokens(test_graph, scratch_tokens):
+def test_import_glosses_merges_languages_and_skips_unknown_tokens(
+    test_graph, test_db, scratch_tokens
+):
     updated = import_word_glosses(
-        test_graph, "urdu", {"99:1:1": " پہلا ", "99:1:2": "دوسرا", "99:9:9": "ignored"}
+        test_graph, test_db, "urdu", {"99:1:1": " پہلا ", "99:1:2": "دوسرا", "99:9:9": "ignored"}
     )
     assert updated == 2
     assert _glosses(test_graph, "99:1:1") == {"english": "first", "urdu": "پہلا"}
     assert _glosses(test_graph, "99:1:2") == {"urdu": "دوسرا"}
 
     # Re-importing a language replaces only that language
-    import_word_glosses(test_graph, "urdu", {"99:1:1": "اول"})
+    import_word_glosses(test_graph, test_db, "urdu", {"99:1:1": "اول"})
     assert _glosses(test_graph, "99:1:1") == {"english": "first", "urdu": "اول"}
+
+
+def test_cypher_fallback_behaves_the_same(test_graph, scratch_tokens):
+    updated = _import_with_cypher(test_graph, "urdu", {"99:1:1": "پہلا", "99:9:9": "ignored"})
+    assert updated == 1
+    assert _glosses(test_graph, "99:1:1") == {"english": "first", "urdu": "پہلا"}
