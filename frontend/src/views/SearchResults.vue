@@ -3,6 +3,7 @@
     <Card>
       <template #title>
         Search Results for "{{ searchTerm }}"
+        <span class="search-scope">in {{ describeSearchSpec(searchSpec) }}</span>
       </template>
       <template #content>
         <div v-if="loading" class="loading-state">
@@ -37,6 +38,7 @@ import Card from 'primevue/card';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
 import AyaView from '../components/AyaView.vue';
+import { describeSearchSpec, pickSearchSpec } from '../search_spec';
 
 const route = useRoute();
 const store = useStore();
@@ -63,6 +65,11 @@ const cleanedSearchTerm = computed(() => {
   return cleaned;
 });
 
+// Arabic terms search the Arabic text; other scripts search a translation
+const searchSpec = computed(() =>
+  pickSearchSpec(cleanedSearchTerm.value, store.selectedTranslations, store.availableTranslations)
+);
+
 // Use VueUse for better async state management
 const {
   state: searchResults,
@@ -72,9 +79,8 @@ const {
   async () => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    // Use cleaned search term and search against simple-clean text
     const encodedSearchTerm = encodeURIComponent(cleanedSearchTerm.value);
-    let requestUrl = `${baseUrl}/search/${encodedSearchTerm}/arabic:simple-clean`;
+    let requestUrl = `${baseUrl}/search/${encodedSearchTerm}/${searchSpec.value}`;
 
     // For display, we want the user's selected Arabic text type and translations
     let displayLanguages = `arabic:${store.arabicTextType}`;
@@ -152,4 +158,11 @@ onMounted(() => {
   direction: rtl;
   text-align: right;
 }
+.search-scope {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: var(--p-text-muted-color, #666);
+  margin-left: 0.5rem;
+}
+
 </style>
